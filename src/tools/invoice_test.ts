@@ -1,0 +1,463 @@
+/**
+ * Invoice Tools Tests
+ *
+ * Tests that invoice tools correctly call adapter methods
+ * and handle validation.
+ *
+ * @module lib/einvoice/src/tools/invoice_test
+ */
+
+import { assertEquals, assertRejects } from "jsr:@std/assert";
+import { invoiceTools } from "./invoice.ts";
+import { createMockAdapter } from "../testing/helpers.ts";
+import {
+  storeGenerated,
+  getGenerated,
+  _clearStore,
+  _expireEntry,
+} from "../generated-store.ts";
+
+function findTool(name: string) {
+  const tool = invoiceTools.find((t) => t.name === name);
+  if (!tool) throw new Error(`Tool not found: ${name}`);
+  return tool;
+}
+
+// ── Emit ─────────────────────────────────────────────────
+
+Deno.test("einvoice_invoice_emit - calls adapter.emitInvoice with file", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_emit");
+
+  // btoa("hello") = "aGVsbG8="
+  await tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.pdf" }, { adapter });
+
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].method, "emitInvoice");
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.filename, "invoice.pdf");
+  assertEquals(arg.file instanceof Uint8Array, true);
+});
+
+Deno.test("einvoice_invoice_emit - throws without required fields", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_emit");
+
+  await assertRejects(
+    () => tool.handler({}, { adapter }),
+    Error,
+    "Provide either 'generated_id' or both 'file_base64' and 'filename'",
+  );
+});
+
+Deno.test("einvoice_invoice_emit - throws for invalid filename extension", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_emit");
+
+  await assertRejects(
+    () => tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.docx" }, { adapter }),
+    Error,
+    "filename must end in .pdf or .xml",
+  );
+});
+
+// ── Search ───────────────────────────────────────────────
+
+Deno.test("einvoice_invoice_search - calls adapter.searchInvoices with q and pagination", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_search");
+
+  await tool.handler({ q: "status:accepted", offset: 0, limit: 10 }, { adapter });
+
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].method, "searchInvoices");
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.q, "status:accepted");
+  assertEquals(arg.offset, 0);
+  assertEquals(arg.limit, 10);
+});
+
+Deno.test("einvoice_invoice_search - sanitizes empty string to undefined", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_search");
+
+  await tool.handler({ q: "" }, { adapter });
+
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.q, undefined);
+});
+
+Deno.test("einvoice_invoice_search - sanitizes whitespace-only to undefined", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_search");
+
+  await tool.handler({ q: "  " }, { adapter });
+
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.q, undefined);
+});
+
+Deno.test("einvoice_invoice_search - sanitizes wildcard '*' to undefined", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_search");
+
+  await tool.handler({ q: "*" }, { adapter });
+
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.q, undefined);
+});
+
+Deno.test("einvoice_invoice_search - sanitizes ' * ' to undefined", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_search");
+
+  await tool.handler({ q: " * " }, { adapter });
+
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.q, undefined);
+});
+
+// ── Get ──────────────────────────────────────────────────
+
+Deno.test("einvoice_invoice_get - calls adapter.getInvoice", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_get");
+
+  await tool.handler({ id: "inv-123" }, { adapter });
+
+  assertEquals(calls[0].method, "getInvoice");
+  assertEquals(calls[0].args[0], "inv-123");
+});
+
+Deno.test("einvoice_invoice_get - throws without id", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_get");
+
+  await assertRejects(
+    () => tool.handler({}, { adapter }),
+    Error,
+    "'id' is required",
+  );
+});
+
+// ── Download ─────────────────────────────────────────────
+
+Deno.test("einvoice_invoice_download - returns base64-encoded result", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_download");
+
+  const result = (await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
+
+  assertEquals(result.content_type, "application/xml");
+  assertEquals(typeof result.data_base64, "string");
+  assertEquals(result.size_bytes, 3);
+});
+
+// ── Download Readable ────────────────────────────────────
+
+Deno.test("einvoice_invoice_download_readable - returns base64 PDF", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_download_readable");
+
+  const result = (await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
+
+  assertEquals(result.content_type, "application/pdf");
+  assertEquals(result.size_bytes, 3);
+});
+
+// ── Invoice Files ────────────────────────────────────────
+
+Deno.test("einvoice_invoice_files - calls adapter.getInvoiceFiles", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_files");
+
+  await tool.handler({ id: "inv-123" }, { adapter });
+
+  assertEquals(calls[0].method, "getInvoiceFiles");
+  assertEquals(calls[0].args[0], "inv-123");
+});
+
+// ── Download File ────────────────────────────────────────
+
+Deno.test("einvoice_invoice_download_file - returns base64-encoded result", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_download_file");
+
+  const result = (await tool.handler({ file_id: "file-abc" }, { adapter })) as Record<string, unknown>;
+
+  assertEquals(result.content_type, "application/octet-stream");
+  assertEquals(typeof result.data_base64, "string");
+  assertEquals(result.size_bytes, 3);
+});
+
+Deno.test("einvoice_invoice_download_file - throws without file_id", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_download_file");
+
+  await assertRejects(
+    () => tool.handler({}, { adapter }),
+    Error,
+    "'file_id' is required",
+  );
+});
+
+// ── Mark Seen ────────────────────────────────────────────
+
+Deno.test("einvoice_invoice_mark_seen - calls adapter.markInvoiceSeen", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_mark_seen");
+
+  await tool.handler({ id: "inv-123" }, { adapter });
+
+  assertEquals(calls[0].method, "markInvoiceSeen");
+  assertEquals(calls[0].args[0], "inv-123");
+});
+
+// ── Not Seen ─────────────────────────────────────────────
+
+Deno.test("einvoice_invoice_not_seen - calls adapter.getUnseenInvoices with offset/limit", async () => {
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_not_seen");
+
+  await tool.handler({ offset: 10, limit: 5 }, { adapter });
+
+  assertEquals(calls[0].method, "getUnseenInvoices");
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.offset, 10);
+  assertEquals(arg.limit, 5);
+});
+
+// ── Generate Formats (preview flow) ──────────────────────
+
+Deno.test("einvoice_invoice_generate_cii - returns generated_id, no auto-emit", async () => {
+  _clearStore();
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_generate_cii");
+
+  const result = (await tool.handler(
+    { invoice: { invoiceId: "F-001" }, flavor: "EN16931" },
+    { adapter },
+  )) as Record<string, unknown>;
+
+  // Should call generateCII but NOT emitInvoice
+  assertEquals(calls[0].method, "generateCII");
+  assertEquals(calls.length, 1); // no emitInvoice call
+  assertEquals(typeof result.generated_id, "string");
+  assertEquals(result.filename, "F-001.xml");
+  assertEquals(typeof result.preview, "object");
+});
+
+Deno.test("einvoice_invoice_generate_cii - throws without flavor", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_generate_cii");
+
+  await assertRejects(
+    () => tool.handler({ invoice: { number: "F-001" } }, { adapter }),
+    Error,
+    "'invoice' and 'flavor' are required",
+  );
+});
+
+Deno.test("einvoice_invoice_generate_ubl - returns generated_id, no auto-emit", async () => {
+  _clearStore();
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_generate_ubl");
+
+  const result = (await tool.handler(
+    { invoice: { invoiceId: "U-001" }, flavor: "MINIMUM" },
+    { adapter },
+  )) as Record<string, unknown>;
+
+  assertEquals(calls[0].method, "generateUBL");
+  assertEquals(calls.length, 1);
+  assertEquals(typeof result.generated_id, "string");
+  assertEquals(result.filename, "U-001.xml");
+});
+
+Deno.test("einvoice_invoice_generate_facturx - returns generated_id, no auto-emit", async () => {
+  _clearStore();
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_generate_facturx");
+
+  const result = (await tool.handler(
+    { invoice: { invoiceId: "FX-001" }, flavor: "EN16931", language: "FRENCH" },
+    { adapter },
+  )) as Record<string, unknown>;
+
+  assertEquals(calls[0].method, "generateFacturX");
+  assertEquals(calls.length, 1);
+  assertEquals(typeof result.generated_id, "string");
+  assertEquals(result.filename, "FX-001.pdf");
+});
+
+// ── Emit via generated_id ────────────────────────────────
+
+Deno.test("einvoice_invoice_emit - emits from generated_id", async () => {
+  _clearStore();
+  const { adapter, calls } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_emit");
+
+  // Store a file first
+  const file = new Uint8Array([10, 20, 30]);
+  const id = storeGenerated(file, "test.pdf");
+
+  await tool.handler({ generated_id: id }, { adapter });
+
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].method, "emitInvoice");
+  const arg = calls[0].args[0] as Record<string, unknown>;
+  assertEquals(arg.filename, "test.pdf");
+  assertEquals(arg.file instanceof Uint8Array, true);
+});
+
+Deno.test("einvoice_invoice_emit - throws for expired generated_id", async () => {
+  _clearStore();
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_emit");
+
+  const id = storeGenerated(new Uint8Array([1]), "old.xml");
+  _expireEntry(id);
+
+  await assertRejects(
+    () => tool.handler({ generated_id: id }, { adapter }),
+    Error,
+    "Generated file expired or not found",
+  );
+});
+
+// ── Generated Store ──────────────────────────────────────
+
+Deno.test("generated-store - store and retrieve", () => {
+  _clearStore();
+  const file = new Uint8Array([1, 2, 3]);
+  const id = storeGenerated(file, "invoice.pdf");
+
+  const result = getGenerated(id);
+  assertEquals(result !== null, true);
+  assertEquals(result!.filename, "invoice.pdf");
+  assertEquals(result!.file, file);
+});
+
+Deno.test("generated-store - retrieve consumes entry (one-shot)", () => {
+  _clearStore();
+  const id = storeGenerated(new Uint8Array([1]), "once.pdf");
+
+  const first = getGenerated(id);
+  assertEquals(first !== null, true);
+
+  const second = getGenerated(id);
+  assertEquals(second, null);
+});
+
+Deno.test("generated-store - expired entries return null", () => {
+  _clearStore();
+  const id = storeGenerated(new Uint8Array([1]), "exp.xml");
+  _expireEntry(id);
+
+  const result = getGenerated(id);
+  assertEquals(result, null);
+});
+
+// ── M4 fix: direction fallback inv.way → metadata.direction ──
+
+Deno.test("einvoice_invoice_get - resolves direction from inv.way", async () => {
+  const mockResponse = {
+    invoiceId: "inv-1",
+    way: "RECEIVED",
+    businessData: { seller: { name: "A" }, buyer: { name: "B" } },
+  };
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_invoice_get");
+
+  const result = (await tool.handler({ id: "inv-1" }, { adapter })) as Record<string, unknown>;
+  assertEquals(result.direction, "received");
+});
+
+Deno.test("einvoice_invoice_get - falls back to metadata.direction when way is absent", async () => {
+  const mockResponse = {
+    invoiceId: "inv-2",
+    metadata: { direction: "OUTBOUND" },
+    businessData: { seller: { name: "A" }, buyer: { name: "B" } },
+  };
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_invoice_get");
+
+  const result = (await tool.handler({ id: "inv-2" }, { adapter })) as Record<string, unknown>;
+  assertEquals(result.direction, "sent");
+});
+
+// ── C1 fix: not_seen idField matches formatted rows ─────
+
+Deno.test("einvoice_invoice_not_seen - _rowAction.idField is '_id' (matches formatted rows)", async () => {
+  const mockResponse = {
+    data: [
+      { metadata: { invoiceId: "inv-99", state: "DELIVERED", direction: "INBOUND", createDate: "2026-03-15T10:00:00Z" } },
+    ],
+  };
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_invoice_not_seen");
+
+  const result = (await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const rowAction = result._rowAction as Record<string, string>;
+  assertEquals(rowAction.idField, "_id");
+
+  // Verify formatted rows have _id field
+  const data = result.data as Record<string, unknown>[];
+  assertEquals(data[0]._id, "inv-99");
+});
+
+// ── M2 fix: TextEncoder produces correct UTF-8 bytes ────
+
+Deno.test("einvoice_invoice_generate_cii - handles non-ASCII characters (accents)", async () => {
+  _clearStore();
+  const { adapter } = createMockAdapter("Société Générale — été");
+  const tool = findTool("einvoice_invoice_generate_cii");
+
+  const result = (await tool.handler(
+    { invoice: { invoiceId: "ACCENT-01" }, flavor: "EN16931" },
+    { adapter },
+  )) as Record<string, unknown>;
+
+  // Retrieve the stored bytes and verify UTF-8 encoding
+  const stored = getGenerated(result.generated_id as string);
+  assertEquals(stored !== null, true);
+  const decoded = new TextDecoder().decode(stored!.file);
+  assertEquals(decoded, "Société Générale — été");
+});
+
+// ── Search _rowAction.idField matches formatted rows ─────
+
+Deno.test("einvoice_invoice_search - _rowAction.idField is '_id' (matches formatted rows)", async () => {
+  const mockResponse = {
+    meta: { count: 1 },
+    data: [
+      { metadata: { invoiceId: "inv-42", state: "DEPOSITED", direction: "OUTBOUND", createDate: "2026-01-01T00:00:00Z" }, businessData: { seller: { name: "Foo" }, buyer: { name: "Bar" } } },
+    ],
+  };
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_invoice_search");
+
+  const result = (await tool.handler({ q: "test" }, { adapter })) as Record<string, unknown>;
+  const rowAction = result._rowAction as Record<string, string>;
+  assertEquals(rowAction.idField, "_id");
+
+  const data = result.data as Record<string, unknown>[];
+  assertEquals(data[0]._id, "inv-42");
+});
+
+// ── _meta.ui ─────────────────────────────────────────────
+
+Deno.test("einvoice_invoice_search has doclist-viewer UI", () => {
+  const tool = findTool("einvoice_invoice_search");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
+});
+
+Deno.test("einvoice_invoice_get has invoice-viewer UI", () => {
+  const tool = findTool("einvoice_invoice_get");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/invoice-viewer");
+});
+
+Deno.test("einvoice_invoice_not_seen has doclist-viewer UI", () => {
+  const tool = findTool("einvoice_invoice_not_seen");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
+});

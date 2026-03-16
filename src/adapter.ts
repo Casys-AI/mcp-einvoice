@@ -1,0 +1,139 @@
+/**
+ * E-Invoice Adapter Interface
+ *
+ * PA-agnostic interface for French e-invoicing operations.
+ * Each PA (Plateforme Agréée) implements this interface.
+ * Currently implemented: Iopole (REST/JSON).
+ *
+ * The MCP tools call adapter methods, not PA-specific APIs.
+ *
+ * @module lib/einvoice/src/adapter
+ */
+
+// ─── Common Types ─────────────────────────────────────────
+
+export interface DownloadResult {
+  data: Uint8Array;
+  contentType: string;
+}
+
+export interface PaginatedRequest {
+  offset?: number;
+  limit?: number;
+}
+
+// ─── Invoice Types ────────────────────────────────────────
+
+export interface EmitInvoiceRequest {
+  file: Uint8Array;
+  filename: string;
+}
+
+export interface InvoiceSearchFilters extends PaginatedRequest {
+  q?: string;
+  expand?: string;
+}
+
+// ─── Directory Types ──────────────────────────────────────
+
+export interface DirectoryFrSearchFilters extends PaginatedRequest {
+  q: string;
+}
+
+export interface DirectoryIntSearchFilters extends PaginatedRequest {
+  value: string;
+}
+
+// ─── Generate Types ──────────────────────────────────────
+
+export interface GenerateInvoiceRequest {
+  invoice: Record<string, unknown>;
+  flavor: string;
+}
+
+export interface GenerateFacturXRequest extends GenerateInvoiceRequest {
+  language?: string;
+}
+
+// ─── Status Types ─────────────────────────────────────────
+
+/**
+ * Status codes per Iopole Swagger spec:
+ * IN_HAND, APPROVED, PARTIALLY_APPROVED, DISPUTED, SUSPENDED,
+ * COMPLETED, REFUSED, PAYMENT_SENT, PAYMENT_RECEIVED
+ */
+export interface SendStatusRequest {
+  invoiceId: string;
+  code: string;
+  message?: string;
+  payment?: Record<string, unknown>;
+}
+
+// ─── Webhook Types ────────────────────────────────────────
+
+export interface CreateWebhookRequest {
+  url: string;
+  events: string[];
+  name?: string;
+  active?: boolean;
+}
+
+export interface UpdateWebhookRequest {
+  url?: string;
+  events?: string[];
+  name?: string;
+  active?: boolean;
+}
+
+/**
+ * E-Invoice Adapter — PA-agnostic interface.
+ *
+ * Each method maps to a business operation, not a specific API endpoint.
+ * PA adapters translate these calls to their concrete APIs.
+ */
+export interface EInvoiceAdapter {
+  /** Adapter identifier (e.g. "iopole") */
+  readonly name: string;
+
+  // ─── Invoice Operations ───────────────────────────────
+
+  emitInvoice(req: EmitInvoiceRequest): Promise<unknown>;
+  searchInvoices(filters: InvoiceSearchFilters): Promise<unknown>;
+  getInvoice(id: string): Promise<unknown>;
+  downloadInvoice(id: string): Promise<DownloadResult>;
+  downloadReadable(id: string): Promise<DownloadResult>;
+  getInvoiceFiles(id: string): Promise<unknown>;
+  getAttachments(id: string): Promise<unknown>;
+  downloadFile(fileId: string): Promise<DownloadResult>;
+  markInvoiceSeen(id: string): Promise<unknown>;
+  getUnseenInvoices(pagination: PaginatedRequest): Promise<unknown>;
+  generateCII(req: GenerateInvoiceRequest): Promise<unknown>;
+  generateUBL(req: GenerateInvoiceRequest): Promise<unknown>;
+  generateFacturX(req: GenerateFacturXRequest): Promise<unknown>;
+
+  // ─── Directory ────────────────────────────────────────
+
+  searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<unknown>;
+  searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown>;
+  checkPeppolParticipant(scheme: string, value: string): Promise<unknown>;
+
+  // ─── Status ───────────────────────────────────────────
+
+  sendStatus(req: SendStatusRequest): Promise<unknown>;
+  getStatusHistory(invoiceId: string): Promise<unknown>;
+  getUnseenStatuses(pagination: PaginatedRequest): Promise<unknown>;
+  markStatusSeen(statusId: string): Promise<unknown>;
+
+  // ─── Reporting ────────────────────────────────────────
+
+  reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown>;
+  reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown>;
+
+  // ─── Webhooks ─────────────────────────────────────────
+
+  listWebhooks(): Promise<unknown>;
+  getWebhook(id: string): Promise<unknown>;
+  createWebhook(req: CreateWebhookRequest): Promise<unknown>;
+  updateWebhook(id: string, req: UpdateWebhookRequest): Promise<unknown>;
+  deleteWebhook(id: string): Promise<unknown>;
+}
