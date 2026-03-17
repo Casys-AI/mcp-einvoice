@@ -101,7 +101,7 @@ async function main() {
   // Build MCP server
   const server = new ConcurrentMCPServer({
     name: "mcp-einvoice",
-    version: "0.1.0",
+    version: "0.1.1",
     maxConcurrent: 10,
     backpressureStrategy: "queue",
     validateSchema: true,
