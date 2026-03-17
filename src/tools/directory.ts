@@ -113,7 +113,7 @@ export const directoryTools: EInvoiceTool[] = [
       if (Array.isArray(data)) {
         result.data = data.map(formatDirectoryFrRow);
       }
-      return result;
+      return { ...result, _title: "Annuaire français" };
     },
   },
 
