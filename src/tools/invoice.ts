@@ -19,6 +19,14 @@ function uint8ToBase64(data: Uint8Array): string {
   return btoa(binary);
 }
 
+/** Map Iopole direction codes to viewer-friendly lowercase values. */
+function normalizeDirection(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  if (raw === "RECEIVED" || raw === "INBOUND") return "received";
+  if (raw === "SENT" || raw === "EMITTED" || raw === "OUTBOUND") return "sent";
+  return raw.toLowerCase();
+}
+
 /**
  * Normalize invoice data before sending to Iopole generate API.
  * Adds missing fields that the EN16931 schematron requires
@@ -300,13 +308,7 @@ export const invoiceTools: EInvoiceTool[] = [
         return {
           id: inv?.invoiceId,
           status: inv?.state ?? inv?.status ?? "UNKNOWN",
-          direction: (() => {
-            const d = inv?.way ?? inv?.metadata?.direction;
-            if (!d) return undefined;
-            if (d === "RECEIVED" || d === "INBOUND") return "received";
-            if (d === "SENT" || d === "EMITTED" || d === "OUTBOUND") return "sent";
-            return d.toLowerCase();
-          })(),
+          direction: normalizeDirection(inv?.way ?? inv?.metadata?.direction),
           format: inv?.originalFormat,
           network: inv?.originalNetwork,
           issue_date: inv?.date,
@@ -328,13 +330,7 @@ export const invoiceTools: EInvoiceTool[] = [
         id: inv.invoiceId,
         invoice_number: bd.invoiceId,
         status: inv.state ?? inv.status,
-        direction: (() => {
-          const d = inv.way ?? inv.metadata?.direction;
-          if (!d) return undefined;
-          if (d === "RECEIVED" || d === "INBOUND") return "received";
-          if (d === "SENT" || d === "EMITTED" || d === "OUTBOUND") return "sent";
-          return d.toLowerCase();
-        })(),
+        direction: normalizeDirection(inv.way ?? inv.metadata?.direction),
         format: inv.originalFormat,
         network: inv.originalNetwork,
         invoice_type: bd.detailedType?.value,
