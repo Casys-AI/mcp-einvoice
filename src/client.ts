@@ -14,7 +14,7 @@ import {
   getToolsByCategory,
   toolsByCategory,
 } from "./tools/mod.ts";
-import type { EInvoiceTool, EInvoiceToolCategory } from "./tools/types.ts";
+import type { EInvoiceTool, EInvoiceToolCategory, JSONSchema, MCPToolWireFormat } from "./tools/types.ts";
 import type { EInvoiceAdapter } from "./adapter.ts";
 
 // Re-export from tools
@@ -26,28 +26,7 @@ export {
   toolsByCategory,
 };
 
-export type { EInvoiceTool, EInvoiceToolCategory };
-
-// ============================================================================
-// Wire format types (MCP protocol)
-// ============================================================================
-
-/** Minimal JSON Schema representation used for MCP tool input validation. */
-export interface JSONSchema {
-  type: string;
-  properties?: Record<string, JSONSchema>;
-  required?: string[];
-  description?: string;
-  [key: string]: unknown;
-}
-
-/** MCP protocol wire format for tool registration. */
-export interface MCPToolWireFormat {
-  name: string;
-  description: string;
-  inputSchema: JSONSchema;
-  _meta?: { ui: { resourceUri: string } };
-}
+export type { EInvoiceTool, EInvoiceToolCategory, JSONSchema, MCPToolWireFormat };
 
 // ============================================================================
 // EInvoiceToolsClient Class

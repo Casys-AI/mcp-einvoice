@@ -133,7 +133,20 @@ export class IopoleClient {
       headers?: Record<string, string>;
     },
   ): Promise<T> {
-    const url = new URL(`${this.config.baseUrl}${path}`);
+    return this.requestWithBase<T>(this.config.baseUrl, method, path, options);
+  }
+
+  private async requestWithBase<T = unknown>(
+    baseUrl: string,
+    method: string,
+    path: string,
+    options?: {
+      body?: unknown;
+      query?: Record<string, string | number | boolean | undefined>;
+      headers?: Record<string, string>;
+    },
+  ): Promise<T> {
+    const url = new URL(`${baseUrl}${path}`);
 
     if (options?.query) {
       for (const [key, value] of Object.entries(options.query)) {
@@ -202,20 +215,15 @@ export class IopoleClient {
 
   /**
    * GET request against the v1.1 API endpoint.
-   * Replaces /v1 with /v1.1 in the base URL for endpoints that require it
-   * (e.g. /v1.1/invoice/search). Safer than path traversal tricks.
+   * Builds a v1.1 URL without mutating this.config.baseUrl,
+   * so concurrent calls (e.g. getV11 + get) cannot interfere.
    */
   async getV11<T = unknown>(
     path: string,
     query?: Record<string, string | number | boolean | undefined>,
   ): Promise<T> {
-    const originalBase = this.config.baseUrl;
-    try {
-      this.config.baseUrl = originalBase.replace(/\/v1\b/, "/v1.1");
-      return await this.request<T>("GET", path, { query });
-    } finally {
-      this.config.baseUrl = originalBase;
-    }
+    const baseV11 = this.config.baseUrl.replace(/\/v1\b/, "/v1.1");
+    return this.requestWithBase<T>(baseV11, "GET", path, { query });
   }
 
   async post<T = unknown>(path: string, body?: unknown): Promise<T> {
