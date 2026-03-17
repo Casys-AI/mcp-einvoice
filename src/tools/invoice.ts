@@ -261,6 +261,7 @@ export const invoiceTools: EInvoiceTool[] = [
       }
       return {
         ...result,
+        _title: "Factures",
         _rowAction: {
           toolName: "einvoice_invoice_get",
           idField: "_id",
@@ -532,6 +533,7 @@ export const invoiceTools: EInvoiceTool[] = [
       }
       return {
         ...result,
+        _title: "Factures non lues",
         _rowAction: {
           toolName: "einvoice_invoice_get",
           idField: "_id",
