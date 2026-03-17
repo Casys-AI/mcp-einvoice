@@ -296,8 +296,12 @@ export function InvoiceViewer() {
 
   const currency = data.currency ?? "EUR";
   const isReceived = data.direction === "received";
-  const canAct = isReceived && data.status && !["accepted", "approved", "rejected", "refused", "paid", "completed", "cancelled", "payment_received"].includes(data.status.toLowerCase());
-  const isPreview = !emitSuccess && data.status?.toLowerCase() === "aperçu" && !!data.generated_id;
+  const isSent = data.direction === "sent";
+  const statusLower = data.status?.toLowerCase() ?? "";
+  const terminalStatuses = ["accepted", "approved", "rejected", "refused", "paid", "completed", "cancelled", "payment_received"];
+  const isTerminal = terminalStatuses.includes(statusLower);
+  const isPreview = !emitSuccess && statusLower === "aperçu" && !!data.generated_id;
+  const hasId = !!data.id && data.id !== "(aperçu)";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -435,15 +439,30 @@ export function InvoiceViewer() {
           </div>
         )}
 
-        {/* Action Buttons */}
-        {canAct && (
+        {/* Action Buttons — contextual based on direction + status */}
+        {hasId && !isPreview && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 0", borderTop: `1px solid ${colors.border}` }}>
-            <ActionButton label="Accepter" variant="success" loading={actionLoading === "status_accept"}
-              onClick={() => callAction("status_accept", "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, "Facture acceptée")} />
-            <ActionButton label="Rejeter" variant="error" loading={actionLoading === "status_reject"}
-              onClick={() => callAction("status_reject", "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, "Facture refusée")} />
-            <ActionButton label="Contester" variant="info" loading={actionLoading === "status_dispute"}
-              onClick={() => callAction("status_dispute", "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, "Litige signalé")} />
+            {/* Received invoice actions */}
+            {isReceived && !isTerminal && (
+              <>
+                <ActionButton label="Accepter" variant="success" loading={actionLoading === "status_accept"}
+                  onClick={() => callAction("status_accept", "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, "Facture acceptée")} />
+                <ActionButton label="Rejeter" variant="error" loading={actionLoading === "status_reject"}
+                  onClick={() => callAction("status_reject", "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, "Facture refusée")} />
+                <ActionButton label="Contester" variant="info" loading={actionLoading === "status_dispute"}
+                  onClick={() => callAction("status_dispute", "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, "Litige signalé")} />
+                <ActionButton label="Paiement envoyé" variant="success" loading={actionLoading === "status_payment_sent"}
+                  onClick={() => callAction("status_payment_sent", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
+              </>
+            )}
+            {/* Sent invoice actions */}
+            {isSent && !isTerminal && (
+              <>
+                <ActionButton label="Paiement reçu" variant="success" loading={actionLoading === "status_payment_received"}
+                  onClick={() => callAction("status_payment_received", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
+              </>
+            )}
+            {/* Common actions — always available */}
             <ActionButton label="Marquer lu" variant="default" loading={actionLoading === "mark_seen"}
               onClick={() => callAction("mark_seen", "einvoice_invoice_mark_seen", { id: data.id }, "Marquée comme lue")} />
             <ActionButton label="Télécharger PDF" variant="default" loading={actionLoading === "download_pdf"}
