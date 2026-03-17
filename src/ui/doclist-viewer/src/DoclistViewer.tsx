@@ -253,8 +253,8 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
         { name: rowAction.toolName, arguments: { [rowAction.argName]: String(idValue) } },
         { timeout: TOOL_CALL_TIMEOUT_MS },
       );
-    } catch {
-      // Silent — the host handles displaying the result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement");
     } finally {
       setDrillLoading(null);
     }
@@ -368,13 +368,20 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = colors.bg.hover; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
-                  {columns.map((col) => {
+                  {columns.map((col, colIdx) => {
                     const val = row[col];
                     const isNum = typeof val === "number";
                     const isStatus = isStatusField(col) && typeof val === "string";
                     return (
                       <td key={col} style={{ ...styles.tableCell, ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 12 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
-                        {isStatus ? <StatusCell value={val as string} /> : formatCell(val)}
+                        {isDrilling && colIdx === 0 ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                            <span className="skeleton" style={{ width: 14, height: 14, borderRadius: "50%", display: "inline-block" }} />
+                            {isStatus ? <StatusCell value={val as string} /> : formatCell(val)}
+                          </span>
+                        ) : (
+                          isStatus ? <StatusCell value={val as string} /> : formatCell(val)
+                        )}
                       </td>
                     );
                   })}

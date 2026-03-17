@@ -223,8 +223,8 @@ export function InvoiceViewer() {
     }
   }
 
-  async function callAction(actionKey: string, toolName: string, args: Record<string, unknown>, successMsg: string): Promise<boolean> {
-    if (!app.getHostCapabilities()?.serverTools) return false;
+  async function callAction(actionKey: string, toolName: string, args: Record<string, unknown>, successMsg: string): Promise<string | null> {
+    if (!app.getHostCapabilities()?.serverTools) return null;
     setActionLoading(actionKey);
     setActionMessage(null);
 
@@ -232,16 +232,17 @@ export function InvoiceViewer() {
       const result = await app.callServerTool({ name: toolName, arguments: args }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (result.isError) {
         setActionMessage("Action échouée");
-        return false;
+        return null;
       } else {
-        setActionMessage(successMsg);
-        // Refresh the invoice data after action
-        setTimeout(() => void requestRefresh({ ignoreInterval: true }), 500);
-        return true;
+        if (successMsg) setActionMessage(successMsg);
+        // Delay refresh to let server settle before fetching new state
+        lastRefreshStartedAtRef.current = Date.now();
+        setTimeout(() => void requestRefresh({ ignoreInterval: true }), 2000);
+        return extractToolResultText(result) ?? "";
       }
     } catch {
       setActionMessage("Erreur réseau");
-      return false;
+      return null;
     } finally {
       setActionLoading(null);
     }
@@ -358,7 +359,7 @@ export function InvoiceViewer() {
 
         {/* Line Items */}
         {data.items && data.items.length > 0 && (
-          <div style={{ border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ border: `1px solid ${colors.border}`, borderRadius: 8, overflowX: "auto", marginBottom: 16 }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
@@ -407,69 +408,59 @@ export function InvoiceViewer() {
           </div>
         )}
 
-        {/* Emit button — generate preview → confirm → deposit */}
-        {isPreview && (
-          <div style={{ padding: "16px 0", borderTop: `1px solid ${colors.border}` }}>
-            <button
+        {/* Unified Action Buttons — contextual based on state + direction */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 0", borderTop: `1px solid ${colors.border}` }}>
+          {/* Preview: emit button */}
+          {isPreview && (
+            <ActionButton label="Déposer la facture" variant="success" loading={actionLoading === "emit"}
               onClick={async () => {
-                const ok = await callAction("einvoice_invoice_emit", "einvoice_invoice_emit", { generated_id: data.generated_id }, "");
-                if (ok) {
-                  setEmitSuccess(true);
-                  setActionMessage(null);
-                  hydrateData({ ...data, status: "deposited", generated_id: undefined });
+                const resultText = await callAction("emit", "einvoice_invoice_emit", { generated_id: data.generated_id }, "");
+                if (resultText) {
+                  try {
+                    const emitResponse = JSON.parse(resultText);
+                    setEmitSuccess(true);
+                    setActionMessage("Facture déposée");
+                    hydrateData({
+                      ...data,
+                      id: emitResponse.id ?? data.id,
+                      status: "deposited",
+                      generated_id: undefined,
+                    });
+                  } catch {
+                    setEmitSuccess(true);
+                    hydrateData({ ...data, status: "deposited", generated_id: undefined });
+                  }
                 }
-              }}
-              disabled={actionLoading === "einvoice_invoice_emit"}
-              style={{
-                width: "100%",
-                padding: "12px 24px",
-                fontSize: 14,
-                fontWeight: 600,
-                background: colors.successDim,
-                color: colors.success,
-                border: `1px solid ${colors.success}`,
-                borderRadius: 8,
-                cursor: actionLoading === "einvoice_invoice_emit" ? "default" : "pointer",
-                opacity: actionLoading === "einvoice_invoice_emit" ? 0.5 : 1,
-                fontFamily: fonts.sans,
-                transition: "opacity 0.15s",
-              }}
-            >
-              {actionLoading === "einvoice_invoice_emit" ? "Dépôt en cours…" : "Déposer la facture"}
-            </button>
-          </div>
-        )}
-
-        {/* Action Buttons — contextual based on direction + status */}
-        {hasId && !isPreview && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 0", borderTop: `1px solid ${colors.border}` }}>
-            {/* Received invoice actions */}
-            {isReceived && !isTerminal && (
-              <>
-                <ActionButton label="Accepter" variant="success" loading={actionLoading === "status_accept"}
-                  onClick={() => callAction("status_accept", "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, "Facture acceptée")} />
-                <ActionButton label="Rejeter" variant="error" loading={actionLoading === "status_reject"}
-                  onClick={() => callAction("status_reject", "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, "Facture refusée")} />
-                <ActionButton label="Contester" variant="info" loading={actionLoading === "status_dispute"}
-                  onClick={() => callAction("status_dispute", "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, "Litige signalé")} />
-                <ActionButton label="Paiement envoyé" variant="success" loading={actionLoading === "status_payment_sent"}
-                  onClick={() => callAction("status_payment_sent", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
-              </>
-            )}
-            {/* Sent invoice actions */}
-            {isSent && !isTerminal && (
-              <>
-                <ActionButton label="Paiement reçu" variant="success" loading={actionLoading === "status_payment_received"}
-                  onClick={() => callAction("status_payment_received", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
-              </>
-            )}
-            {/* Common actions — always available */}
-            <ActionButton label="Marquer lu" variant="default" loading={actionLoading === "mark_seen"}
-              onClick={() => callAction("mark_seen", "einvoice_invoice_mark_seen", { id: data.id }, "Marquée comme lue")} />
-            <ActionButton label="Télécharger PDF" variant="default" loading={actionLoading === "download_pdf"}
-              onClick={() => callAction("download_pdf", "einvoice_invoice_download_readable", { id: data.id }, "PDF téléchargé")} />
-          </div>
-        )}
+              }} />
+          )}
+          {/* Received invoice actions */}
+          {isReceived && !isTerminal && !isPreview && (
+            <>
+              <ActionButton label="Accepter" variant="success" loading={actionLoading === "status_accept"}
+                onClick={() => callAction("status_accept", "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, "Facture acceptée")} />
+              <ActionButton label="Rejeter" variant="error" loading={actionLoading === "status_reject"}
+                onClick={() => callAction("status_reject", "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, "Facture refusée")} />
+              <ActionButton label="Contester" variant="info" loading={actionLoading === "status_dispute"}
+                onClick={() => callAction("status_dispute", "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, "Litige signalé")} />
+              <ActionButton label="Paiement envoyé" variant="success" loading={actionLoading === "status_payment_sent"}
+                onClick={() => callAction("status_payment_sent", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
+            </>
+          )}
+          {/* Sent invoice actions */}
+          {isSent && !isTerminal && !isPreview && (
+            <ActionButton label="Paiement reçu" variant="success" loading={actionLoading === "status_payment_received"}
+              onClick={() => callAction("status_payment_received", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
+          )}
+          {/* Common actions — always available for real invoices */}
+          {hasId && (
+            <>
+              <ActionButton label="Marquer lu" variant="default" loading={actionLoading === "mark_seen"}
+                onClick={() => callAction("mark_seen", "einvoice_invoice_mark_seen", { id: data.id }, "Marquée comme lue")} />
+              <ActionButton label="Télécharger PDF" variant="default" loading={actionLoading === "download_pdf"}
+                onClick={() => callAction("download_pdf", "einvoice_invoice_download_readable", { id: data.id }, "PDF téléchargé")} />
+            </>
+          )}
+        </div>
       </div>
       <IopoleBrandFooter />
     </div>
