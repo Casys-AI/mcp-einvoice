@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, CSSProperties } from
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles, formatNumber } from "~/shared/theme";
 import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { FeedbackBanner } from "~/shared/Feedback";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -33,6 +34,7 @@ interface RowAction {
 interface DoclistData {
   count: number;
   doctype?: string;
+  _title?: string;
   data: Record<string, unknown>[];
   refreshRequest?: UiRefreshRequestData;
   _rowAction?: RowAction;
@@ -42,6 +44,17 @@ type SortDir = "asc" | "desc";
 
 // Iopole + French e-invoicing statuses
 const DOC_STATUS: Record<string, { color: string; bg: string }> = {
+  // Iopole API statuses
+  delivered: { color: colors.info, bg: colors.infoDim },
+  in_hand: { color: colors.info, bg: colors.infoDim },
+  approved: { color: colors.success, bg: colors.successDim },
+  partially_approved: { color: colors.warning, bg: colors.warningDim },
+  completed: { color: colors.success, bg: colors.successDim },
+  payment_sent: { color: colors.success, bg: colors.successDim },
+  payment_received: { color: colors.success, bg: colors.successDim },
+  suspended: { color: colors.warning, bg: colors.warningDim },
+  invalid: { color: colors.error, bg: colors.errorDim },
+  // Legacy / French aliases
   deposited: { color: colors.info, bg: colors.infoDim },
   accepted: { color: colors.success, bg: colors.successDim },
   paid: { color: colors.success, bg: colors.successDim },
@@ -97,7 +110,7 @@ function DoclistEmptyState() {
   );
 }
 
-const STATUS_FIELDS = new Set(["status", "state", "lifecycle_status"]);
+const STATUS_FIELDS = new Set(["status", "state", "statut", "lifecycle_status"]);
 const HIDDEN_FIELDS = new Set(["doctype", "owner", "modified_by", "creation", "modified", "idx", "_rowAction"]);
 
 function isStatusField(key: string): boolean {
@@ -253,8 +266,8 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
         { name: rowAction.toolName, arguments: { [rowAction.argName]: String(idValue) } },
         { timeout: TOOL_CALL_TIMEOUT_MS },
       );
-    } catch {
-      // Silent — the host handles displaying the result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement");
     } finally {
       setDrillLoading(null);
     }
@@ -309,11 +322,12 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
     <div style={{ padding: 16, fontFamily: fonts.sans }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>{data.doctype ?? "Documents"}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>{data._title ?? data.doctype ?? "Documents"}</div>
           <div style={{ fontSize: 12, color: colors.text.muted }}>{sorted.length} sur {data.count ?? rows.length} résultats</div>
-          <div aria-live="polite" style={{ fontSize: 11, color: error ? colors.error : colors.text.faint, marginTop: 4 }}>
-            {error ?? (refreshing ? "Rafraîchissement…" : "Rafraîchissement auto au focus")}
+          <div aria-live="polite" style={{ fontSize: 11, color: colors.text.faint, marginTop: 4 }}>
+            {refreshing ? "Rafraîchissement…" : "Rafraîchissement auto au focus"}
           </div>
+          {error && <FeedbackBanner type="error" message={error} onDismiss={() => setError(null)} />}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input type="text" placeholder="Rechercher..." value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }}
@@ -368,13 +382,20 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = colors.bg.hover; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
-                  {columns.map((col) => {
+                  {columns.map((col, colIdx) => {
                     const val = row[col];
                     const isNum = typeof val === "number";
                     const isStatus = isStatusField(col) && typeof val === "string";
                     return (
                       <td key={col} style={{ ...styles.tableCell, ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 12 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
-                        {isStatus ? <StatusCell value={val as string} /> : formatCell(val)}
+                        {isDrilling && colIdx === 0 ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                            <span className="skeleton" style={{ width: 14, height: 14, borderRadius: "50%", display: "inline-block" }} />
+                            {isStatus ? <StatusCell value={val as string} /> : formatCell(val)}
+                          </span>
+                        ) : (
+                          isStatus ? <StatusCell value={val as string} /> : formatCell(val)
+                        )}
                       </td>
                     );
                   })}

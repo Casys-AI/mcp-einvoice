@@ -125,6 +125,7 @@ export const statusTools: EInvoiceTool[] = [
       });
       return {
         ...(result as Record<string, unknown>),
+        _title: "Statuts non lus",
         _rowAction: {
           toolName: "einvoice_status_history",
           idField: "invoiceId",

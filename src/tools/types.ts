@@ -15,7 +15,8 @@ export type EInvoiceToolCategory =
   | "directory"
   | "status"
   | "reporting"
-  | "webhook";
+  | "webhook"
+  | "config";
 
 /** JSON Schema for tool inputs (MCP wire format) */
 export type JSONSchema = {

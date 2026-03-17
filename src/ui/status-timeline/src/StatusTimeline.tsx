@@ -12,6 +12,7 @@ import { useState, useEffect, useRef, CSSProperties } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { FeedbackBanner, EmptyTimelineIcon } from "~/shared/Feedback";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -244,7 +245,8 @@ export function StatusTimeline() {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <IopoleBrandHeader />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 16, flex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
+          <EmptyTimelineIcon />
           <div style={{ fontSize: 13 }}>Aucun historique de statut</div>
         </div>
         <IopoleBrandFooter />
@@ -269,11 +271,7 @@ export function StatusTimeline() {
         </div>
 
         {/* Error */}
-        {error && (
-          <div style={{ fontSize: 12, color: colors.error, marginBottom: 12 }}>
-            {error}
-          </div>
-        )}
+        {error && <FeedbackBanner type="error" message={error} onDismiss={() => setError(null)} />}
 
         {/* Timeline entries */}
         <div style={{ position: "relative" }}>
