@@ -199,8 +199,10 @@ export const invoiceTools: EInvoiceTool[] = [
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
     description:
       "Search invoices using a query string. Returns paginated results. " +
-      "The query uses Lucene-like syntax (e.g. 'status:accepted AND direction:received'). " +
-      "Use expand to include additional data in results.",
+      "The query uses Lucene-like syntax. Valid fields: senderName, receiverName, " +
+      "invoiceId, state (e.g. DELIVERED, ACCEPTED, REJECTED, INVALID). " +
+      "Examples: 'senderName:Acme', 'state:ACCEPTED', 'invoiceId:CASYS-001'. " +
+      "Omit q or pass empty string to list all invoices.",
     category: "invoice",
     inputSchema: {
       type: "object",
