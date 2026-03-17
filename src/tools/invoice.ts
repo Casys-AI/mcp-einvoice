@@ -10,6 +10,15 @@
 import type { EInvoiceTool } from "./types.ts";
 import { storeGenerated, getGenerated } from "../generated-store.ts";
 
+/** Encode a Uint8Array to base64, chunked to avoid stack overflow on large files. */
+function uint8ToBase64(data: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < data.length; i += 8192) {
+    binary += String.fromCharCode(...data.subarray(i, i + 8192));
+  }
+  return btoa(binary);
+}
+
 /**
  * Normalize invoice data before sending to Iopole generate API.
  * Adds missing fields that the EN16931 schematron requires
@@ -96,6 +105,22 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
   };
 }
 
+/** Shared description for the invoice input schema (used by generate_cii/ubl/facturx). */
+const INVOICE_SCHEMA_DESCRIPTION =
+  "Invoice data in Iopole format. Required fields: " +
+  "invoiceId (string, max 20 chars): invoice number e.g. \"CASYS-001\"; " +
+  "invoiceDate (string, YYYY-MM-DD): issue date; " +
+  "type (number): invoice type code, usually 380 for commercial invoice; " +
+  "processType (string): e.g. \"B1\" for goods; " +
+  "invoiceDueDate (string, YYYY-MM-DD): due date; " +
+  "seller (object): { name, siren, siret, country, vatNumber, electronicAddress (format \"0225:siren_siret\"), identifiers: [{ type: \"ELECTRONIC_ADDRESS\", value: \"siren_siret\", scheme: \"0225\" }] }; " +
+  "buyer (object): same structure as seller; " +
+  "monetary (object): { invoiceCurrency: \"EUR\", invoiceAmount: { amount }, payableAmount: { amount }, taxTotalAmount: { amount, currency: \"EUR\" }, lineTotalAmount: { amount }, taxBasisTotalAmount: { amount } }; " +
+  "taxDetails (array): [{ percent, taxType: \"VAT\", categoryCode: \"S\", taxableAmount: { amount }, taxAmount: { amount } }]; " +
+  "lines (array): [{ id: \"1\", item: { name }, billedQuantity: { quantity, unitCode: \"DAY\"|\"C62\" }, price: { netAmount: { amount }, baseQuantity: { quantity: 1, unitCode } }, totalAmount: { amount }, taxDetail: { percent, taxType: \"VAT\", categoryCode: \"S\" } }]; " +
+  "paymentTerms (string, optional): payment conditions text; " +
+  "notes (array, optional): [{ type: { code: \"PMT\" }, content: \"...\" }]";
+
 export const invoiceTools: EInvoiceTool[] = [
   // ── Emit ────────────────────────────────────────────────
 
@@ -153,7 +178,12 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_emit] filename must end in .pdf or .xml");
       }
       // Decode base64 to Uint8Array
-      const binaryString = atob(input.file_base64 as string);
+      let binaryString: string;
+      try {
+        binaryString = atob(input.file_base64 as string);
+      } catch {
+        throw new Error("[einvoice_invoice_emit] 'file_base64' is not valid base64");
+      }
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
@@ -349,12 +379,7 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_download] 'id' is required");
       }
       const { data, contentType } = await ctx.adapter.downloadInvoice(input.id as string);
-      let binary = "";
-      for (let i = 0; i < data.length; i += 8192) {
-        binary += String.fromCharCode(...data.subarray(i, i + 8192));
-      }
-      const base64 = btoa(binary);
-      return { content_type: contentType, data_base64: base64, size_bytes: data.length };
+      return { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length };
     },
   },
 
@@ -377,13 +402,7 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_download_readable] 'id' is required");
       }
       const { data, contentType } = await ctx.adapter.downloadReadable(input.id as string);
-      // Chunk-based base64 encoding to avoid stack overflow on large files
-      let binary = "";
-      for (let i = 0; i < data.length; i += 8192) {
-        binary += String.fromCharCode(...data.subarray(i, i + 8192));
-      }
-      const base64 = btoa(binary);
-      return { content_type: contentType, data_base64: base64, size_bytes: data.length };
+      return { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length };
     },
   },
 
@@ -448,12 +467,7 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_download_file] 'file_id' is required");
       }
       const { data, contentType } = await ctx.adapter.downloadFile(input.file_id as string);
-      let binary = "";
-      for (let i = 0; i < data.length; i += 8192) {
-        binary += String.fromCharCode(...data.subarray(i, i + 8192));
-      }
-      const base64 = btoa(binary);
-      return { content_type: contentType, data_base64: base64, size_bytes: data.length };
+      return { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length };
     },
   },
 
@@ -540,20 +554,7 @@ export const invoiceTools: EInvoiceTool[] = [
       properties: {
         invoice: {
           type: "object",
-          description:
-            "Invoice data in Iopole format. Required fields: " +
-            "invoiceId (string, max 20 chars): invoice number e.g. \"CASYS-001\"; " +
-            "invoiceDate (string, YYYY-MM-DD): issue date; " +
-            "type (number): invoice type code, usually 380 for commercial invoice; " +
-            "processType (string): e.g. \"B1\" for goods; " +
-            "invoiceDueDate (string, YYYY-MM-DD): due date; " +
-            "seller (object): { name, siren, siret, country, vatNumber, electronicAddress (format \"0225:siren_siret\"), identifiers: [{ type: \"ELECTRONIC_ADDRESS\", value: \"siren_siret\", scheme: \"0225\" }] }; " +
-            "buyer (object): same structure as seller; " +
-            "monetary (object): { invoiceCurrency: \"EUR\", invoiceAmount: { amount }, payableAmount: { amount }, taxTotalAmount: { amount, currency: \"EUR\" }, lineTotalAmount: { amount }, taxBasisTotalAmount: { amount } }; " +
-            "taxDetails (array): [{ percent, taxType: \"VAT\", categoryCode: \"S\", taxableAmount: { amount }, taxAmount: { amount } }]; " +
-            "lines (array): [{ id: \"1\", item: { name }, billedQuantity: { quantity, unitCode: \"DAY\"|\"C62\" }, price: { netAmount: { amount }, baseQuantity: { quantity: 1, unitCode } }, totalAmount: { amount }, taxDetail: { percent, taxType: \"VAT\", categoryCode: \"S\" } }]; " +
-            "paymentTerms (string, optional): payment conditions text; " +
-            "notes (array, optional): [{ type: { code: \"PMT\" }, content: \"...\" }]",
+          description: INVOICE_SCHEMA_DESCRIPTION,
         },
         flavor: {
           type: "string",
@@ -598,20 +599,7 @@ export const invoiceTools: EInvoiceTool[] = [
       properties: {
         invoice: {
           type: "object",
-          description:
-            "Invoice data in Iopole format. Required fields: " +
-            "invoiceId (string, max 20 chars): invoice number e.g. \"CASYS-001\"; " +
-            "invoiceDate (string, YYYY-MM-DD): issue date; " +
-            "type (number): invoice type code, usually 380 for commercial invoice; " +
-            "processType (string): e.g. \"B1\" for goods; " +
-            "invoiceDueDate (string, YYYY-MM-DD): due date; " +
-            "seller (object): { name, siren, siret, country, vatNumber, electronicAddress (format \"0225:siren_siret\"), identifiers: [{ type: \"ELECTRONIC_ADDRESS\", value: \"siren_siret\", scheme: \"0225\" }] }; " +
-            "buyer (object): same structure as seller; " +
-            "monetary (object): { invoiceCurrency: \"EUR\", invoiceAmount: { amount }, payableAmount: { amount }, taxTotalAmount: { amount, currency: \"EUR\" }, lineTotalAmount: { amount }, taxBasisTotalAmount: { amount } }; " +
-            "taxDetails (array): [{ percent, taxType: \"VAT\", categoryCode: \"S\", taxableAmount: { amount }, taxAmount: { amount } }]; " +
-            "lines (array): [{ id: \"1\", item: { name }, billedQuantity: { quantity, unitCode: \"DAY\"|\"C62\" }, price: { netAmount: { amount }, baseQuantity: { quantity: 1, unitCode } }, totalAmount: { amount }, taxDetail: { percent, taxType: \"VAT\", categoryCode: \"S\" } }]; " +
-            "paymentTerms (string, optional): payment conditions text; " +
-            "notes (array, optional): [{ type: { code: \"PMT\" }, content: \"...\" }]",
+          description: INVOICE_SCHEMA_DESCRIPTION,
         },
         flavor: {
           type: "string",
@@ -656,20 +644,7 @@ export const invoiceTools: EInvoiceTool[] = [
       properties: {
         invoice: {
           type: "object",
-          description:
-            "Invoice data in Iopole format. Required fields: " +
-            "invoiceId (string, max 20 chars): invoice number e.g. \"CASYS-001\"; " +
-            "invoiceDate (string, YYYY-MM-DD): issue date; " +
-            "type (number): invoice type code, usually 380 for commercial invoice; " +
-            "processType (string): e.g. \"B1\" for goods; " +
-            "invoiceDueDate (string, YYYY-MM-DD): due date; " +
-            "seller (object): { name, siren, siret, country, vatNumber, electronicAddress (format \"0225:siren_siret\"), identifiers: [{ type: \"ELECTRONIC_ADDRESS\", value: \"siren_siret\", scheme: \"0225\" }] }; " +
-            "buyer (object): same structure as seller; " +
-            "monetary (object): { invoiceCurrency: \"EUR\", invoiceAmount: { amount }, payableAmount: { amount }, taxTotalAmount: { amount, currency: \"EUR\" }, lineTotalAmount: { amount }, taxBasisTotalAmount: { amount } }; " +
-            "taxDetails (array): [{ percent, taxType: \"VAT\", categoryCode: \"S\", taxableAmount: { amount }, taxAmount: { amount } }]; " +
-            "lines (array): [{ id: \"1\", item: { name }, billedQuantity: { quantity, unitCode: \"DAY\"|\"C62\" }, price: { netAmount: { amount }, baseQuantity: { quantity: 1, unitCode } }, totalAmount: { amount }, taxDetail: { percent, taxType: \"VAT\", categoryCode: \"S\" } }]; " +
-            "paymentTerms (string, optional): payment conditions text; " +
-            "notes (array, optional): [{ type: { code: \"PMT\" }, content: \"...\" }]",
+          description: INVOICE_SCHEMA_DESCRIPTION,
         },
         flavor: {
           type: "string",

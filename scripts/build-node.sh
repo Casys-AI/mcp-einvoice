@@ -129,7 +129,7 @@ cat > bin/package.json <<PKGJSON
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Casys-AI/casys-pml-cloud"
+    "url": "https://github.com/Casys-AI/mcp-einvoice"
   },
   "license": "MIT"
 }
