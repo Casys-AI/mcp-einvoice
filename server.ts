@@ -36,7 +36,7 @@
  * @module lib/einvoice/server
  */
 
-import { ConcurrentMCPServer } from "@casys/mcp-server";
+import { ConcurrentMCPServer, launchInspector } from "@casys/mcp-server";
 import { EInvoiceToolsClient } from "./src/client.ts";
 import type { EInvoiceAdapter } from "./src/adapter.ts";
 import { createIopoleAdapter } from "./src/adapters/iopole.ts";
@@ -70,6 +70,12 @@ function createAdapter(adapterName: string): EInvoiceAdapter {
 
 async function main() {
   const args = getArgs();
+
+  // Inspector mode — launch MCP Inspector for interactive debugging
+  if (args.includes("--inspect")) {
+    await launchInspector("deno", ["run", "--allow-all", import.meta.filename!]);
+    return;
+  }
 
   // Adapter selection
   const adapterArg = args.find((arg) => arg.startsWith("--adapter="));
