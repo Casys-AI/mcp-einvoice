@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, CSSProperties } from
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles, formatNumber } from "~/shared/theme";
 import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { FeedbackBanner } from "~/shared/Feedback";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -311,9 +312,10 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>{data.doctype ?? "Documents"}</div>
           <div style={{ fontSize: 12, color: colors.text.muted }}>{sorted.length} sur {data.count ?? rows.length} résultats</div>
-          <div aria-live="polite" style={{ fontSize: 11, color: error ? colors.error : colors.text.faint, marginTop: 4 }}>
-            {error ?? (refreshing ? "Rafraîchissement…" : "Rafraîchissement auto au focus")}
+          <div aria-live="polite" style={{ fontSize: 11, color: colors.text.faint, marginTop: 4 }}>
+            {refreshing ? "Rafraîchissement…" : "Rafraîchissement auto au focus"}
           </div>
+          {error && <FeedbackBanner type="error" message={error} onDismiss={() => setError(null)} />}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input type="text" placeholder="Rechercher..." value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }}
