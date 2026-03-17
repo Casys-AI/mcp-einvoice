@@ -76,6 +76,7 @@ interface InvoiceData {
 const INVOICE_STATUS: Record<string, { color: string; bg: string; label: string }> = {
   // Aperçu (generate preview)
   "aperçu":          { color: colors.warning,   bg: colors.warningDim, label: "Aperçu — non envoyée" },
+  "apercu":          { color: colors.warning,   bg: colors.warningDim, label: "Aperçu — non envoyée" },
   // Iopole API statuses (uppercase)
   delivered:         { color: colors.info,      bg: colors.infoDim,    label: "Livrée" },
   in_hand:           { color: colors.info,      bg: colors.infoDim,    label: "Prise en charge" },
@@ -300,8 +301,8 @@ export function InvoiceViewer() {
   const statusLower = data.status?.toLowerCase() ?? "";
   const terminalStatuses = ["accepted", "approved", "rejected", "refused", "paid", "completed", "cancelled", "payment_received"];
   const isTerminal = terminalStatuses.includes(statusLower);
-  const isPreview = !emitSuccess && statusLower === "aperçu" && !!data.generated_id;
-  const hasId = !!data.id && data.id !== "(aperçu)";
+  const isPreview = !emitSuccess && (statusLower === "aperçu" || statusLower === "apercu") && !!data.generated_id;
+  const hasId = !!data.id && data.id !== "(aperçu)" && data.id !== "(apercu)";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
