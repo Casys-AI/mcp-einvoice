@@ -670,8 +670,9 @@ export const invoiceTools: EInvoiceTool[] = [
         flavor: input.flavor as string,
         language: input.language as string | undefined,
       });
-      const raw = typeof result === "string" ? result : JSON.stringify(result);
-      const bytes = new TextEncoder().encode(raw);
+      // Factur-X returns { data: Uint8Array, contentType } from postBinary
+      const binary = result as { data: Uint8Array; contentType: string };
+      const bytes = binary.data instanceof Uint8Array ? binary.data : new TextEncoder().encode(typeof result === "string" ? result : JSON.stringify(result));
       const filename = `${inv.invoiceId ?? "invoice"}.pdf`;
       const generated_id = storeGenerated(bytes, filename);
       return {
