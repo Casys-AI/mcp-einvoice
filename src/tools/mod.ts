@@ -12,6 +12,7 @@ import { directoryTools } from "./directory.ts";
 import { statusTools } from "./status.ts";
 import { reportingTools } from "./reporting.ts";
 import { webhookTools } from "./webhook.ts";
+import { configTools } from "./config.ts";
 import type { EInvoiceTool, EInvoiceToolCategory } from "./types.ts";
 
 export {
@@ -20,6 +21,7 @@ export {
   statusTools,
   reportingTools,
   webhookTools,
+  configTools,
 };
 export type { EInvoiceTool, EInvoiceToolCategory };
 
@@ -30,6 +32,7 @@ export const toolsByCategory: Record<string, EInvoiceTool[]> = {
   status: statusTools,
   reporting: reportingTools,
   webhook: webhookTools,
+  config: configTools,
 };
 
 /** Flat array of all tools */
@@ -39,6 +42,7 @@ export const allTools: EInvoiceTool[] = [
   ...statusTools,
   ...reportingTools,
   ...webhookTools,
+  ...configTools,
 ];
 
 /** Get tools for a specific category */

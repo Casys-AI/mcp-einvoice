@@ -136,4 +136,18 @@ export interface EInvoiceAdapter {
   createWebhook(req: CreateWebhookRequest): Promise<unknown>;
   updateWebhook(id: string, req: UpdateWebhookRequest): Promise<unknown>;
   deleteWebhook(id: string): Promise<unknown>;
+
+  // ─── Operator Config ───────────────────────────────────
+
+  getCustomerId(): Promise<unknown>;
+  listBusinessEntities(): Promise<unknown>;
+  getBusinessEntity(id: string): Promise<unknown>;
+  createLegalUnit(data: Record<string, unknown>): Promise<unknown>;
+  createOffice(data: Record<string, unknown>): Promise<unknown>;
+  deleteBusinessEntity(id: string): Promise<unknown>;
+  configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown>;
+  claimBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown>;
+  claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown>;
+  enrollFrench(data: Record<string, unknown>): Promise<unknown>;
+  enrollInternational(data: Record<string, unknown>): Promise<unknown>;
 }
