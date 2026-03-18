@@ -197,6 +197,52 @@ export class IopoleAdapter implements EInvoiceAdapter {
   async deleteWebhook(id: string): Promise<unknown> {
     return await this.client.delete(`/config/webhook/${id}`);
   }
+
+  // ─── Operator Config ───────────────────────────────────
+
+  async getCustomerId(): Promise<unknown> {
+    return await this.client.get("/config/customer/id");
+  }
+
+  async listBusinessEntities(): Promise<unknown> {
+    return await this.client.get("/config/business/entity");
+  }
+
+  async getBusinessEntity(id: string): Promise<unknown> {
+    return await this.client.get(`/config/business/entity/${id}`);
+  }
+
+  async createLegalUnit(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post("/config/business/entity/legalunit", data);
+  }
+
+  async createOffice(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post("/config/business/entity/office", data);
+  }
+
+  async deleteBusinessEntity(id: string): Promise<unknown> {
+    return await this.client.delete(`/config/business/entity/${id}`);
+  }
+
+  async configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/${id}/configure`, data);
+  }
+
+  async claimBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/${id}/claim`, data);
+  }
+
+  async claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/scheme/${scheme}/value/${value}/claim`, data);
+  }
+
+  async enrollFrench(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.put("/config/french/enrollment", data);
+  }
+
+  async enrollInternational(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.put("/config/international/enrollment", data);
+  }
 }
 
 // ─── Factory ──────────────────────────────────────────
