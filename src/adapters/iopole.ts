@@ -110,7 +110,8 @@ export class IopoleAdapter implements EInvoiceAdapter {
   }
 
   async generateFacturX(req: GenerateFacturXRequest): Promise<unknown> {
-    return await this.client.postWithQuery("/tools/facturx/generate", req.invoice, {
+    // Factur-X returns a PDF (binary) — use postBinary to avoid text corruption
+    return await this.client.postBinary("/tools/facturx/generate", req.invoice, {
       flavor: req.flavor,
       language: req.language,
     });
