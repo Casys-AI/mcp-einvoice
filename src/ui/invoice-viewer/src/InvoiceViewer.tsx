@@ -202,14 +202,13 @@ export function InvoiceViewer() {
     }
   }
 
-  async function downloadFile(actionKey: string, toolName: string, filename: string) {
+  async function downloadFile(actionKey: string, toolName: string, filename: string): Promise<boolean> {
     const resultText = await callAction(actionKey, toolName, { id: data.id }, "");
-    if (!resultText) return;
+    if (!resultText) return false;
     try {
       const file = JSON.parse(resultText);
-      if (!file.data_base64) return;
+      if (!file.data_base64) return false;
       const mimeType = file.content_type ?? "application/octet-stream";
-      // Use MCP Apps SDK downloadFile — works in sandboxed iframes
       const { isError } = await app.downloadFile({
         contents: [{
           type: "resource",
@@ -220,9 +219,10 @@ export function InvoiceViewer() {
           },
         }],
       });
-      if (isError) setActionMessage("Téléchargement annulé");
-      else setActionMessage("Téléchargé");
-    } catch { setActionMessage("Erreur de téléchargement"); }
+      if (isError) { setActionMessage("Téléchargement annulé"); return false; }
+      setActionMessage("Téléchargé");
+      return true;
+    } catch { setActionMessage("Erreur de téléchargement"); return false; }
   }
 
   useEffect(() => {
@@ -443,7 +443,14 @@ export function InvoiceViewer() {
           {hasId && (
             <>
               <ActionButton label="PDF" variant="default" loading={actionLoading === AK.DOWNLOAD_PDF}
-                onClick={() => downloadFile(AK.DOWNLOAD_PDF, "einvoice_invoice_download_readable", `${data.invoice_number ?? data.id ?? "facture"}.pdf`)} />
+                onClick={async () => {
+                  // Try readable PDF first, fallback to source file
+                  const ok = await downloadFile(AK.DOWNLOAD_PDF, "einvoice_invoice_download_readable", `${data.invoice_number ?? data.id ?? "facture"}.pdf`);
+                  if (!ok) {
+                    setActionMessage("PDF non disponible — téléchargement du source");
+                    await downloadFile(AK.DOWNLOAD_PDF, "einvoice_invoice_download", `${data.invoice_number ?? data.id ?? "facture"}.xml`);
+                  }
+                }} />
               <ActionButton label="XML source" variant="default" loading={actionLoading === AK.DOWNLOAD_XML}
                 onClick={() => downloadFile(AK.DOWNLOAD_XML, "einvoice_invoice_download", `${data.invoice_number ?? data.id ?? "facture"}.xml`)} />
             </>
