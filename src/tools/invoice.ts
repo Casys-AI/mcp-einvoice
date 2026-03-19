@@ -68,7 +68,7 @@ function normalizeInvoiceForGenerate(inv: any): Record<string, unknown> {
 }
 
 /**
- * Map Iopole businessData-shaped input to invoice-viewer preview format.
+ * Map invoice input to invoice-viewer preview format.
  * Used by generate tools to show the invoice before sending.
  */
 // deno-lint-ignore no-explicit-any
@@ -209,15 +209,15 @@ export const invoiceTools: EInvoiceTool[] = [
     requires: ["searchInvoices"],
     description:
       "Search invoices. Use direction and status to filter. " +
-      "Query uses Lucene syntax — valid fields: senderName, receiverName, invoiceId. " +
-      "Note: 'status', 'direction' are NOT valid Lucene fields — use the parameters instead.",
+      "Query searches by sender name, receiver name, or invoice number. " +
+      "Use the direction and status parameters for filtering — not the query.",
     category: "invoice",
     inputSchema: {
       type: "object",
       properties: {
         q: {
           type: "string",
-          description: "Lucene search query. Examples: 'senderName:Acme'. Omit to list all.",
+          description: "Search query (e.g. company name, invoice number). Omit to list all.",
         },
         direction: {
           type: "string",

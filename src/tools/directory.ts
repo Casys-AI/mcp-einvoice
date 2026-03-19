@@ -24,9 +24,8 @@ export const directoryTools: EInvoiceTool[] = [
     description:
       "Search the French PPF directory (Portail Public de Facturation). " +
       "Find companies registered for e-invoicing in France. " +
-      "Raw SIRET (14 digits), SIREN (9 digits), TVA (FR + 11 digits), or company names " +
-      "are auto-detected and converted to Lucene syntax. You can also pass explicit " +
-      "Lucene syntax (e.g. siret:\"43446637100011\") if needed. " +
+      "Search by SIRET (14 digits), SIREN (9 digits), TVA (FR + 11 digits), or company name. " +
+      "Format is auto-detected. " +
       "Returns the company's registered platform (PDP) and routing information.",
     category: "directory",
     inputSchema: {
@@ -35,9 +34,7 @@ export const directoryTools: EInvoiceTool[] = [
         q: {
           type: "string",
           description:
-            "Search query (required). Can be a raw SIRET, SIREN, VAT number, " +
-            "or company name — auto-converted to Lucene syntax. " +
-            "You can also pass explicit Lucene syntax (e.g. siret:\"43446637100011\").",
+            "Search query (required). SIRET, SIREN, VAT number, or company name.",
         },
         offset: { type: "number", description: "Result offset (default 0)" },
         limit: { type: "number", description: "Max results (default 50, max 200)" },
