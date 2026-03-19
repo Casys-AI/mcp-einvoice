@@ -62,9 +62,10 @@ export class SuperPDPClient extends BaseHttpClient {
     from: string,
     to: string,
   ): Promise<T> {
+    const contentType = from === "json" ? "application/json" : "application/xml";
     return this.request<T>("POST", "/invoices/convert", {
       body: data,
-      contentType: "application/xml",
+      contentType,
       query: { from, to },
     });
   }

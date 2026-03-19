@@ -119,18 +119,18 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   // ─── Format Conversion (native) ───────────────────────
 
   override async generateCII(req: GenerateInvoiceRequest): Promise<string> {
-    const xmlPayload = new TextEncoder().encode(JSON.stringify(req.invoice));
-    return await this.client.convert(xmlPayload, "json", "cii");
+    const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
+    return await this.client.convert(payload, "json", "cii");
   }
 
   override async generateUBL(req: GenerateInvoiceRequest): Promise<string> {
-    const xmlPayload = new TextEncoder().encode(JSON.stringify(req.invoice));
-    return await this.client.convert(xmlPayload, "json", "ubl");
+    const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
+    return await this.client.convert(payload, "json", "ubl");
   }
 
   override async generateFacturX(req: GenerateFacturXRequest): Promise<DownloadResult> {
-    const xmlPayload = new TextEncoder().encode(JSON.stringify(req.invoice));
-    return await this.client.convert(xmlPayload, "json", "facturx");
+    const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
+    return await this.client.convert(payload, "json", "facturx");
   }
 
   // ─── Status / Events (native) ─────────────────────────

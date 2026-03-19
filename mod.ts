@@ -57,6 +57,6 @@ export {
   IopoleClient,
   IopoleAPIError,
   createOAuth2TokenProvider,
-} from "./src/api/iopole-client.ts";
+} from "./src/adapters/iopole/client.ts";
 
-export type { IopoleClientConfig, OAuth2Config } from "./src/api/iopole-client.ts";
+export type { IopoleClientConfig, OAuth2Config } from "./src/adapters/iopole/client.ts";

@@ -194,10 +194,23 @@ export class StorecoveAdapter implements EInvoiceAdapter {
 
   async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
     // Map French directory search to Storecove discovery
-    // Attempt to detect SIRET/SIREN and map to appropriate Peppol scheme
-    return await this.client.post("/discovery/exists", {
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.post("/discovery/exists", {
       identifier: filters.q,
-    });
+    }) as any;
+    // Storecove discovery returns a single participant, not a list
+    const participant = raw?.participant ?? raw;
+    if (!participant || !participant.identifier) {
+      return { rows: [], count: 0 };
+    }
+    return {
+      rows: [{
+        entityId: participant.identifier ?? "",
+        name: participant.name ?? participant.partyName,
+        country: participant.country,
+      }],
+      count: 1,
+    };
   }
 
   async searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown> {
