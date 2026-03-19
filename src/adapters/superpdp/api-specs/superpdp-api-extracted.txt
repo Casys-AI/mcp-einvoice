@@ -1,0 +1,115 @@
+SuperPDP API — Endpoint Reference
+OpenAPI 3.0.4
+Version: 1.13.0.beta
+Server: https://api.superpdp.tech — 
+Auth: BearerAuth (authorizationCode) — tokenUrl: /oauth2/token
+Auth: BearerAuth (clientCredentials) — tokenUrl: /oauth2/token
+============================================================
+
+GET     /v1.beta/companies/me
+        Tags: companies
+        Summary: Show the current company
+        Description: Show the company associated with the current access token.
+        200 Returns (application/json): company
+
+GET     /v1.beta/directory_entries
+        Tags: directory_entries
+        Summary: List directory entries
+        Description: List the directory entries of the company.
+
+The response contains addresses that can be used to send an invoice to the company.
+
+
+        200 Returns (application/json): list_directory_entries
+
+POST    /v1.beta/directory_entries
+        Tags: directory_entries
+        Summary: Create a new directory entry
+        Description: Create a directory entry
+        Body (application/json): create_directory_entry
+        200 Returns (application/json): directory_entry
+
+DELETE  /v1.beta/directory_entries/{id}
+        Tags: directory_entries
+        Summary: Delete directory entry
+        Description: Delete a directory entry. "Reply-to" addresses are technical addresses and cannot be deleted
+        Params: id
+
+GET     /v1.beta/directory_entries/{id}
+        Tags: directory_entries
+        Summary: Get a directory entry
+        Description: Get directory entry
+        Params: id
+        200 Returns (application/json): directory_entry
+
+GET     /v1.beta/invoice_events
+        Tags: invoice_events
+        Summary: List invoices events
+        Description: List invoices events.
+
+ By default, events for all invoices are listed. Use `invoice_id` parameter to select only events related to one invoice.
+
+Invoice events are sorted by id in ascending order.
+
+Pagination is controlled with 2 parameters: `limit` and `starting_after_id`. These parameters allows 
+        Params: invoice_id, starting_after_id, limit
+        200 Returns (application/json): list_events
+
+POST    /v1.beta/invoice_events
+        Tags: invoice_events
+        Summary: Create an invoice event
+        Description: Create an invoice event message and place it in a queue to be sent asynchronously. If the status_code is 'fr:212' without details, the amount will be the invoice total.
+        200 Returns (application/json): event
+
+GET     /v1.beta/invoices
+        Tags: invoices
+        Summary: List invoices
+        Description: List invoices.
+
+By default, both incoming and outgoing invoices are listed. Use the `direction` parameter to select only incoming or outgoing invoices.
+
+The list of invoices can be narrowed down to a period with the `date` parameter. Accepted format are `YYYY`, `YYYY-MM`, `YYYY-MM-DD`.
+
+By default, 
+        Params: direction, date, order, starting_after_id, ending_before_id, limit, expand[]
+        200 Returns (application/json): list_invoices
+
+POST    /v1.beta/invoices
+        Tags: invoices
+        Summary: Create (send) an invoice
+        Description: Create an invoice and place it in a queue to be sent asynchronously. Succeeds if the XML structure of the payload is valid, but this does not mean that the invoice will pass the additionnal validation steps, or that the transmission will succeed. The `id` attribute in the responds allows to fetch th
+        Params: external_id
+        200 Returns (application/json): invoice
+
+POST    /v1.beta/invoices/convert
+        Tags: invoices
+        Summary: Convert invoice
+        Description: Convert an invoice to another format. It is possible to use a multipart request to combine a PDF and a invoice to get a Factur-X in ouput
+        Params: from, to
+        Body (application/json): en_invoice
+        200 Returns (application/json): en_invoice
+
+GET     /v1.beta/invoices/generate_test_invoice
+        Tags: invoices
+        Summary: Download a test invoice
+        Description: This is a convenience method for companies in sandbox mode, because generating a valid invoice can be troublesome. Nothing is saved in our database, the returned invoice is ready to be sent with the API. By default, the seller of the invoice will be the company associated with the access token. The 
+        Params: format
+
+GET     /v1.beta/invoices/{id}
+        Tags: invoices
+        Summary: Get invoice
+        Description: Get an invoice with a specific id.
+        Params: id
+        200 Returns (application/json): invoice
+
+GET     /v1.beta/invoices/{id}/download
+        Tags: invoices
+        Summary: Download raw invoice file
+        Description: Download the raw invoice file referenced by the id. The data can be either XML or PDF.
+        Params: id
+
+POST    /v1.beta/validation_reports
+        Tags: invoices
+        Summary: Validate invoices
+        Description: Send one or more invoices as multipart and get a validation report for each invoice. The invoice format will be automatically detected and the appropriate validation rules will be used.
+        200 Returns (application/json): validation_report

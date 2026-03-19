@@ -10,8 +10,8 @@
  * @module lib/einvoice/src/adapters/iopole
  */
 
+import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import type {
-  EInvoiceAdapter,
   DownloadResult,
   PaginatedRequest,
   EmitInvoiceRequest,
@@ -36,21 +36,37 @@ const IOPOLE_DEFAULT_AUTH_URL =
  * Maps each EInvoiceAdapter method to the corresponding Iopole REST endpoint.
  * No hidden heuristics — direct pass-through to the Iopole API.
  */
-export class IopoleAdapter implements EInvoiceAdapter {
+export class IopoleAdapter extends AfnorBaseAdapter {
   readonly name = "iopole";
+  readonly capabilities = new Set([
+    "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
+    "downloadReadable", "getInvoiceFiles", "getAttachments", "downloadFile",
+    "markInvoiceSeen", "getUnseenInvoices", "generateCII", "generateUBL", "generateFacturX",
+    "searchDirectoryFr", "searchDirectoryInt", "checkPeppolParticipant",
+    "sendStatus", "getStatusHistory", "getUnseenStatuses", "markStatusSeen",
+    "reportInvoiceTransaction", "reportTransaction",
+    "listWebhooks", "getWebhook", "createWebhook", "updateWebhook", "deleteWebhook",
+    "getCustomerId", "listBusinessEntities", "getBusinessEntity",
+    "createLegalUnit", "createOffice", "deleteBusinessEntity",
+    "configureBusinessEntity", "claimBusinessEntity", "claimBusinessEntityByIdentifier",
+    "enrollFrench", "enrollInternational", "registerNetwork", "registerNetworkByScheme",
+    "unregisterNetwork", "createIdentifier", "createIdentifierByScheme", "deleteIdentifier",
+    "deleteClaim",
+  ]);
   private client: IopoleClient;
 
   constructor(client: IopoleClient) {
+    super(null); // no AFNOR client — pure passe-plat to native API
     this.client = client;
   }
 
   // ─── Invoice Operations ───────────────────────────────
 
-  async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
+  override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
     return await this.client.upload("/invoice", req.file, req.filename);
   }
 
-  async searchInvoices(filters: InvoiceSearchFilters): Promise<unknown> {
+  override async searchInvoices(filters: InvoiceSearchFilters): Promise<unknown> {
     // Search endpoint is v1.1, not v1. We use getV11() to swap the version prefix.
     return await this.client.getV11("/invoice/search", {
       q: filters.q,
@@ -60,56 +76,56 @@ export class IopoleAdapter implements EInvoiceAdapter {
     });
   }
 
-  async getInvoice(id: string): Promise<unknown> {
+  override async getInvoice(id: string): Promise<unknown> {
     // Always expand businessData — without it Iopole returns a skeleton
     // with businessData: null (no seller, buyer, lines, monetary data).
     return await this.client.get(`/invoice/${id}`, { expand: "businessData" });
   }
 
-  async downloadInvoice(id: string): Promise<DownloadResult> {
+  override async downloadInvoice(id: string): Promise<DownloadResult> {
     return await this.client.download(`/invoice/${id}/download`);
   }
 
-  async downloadReadable(id: string): Promise<DownloadResult> {
+  override async downloadReadable(id: string): Promise<DownloadResult> {
     return await this.client.download(`/invoice/${id}/download/readable`);
   }
 
-  async getInvoiceFiles(id: string): Promise<unknown> {
+  override async getInvoiceFiles(id: string): Promise<unknown> {
     return await this.client.get(`/invoice/${id}/files`);
   }
 
-  async getAttachments(id: string): Promise<unknown> {
+  override async getAttachments(id: string): Promise<unknown> {
     return await this.client.get(`/invoice/${id}/files/attachments`);
   }
 
-  async downloadFile(fileId: string): Promise<DownloadResult> {
+  override async downloadFile(fileId: string): Promise<DownloadResult> {
     return await this.client.download(`/invoice/file/${fileId}/download`);
   }
 
-  async markInvoiceSeen(id: string): Promise<unknown> {
+  override async markInvoiceSeen(id: string): Promise<unknown> {
     return await this.client.put(`/invoice/${id}/markAsSeen`);
   }
 
-  async getUnseenInvoices(pagination: PaginatedRequest): Promise<unknown> {
+  override async getUnseenInvoices(pagination: PaginatedRequest): Promise<unknown> {
     return await this.client.get("/invoice/notSeen", {
       offset: pagination.offset,
       limit: pagination.limit,
     });
   }
 
-  async generateCII(req: GenerateInvoiceRequest): Promise<unknown> {
+  override async generateCII(req: GenerateInvoiceRequest): Promise<unknown> {
     return await this.client.postWithQuery("/tools/cii/generate", req.invoice, {
       flavor: req.flavor,
     });
   }
 
-  async generateUBL(req: GenerateInvoiceRequest): Promise<unknown> {
+  override async generateUBL(req: GenerateInvoiceRequest): Promise<unknown> {
     return await this.client.postWithQuery("/tools/ubl/generate", req.invoice, {
       flavor: req.flavor,
     });
   }
 
-  async generateFacturX(req: GenerateFacturXRequest): Promise<unknown> {
+  override async generateFacturX(req: GenerateFacturXRequest): Promise<unknown> {
     // Factur-X returns a PDF (binary) — use postBinary to avoid text corruption
     return await this.client.postBinary("/tools/facturx/generate", req.invoice, {
       flavor: req.flavor,
@@ -119,7 +135,7 @@ export class IopoleAdapter implements EInvoiceAdapter {
 
   // ─── Directory ────────────────────────────────────────
 
-  async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<unknown> {
+  override async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<unknown> {
     return await this.client.get("/directory/french", {
       q: filters.q,
       offset: filters.offset,
@@ -127,7 +143,7 @@ export class IopoleAdapter implements EInvoiceAdapter {
     });
   }
 
-  async searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown> {
+  override async searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown> {
     return await this.client.get("/directory/international", {
       value: filters.value,
       offset: filters.offset,
@@ -135,7 +151,7 @@ export class IopoleAdapter implements EInvoiceAdapter {
     });
   }
 
-  async checkPeppolParticipant(scheme: string, value: string): Promise<unknown> {
+  override async checkPeppolParticipant(scheme: string, value: string): Promise<unknown> {
     return await this.client.get(
       `/directory/international/check/scheme/${scheme}/value/${value}`,
     );
@@ -143,7 +159,7 @@ export class IopoleAdapter implements EInvoiceAdapter {
 
   // ─── Status ───────────────────────────────────────────
 
-  async sendStatus(req: SendStatusRequest): Promise<unknown> {
+  override async sendStatus(req: SendStatusRequest): Promise<unknown> {
     return await this.client.post(`/invoice/${req.invoiceId}/status`, {
       code: req.code,
       message: req.message,
@@ -151,128 +167,128 @@ export class IopoleAdapter implements EInvoiceAdapter {
     });
   }
 
-  async getStatusHistory(invoiceId: string): Promise<unknown> {
+  override async getStatusHistory(invoiceId: string): Promise<unknown> {
     return await this.client.get(`/invoice/${invoiceId}/status-history`);
   }
 
-  async getUnseenStatuses(pagination: PaginatedRequest): Promise<unknown> {
+  override async getUnseenStatuses(pagination: PaginatedRequest): Promise<unknown> {
     return await this.client.get("/invoice/status/notSeen", {
       offset: pagination.offset,
       limit: pagination.limit,
     });
   }
 
-  async markStatusSeen(statusId: string): Promise<unknown> {
+  override async markStatusSeen(statusId: string): Promise<unknown> {
     return await this.client.put(`/invoice/status/${statusId}/markAsSeen`);
   }
 
   // ─── Reporting ────────────────────────────────────────
 
-  async reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown> {
     return await this.client.post("/reporting/fr/invoice/transaction", transaction);
   }
 
-  async reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown> {
     return await this.client.post(`/reporting/fr/transaction/${businessEntityId}`, transaction);
   }
 
   // ─── Webhooks ─────────────────────────────────────────
 
-  async listWebhooks(): Promise<unknown> {
+  override async listWebhooks(): Promise<unknown> {
     return await this.client.get("/config/webhook");
   }
 
-  async getWebhook(id: string): Promise<unknown> {
+  override async getWebhook(id: string): Promise<unknown> {
     return await this.client.get(`/config/webhook/${id}`);
   }
 
-  async createWebhook(req: CreateWebhookRequest): Promise<unknown> {
+  override async createWebhook(req: CreateWebhookRequest): Promise<unknown> {
     return await this.client.post("/config/webhook", req);
   }
 
-  async updateWebhook(id: string, req: UpdateWebhookRequest): Promise<unknown> {
+  override async updateWebhook(id: string, req: UpdateWebhookRequest): Promise<unknown> {
     return await this.client.put(`/config/webhook/${id}`, req);
   }
 
-  async deleteWebhook(id: string): Promise<unknown> {
+  override async deleteWebhook(id: string): Promise<unknown> {
     return await this.client.delete(`/config/webhook/${id}`);
   }
 
   // ─── Operator Config ───────────────────────────────────
 
-  async getCustomerId(): Promise<unknown> {
+  override async getCustomerId(): Promise<unknown> {
     return await this.client.get("/config/customer/id");
   }
 
-  async listBusinessEntities(): Promise<unknown> {
+  override async listBusinessEntities(): Promise<unknown> {
     return await this.client.get("/config/business/entity");
   }
 
-  async getBusinessEntity(id: string): Promise<unknown> {
+  override async getBusinessEntity(id: string): Promise<unknown> {
     return await this.client.get(`/config/business/entity/${id}`);
   }
 
-  async createLegalUnit(data: Record<string, unknown>): Promise<unknown> {
+  override async createLegalUnit(data: Record<string, unknown>): Promise<unknown> {
     return await this.client.post("/config/business/entity/legalunit", data);
   }
 
-  async createOffice(data: Record<string, unknown>): Promise<unknown> {
+  override async createOffice(data: Record<string, unknown>): Promise<unknown> {
     return await this.client.post("/config/business/entity/office", data);
   }
 
-  async deleteBusinessEntity(id: string): Promise<unknown> {
+  override async deleteBusinessEntity(id: string): Promise<unknown> {
     return await this.client.delete(`/config/business/entity/${id}`);
   }
 
-  async configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
+  override async configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
     return await this.client.post(`/config/business/entity/${id}/configure`, data);
   }
 
-  async claimBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
+  override async claimBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
     return await this.client.post(`/config/business/entity/${id}/claim`, data);
   }
 
-  async claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
+  override async claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
     return await this.client.post(`/config/business/entity/scheme/${scheme}/value/${value}/claim`, data);
   }
 
-  async enrollFrench(data: Record<string, unknown>): Promise<unknown> {
+  override async enrollFrench(data: Record<string, unknown>): Promise<unknown> {
     return await this.client.put("/config/french/enrollment", data);
   }
 
-  async enrollInternational(data: Record<string, unknown>): Promise<unknown> {
+  override async enrollInternational(data: Record<string, unknown>): Promise<unknown> {
     return await this.client.put("/config/international/enrollment", data);
   }
 
-  async registerNetwork(identifierId: string, network: string): Promise<unknown> {
+  override async registerNetwork(identifierId: string, network: string): Promise<unknown> {
     return await this.client.post(`/config/business/entity/identifier/${identifierId}/network/${network}`);
   }
 
-  async registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown> {
+  override async registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown> {
     return await this.client.post(`/config/business/entity/identifier/scheme/${scheme}/value/${value}/network/${network}`);
   }
 
-  async unregisterNetwork(directoryId: string): Promise<unknown> {
+  override async unregisterNetwork(directoryId: string): Promise<unknown> {
     return await this.client.delete(`/config/business/entity/identifier/directory/${directoryId}`);
   }
 
   // ─── Identifier Management ───────────────────────────────
 
-  async createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown> {
+  override async createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown> {
     return await this.client.post(`/config/business/entity/${entityId}/identifier`, data);
   }
 
-  async createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
+  override async createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
     return await this.client.post(`/config/business/entity/scheme/${scheme}/value/${value}/identifier`, data);
   }
 
-  async deleteIdentifier(identifierId: string): Promise<unknown> {
+  override async deleteIdentifier(identifierId: string): Promise<unknown> {
     return await this.client.delete(`/config/business/entity/identifier/${identifierId}`);
   }
 
   // ─── Claim Management ────────────────────────────────────
 
-  async deleteClaim(entityId: string): Promise<unknown> {
+  override async deleteClaim(entityId: string): Promise<unknown> {
     return await this.client.delete(`/config/business/entity/${entityId}/claim`);
   }
 }

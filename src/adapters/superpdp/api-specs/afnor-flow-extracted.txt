@@ -1,0 +1,46 @@
+AFNOR Flow API — Endpoint Reference
+OpenAPI 3.0.3
+Version: 1.2.0
+Server: https://api.superpdp.tech/afnor-flow — 
+Auth: BearerAuth (authorizationCode) — tokenUrl: /oauth2/token
+Auth: BearerAuth (clientCredentials) — tokenUrl: /oauth2/token
+============================================================
+
+POST    /v1/flows
+        Tags: Flow
+        Summary: Submit a new flow
+        Description: Submit a flow. A flow is a single-invoice file, with :
+  - an XML/PDF file with the data of the invoice
+
+The flow is created with a `flowInfo` object, allowing to qualify the flow.
+  
+A flow can be :
+  - an invoice (CII, UBL, Factur-X,...) 
+  - a lifecycle (CDAR) 
+  - or a e-reporting file
+
+
+POST    /v1/flows/search
+        Tags: Flow
+        Summary: Select flows upon criteria
+        Description: Retrieves a set of flows matching the provided search criteria:
+  - Need at least one criterion to be specified
+  - Assuming a logical AND when combining criteria
+  - Assuming a logical OR for criteria allowing a list of values
+
+Pagination works with the updatedAfter property
+The comparison with cur
+
+GET     /v1/flows/{flowId}
+        Tags: Flow
+        Summary: Download the file of a flow
+        Description: Download a file related to a given flow:
+  - an invoice
+  - a life cycle
+  - an e-reporting
+
+        Params: flowId, docType
+
+GET     /v1/healthcheck
+        Tags: Supervisor
+        Summary: Check whether the API service is up and running.

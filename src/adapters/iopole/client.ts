@@ -13,74 +13,10 @@
  * @module lib/iopole/api/iopole-client
  */
 
-// ─── OAuth2 Token Provider ─────────────────────────────
-
-export interface OAuth2Config {
-  /** Keycloak token endpoint */
-  authUrl: string;
-  /** OAuth2 client ID */
-  clientId: string;
-  /** OAuth2 client secret */
-  clientSecret: string;
-}
-
-/**
- * Creates a token provider that fetches and caches OAuth2 client_credentials tokens.
- * Auto-refreshes 60s before expiry. Deduplicates concurrent requests.
- */
-export function createOAuth2TokenProvider(
-  config: OAuth2Config,
-): () => Promise<string> {
-  let cachedToken: string | undefined;
-  let expiresAt = 0;
-  let inflight: Promise<string> | undefined;
-
-  const REFRESH_MARGIN_MS = 60_000;
-
-  async function fetchToken(): Promise<string> {
-    const body = new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-    });
-
-    const response = await fetch(config.authUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(
-        `[IopoleOAuth2] Token request failed: ${response.status} — ${text.slice(0, 500)}`,
-      );
-    }
-
-    const data = await response.json() as { access_token: string; expires_in?: number };
-    if (!data.access_token) {
-      throw new Error(
-        "[IopoleOAuth2] Token response missing access_token",
-      );
-    }
-
-    cachedToken = data.access_token;
-    expiresAt = Date.now() + ((data.expires_in ?? 600) * 1000) - REFRESH_MARGIN_MS;
-
-    return cachedToken;
-  }
-
-  return async () => {
-    if (cachedToken && Date.now() < expiresAt) {
-      return cachedToken;
-    }
-    // Dedup concurrent token requests
-    if (!inflight) {
-      inflight = fetchToken().finally(() => { inflight = undefined; });
-    }
-    return inflight;
-  };
-}
+// ─── OAuth2 Token Provider (shared) ───────────────────
+// Re-exported from shared module — used by Iopole and other OAuth2 adapters.
+export { createOAuth2TokenProvider } from "../shared/oauth2.ts";
+export type { OAuth2Config } from "../shared/oauth2.ts";
 
 // ─── Client Config ─────────────────────────────────────
 
