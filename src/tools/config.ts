@@ -13,7 +13,7 @@
 import type { EInvoiceTool } from "./types.ts";
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {
-  LEGAL_UNIT: "Unité légale",
+  LEGAL_UNIT: "Entité juridique",
   OFFICE: "Établissement",
 };
 

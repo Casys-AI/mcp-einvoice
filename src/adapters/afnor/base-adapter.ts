@@ -36,17 +36,7 @@ import type {
   UpdateWebhookRequest,
 } from "../../adapter.ts";
 import type { AfnorClient } from "./client.ts";
-
-/**
- * Error for operations not supported by the AFNOR standard
- * and not overridden by the native adapter.
- */
-class NotSupportedError extends Error {
-  constructor(method: string, alternative: string) {
-    super(`[AfnorBaseAdapter] ${method} is not covered by AFNOR. ${alternative}`);
-    this.name = "NotSupportedError";
-  }
-}
+import { NotSupportedError } from "../shared/errors.ts";
 
 /**
  * Abstract base adapter for French PA using AFNOR XP Z12-013.
@@ -71,9 +61,9 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   // ─── Invoice Operations (AFNOR: submitFlow, searchFlows, downloadFlow) ───
 
   async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
-    if (!this.afnor) throw this.noAfnor("emitInvoice");
+    const afnor = this.requireAfnor("emitInvoice");
     const syntax = req.filename.toLowerCase().endsWith(".pdf") ? "Factur-X" : "CII";
-    return await this.afnor.submitFlow(
+    return await afnor.submitFlow(
       req.file,
       { flowSyntax: syntax, name: req.filename, processingRule: "B2B" },
       "CustomerInvoice",
@@ -81,8 +71,8 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   }
 
   async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
-    if (!this.afnor) throw this.noAfnor("searchInvoices");
-    const result = await this.afnor.searchFlows(
+    const afnor = this.requireAfnor("searchInvoices");
+    const result = await afnor.searchFlows(
       {
         flowType: ["CustomerInvoice", "SupplierInvoice"],
         ...(filters.q ? { trackingId: filters.q } : {}),
@@ -100,8 +90,8 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   }
 
   async getInvoice(id: string): Promise<InvoiceDetail> {
-    if (!this.afnor) throw this.noAfnor("getInvoice");
-    const { data, contentType } = await this.afnor.downloadFlow(id);
+    const afnor = this.requireAfnor("getInvoice");
+    const { data, contentType } = await afnor.downloadFlow(id);
     if (contentType.includes("json")) {
       // deno-lint-ignore no-explicit-any
       const doc = JSON.parse(new TextDecoder().decode(data)) as any;
@@ -120,14 +110,14 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   }
 
   async downloadInvoice(id: string): Promise<DownloadResult> {
-    if (!this.afnor) throw this.noAfnor("downloadInvoice");
-    return await this.afnor.downloadFlow(id);
+    const afnor = this.requireAfnor("downloadInvoice");
+    return await afnor.downloadFlow(id);
   }
 
   // ─── Status (AFNOR: lifecycle flows) ───────────────────
 
   async sendStatus(req: SendStatusRequest): Promise<unknown> {
-    if (!this.afnor) throw this.noAfnor("sendStatus");
+    const afnor = this.requireAfnor("sendStatus");
     // Lifecycle events are submitted as CDAR flows
     const cdarPayload = JSON.stringify({
       invoiceId: req.invoiceId,
@@ -135,7 +125,7 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
       message: req.message,
       payment: req.payment,
     });
-    return await this.afnor.submitFlow(
+    return await afnor.submitFlow(
       new TextEncoder().encode(cdarPayload),
       { flowSyntax: "CDAR", name: `status-${req.invoiceId}.json`, processingRule: "B2B" },
       "CustomerInvoiceLC",
@@ -143,8 +133,8 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   }
 
   async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
-    if (!this.afnor) throw this.noAfnor("getStatusHistory");
-    const result = await this.afnor.searchFlows({
+    const afnor = this.requireAfnor("getStatusHistory");
+    const result = await afnor.searchFlows({
       flowType: ["CustomerInvoiceLC", "SupplierInvoiceLC"],
       trackingId: invoiceId,
     });
@@ -161,9 +151,9 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   // ─── Reporting (AFNOR: e-reporting flows) ──────────────
 
   async reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown> {
-    if (!this.afnor) throw this.noAfnor("reportInvoiceTransaction");
+    const afnor = this.requireAfnor("reportInvoiceTransaction");
     const payload = new TextEncoder().encode(JSON.stringify(transaction));
-    return await this.afnor.submitFlow(
+    return await afnor.submitFlow(
       payload,
       { flowSyntax: "FRR", name: "report.json", processingRule: "B2C" },
       "UnitaryCustomerTransactionReport",
@@ -171,9 +161,9 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   }
 
   async reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown> {
-    if (!this.afnor) throw this.noAfnor("reportTransaction");
+    const afnor = this.requireAfnor("reportTransaction");
     const payload = new TextEncoder().encode(JSON.stringify({ businessEntityId, ...transaction }));
-    return await this.afnor.submitFlow(
+    return await afnor.submitFlow(
       payload,
       { flowSyntax: "FRR", name: "report.json", processingRule: "B2C" },
       "AggregatedCustomerTransactionReport",
@@ -183,167 +173,171 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   // ─── Not covered by AFNOR — subclass must override or leave as stub ───
 
   async downloadReadable(_id: string): Promise<DownloadResult> {
-    throw new NotSupportedError("downloadReadable", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "downloadReadable", "Override in subclass with native API.");
   }
 
   async getInvoiceFiles(_id: string): Promise<unknown> {
-    throw new NotSupportedError("getInvoiceFiles", "AFNOR flows are atomic. Override in subclass.");
+    throw new NotSupportedError(this.name, "getInvoiceFiles", "AFNOR flows are atomic. Override in subclass.");
   }
 
   async getAttachments(_id: string): Promise<unknown> {
-    throw new NotSupportedError("getAttachments", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "getAttachments", "Override in subclass with native API.");
   }
 
   async downloadFile(_fileId: string): Promise<DownloadResult> {
-    throw new NotSupportedError("downloadFile", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "downloadFile", "Override in subclass with native API.");
   }
 
   async markInvoiceSeen(_id: string): Promise<unknown> {
-    throw new NotSupportedError("markInvoiceSeen", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "markInvoiceSeen", "Not in AFNOR spec.");
   }
 
   async getUnseenInvoices(_pagination: PaginatedRequest): Promise<unknown> {
-    throw new NotSupportedError("getUnseenInvoices", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "getUnseenInvoices", "Not in AFNOR spec.");
   }
 
   async generateCII(_req: GenerateInvoiceRequest): Promise<string> {
-    throw new NotSupportedError("generateCII", "Override in subclass if PA has format conversion.");
+    throw new NotSupportedError(this.name, "generateCII", "Override in subclass if PA has format conversion.");
   }
 
   async generateUBL(_req: GenerateInvoiceRequest): Promise<string> {
-    throw new NotSupportedError("generateUBL", "Override in subclass if PA has format conversion.");
+    throw new NotSupportedError(this.name, "generateUBL", "Override in subclass if PA has format conversion.");
   }
 
   async generateFacturX(_req: GenerateFacturXRequest): Promise<DownloadResult> {
-    throw new NotSupportedError("generateFacturX", "Override in subclass if PA has format conversion.");
+    throw new NotSupportedError(this.name, "generateFacturX", "Override in subclass if PA has format conversion.");
   }
 
   // ─── Directory — not in AFNOR, subclass must override ─
 
   async searchDirectoryFr(_filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
-    throw new NotSupportedError("searchDirectoryFr", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "searchDirectoryFr", "Override in subclass with native API.");
   }
 
   async searchDirectoryInt(_filters: DirectoryIntSearchFilters): Promise<unknown> {
-    throw new NotSupportedError("searchDirectoryInt", "Not in AFNOR spec. Override in subclass.");
+    throw new NotSupportedError(this.name, "searchDirectoryInt", "Not in AFNOR spec. Override in subclass.");
   }
 
   async checkPeppolParticipant(_scheme: string, _value: string): Promise<unknown> {
-    throw new NotSupportedError("checkPeppolParticipant", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "checkPeppolParticipant", "Not in AFNOR spec.");
   }
 
   // ─── Status extras ─────────────────────────────────────
 
   async getUnseenStatuses(_pagination: PaginatedRequest): Promise<unknown> {
-    throw new NotSupportedError("getUnseenStatuses", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "getUnseenStatuses", "Not in AFNOR spec.");
   }
 
   async markStatusSeen(_statusId: string): Promise<unknown> {
-    throw new NotSupportedError("markStatusSeen", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "markStatusSeen", "Not in AFNOR spec.");
   }
 
   // ─── Webhooks — not in AFNOR (yet) ────────────────────
 
   async listWebhooks(): Promise<unknown> {
-    throw new NotSupportedError("listWebhooks", "Not in AFNOR spec. Override in subclass.");
+    throw new NotSupportedError(this.name, "listWebhooks", "Not in AFNOR spec. Override in subclass.");
   }
 
   async getWebhook(_id: string): Promise<unknown> {
-    throw new NotSupportedError("getWebhook", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "getWebhook", "Not in AFNOR spec.");
   }
 
   async createWebhook(_req: CreateWebhookRequest): Promise<unknown> {
-    throw new NotSupportedError("createWebhook", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "createWebhook", "Not in AFNOR spec.");
   }
 
   async updateWebhook(_id: string, _req: UpdateWebhookRequest): Promise<unknown> {
-    throw new NotSupportedError("updateWebhook", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "updateWebhook", "Not in AFNOR spec.");
   }
 
   async deleteWebhook(_id: string): Promise<unknown> {
-    throw new NotSupportedError("deleteWebhook", "Not in AFNOR spec.");
+    throw new NotSupportedError(this.name, "deleteWebhook", "Not in AFNOR spec.");
   }
 
   // ─── Operator Config — not in AFNOR ───────────────────
 
   async getCustomerId(): Promise<unknown> {
-    throw new NotSupportedError("getCustomerId", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "getCustomerId", "Override in subclass with native API.");
   }
 
   async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
-    throw new NotSupportedError("listBusinessEntities", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "listBusinessEntities", "Override in subclass with native API.");
   }
 
   async getBusinessEntity(_id: string): Promise<unknown> {
-    throw new NotSupportedError("getBusinessEntity", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "getBusinessEntity", "Override in subclass with native API.");
   }
 
   async createLegalUnit(_data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("createLegalUnit", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "createLegalUnit", "Override in subclass with native API.");
   }
 
   async createOffice(_data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("createOffice", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "createOffice", "Override in subclass with native API.");
   }
 
   async deleteBusinessEntity(_id: string): Promise<unknown> {
-    throw new NotSupportedError("deleteBusinessEntity", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "deleteBusinessEntity", "Override in subclass with native API.");
   }
 
   async configureBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("configureBusinessEntity", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "configureBusinessEntity", "Override in subclass with native API.");
   }
 
   async claimBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("claimBusinessEntity", "Override in subclass.");
+    throw new NotSupportedError(this.name, "claimBusinessEntity", "Override in subclass.");
   }
 
   async claimBusinessEntityByIdentifier(_scheme: string, _value: string, _data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("claimBusinessEntityByIdentifier", "Override in subclass.");
+    throw new NotSupportedError(this.name, "claimBusinessEntityByIdentifier", "Override in subclass.");
   }
 
   async enrollFrench(_data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("enrollFrench", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "enrollFrench", "Override in subclass with native API.");
   }
 
   async enrollInternational(_data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("enrollInternational", "Override in subclass.");
+    throw new NotSupportedError(this.name, "enrollInternational", "Override in subclass.");
   }
 
   async registerNetwork(_identifierId: string, _network: string): Promise<unknown> {
-    throw new NotSupportedError("registerNetwork", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "registerNetwork", "Override in subclass with native API.");
   }
 
   async registerNetworkByScheme(_scheme: string, _value: string, _network: string): Promise<unknown> {
-    throw new NotSupportedError("registerNetworkByScheme", "Override in subclass.");
+    throw new NotSupportedError(this.name, "registerNetworkByScheme", "Override in subclass.");
   }
 
   async unregisterNetwork(_directoryId: string): Promise<unknown> {
-    throw new NotSupportedError("unregisterNetwork", "Override in subclass.");
+    throw new NotSupportedError(this.name, "unregisterNetwork", "Override in subclass.");
   }
 
   async createIdentifier(_entityId: string, _data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("createIdentifier", "Override in subclass with native API.");
+    throw new NotSupportedError(this.name, "createIdentifier", "Override in subclass with native API.");
   }
 
   async createIdentifierByScheme(_scheme: string, _value: string, _data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError("createIdentifierByScheme", "Override in subclass.");
+    throw new NotSupportedError(this.name, "createIdentifierByScheme", "Override in subclass.");
   }
 
   async deleteIdentifier(_identifierId: string): Promise<unknown> {
-    throw new NotSupportedError("deleteIdentifier", "Override in subclass.");
+    throw new NotSupportedError(this.name, "deleteIdentifier", "Override in subclass.");
   }
 
   async deleteClaim(_entityId: string): Promise<unknown> {
-    throw new NotSupportedError("deleteClaim", "Override in subclass.");
+    throw new NotSupportedError(this.name, "deleteClaim", "Override in subclass.");
   }
 
   // ─── Helpers ───────────────────────────────────────────
 
-  private noAfnor(method: string): Error {
-    return new Error(
-      `[${this.name}] ${method}: AFNOR API not configured. ` +
-      `Override this method with native implementation.`,
-    );
+  /** Get the AFNOR client or throw if not configured. */
+  protected requireAfnor(method: string): AfnorClient {
+    if (!this.afnor) {
+      throw new Error(
+        `[${this.name}] ${method}: AFNOR API not configured. ` +
+        `Override this method with native implementation.`,
+      );
+    }
+    return this.afnor;
   }
 }

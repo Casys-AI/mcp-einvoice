@@ -34,6 +34,7 @@ import type {
   UpdateWebhookRequest,
 } from "../../adapter.ts";
 import { IopoleClient, createOAuth2TokenProvider } from "./client.ts";
+import { requireEnv } from "../shared/env.ts";
 import { env } from "../../runtime.ts";
 
 const IOPOLE_DEFAULT_AUTH_URL =
@@ -439,7 +440,7 @@ function normalizeDirection(raw: string | undefined): InvoiceDirection | undefin
   if (!raw) return undefined;
   if (raw === "RECEIVED" || raw === "INBOUND") return "received";
   if (raw === "SENT" || raw === "EMITTED" || raw === "OUTBOUND") return "sent";
-  return raw.toLowerCase() as InvoiceDirection;
+  return undefined;
 }
 
 /** Normalize Iopole status history response (array, {data}, {entries}, {history}) into StatusHistoryResult. */
@@ -472,29 +473,20 @@ function normalizeStatusHistory(raw: unknown): StatusHistoryResult {
  * Required: IOPOLE_API_URL, IOPOLE_CLIENT_ID, IOPOLE_CLIENT_SECRET, IOPOLE_CUSTOMER_ID
  * Optional: IOPOLE_AUTH_URL (default: production Keycloak)
  */
-/** Require an env var to be set, or throw with a descriptive message. */
-function requireEnv(name: string, hint: string): string {
-  const value = env(name);
-  if (!value) {
-    throw new Error(`[IopoleAdapter] ${name} is required. ${hint}`);
-  }
-  return value;
-}
-
 export function createIopoleAdapter(): IopoleAdapter {
-  const baseUrl = requireEnv(
+  const baseUrl = requireEnv("IopoleAdapter",
     "IOPOLE_API_URL",
     "Set it to https://api.ppd.iopole.fr/v1 (sandbox) or https://api.iopole.com/v1 (production).",
   );
-  const clientId = requireEnv(
+  const clientId = requireEnv("IopoleAdapter",
     "IOPOLE_CLIENT_ID",
     "Get your client ID from the Iopole dashboard or admin console.",
   );
-  const clientSecret = requireEnv(
+  const clientSecret = requireEnv("IopoleAdapter",
     "IOPOLE_CLIENT_SECRET",
     "Get your client secret from the Iopole dashboard or admin console.",
   );
-  const customerId = requireEnv(
+  const customerId = requireEnv("IopoleAdapter",
     "IOPOLE_CUSTOMER_ID",
     "Find it in Settings → Unique Identifier (sandbox) or admin console.",
   );

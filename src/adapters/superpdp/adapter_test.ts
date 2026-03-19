@@ -293,7 +293,7 @@ Deno.test("SuperPDPAdapter.downloadReadable() - throws NotSupportedError", async
   await assertRejects(
     () => adapter.downloadReadable("inv-1"),
     Error,
-    "not covered by AFNOR",
+    "is not supported",
   );
 });
 
@@ -302,7 +302,7 @@ Deno.test("SuperPDPAdapter.listWebhooks() - throws NotSupportedError", async () 
   await assertRejects(
     () => adapter.listWebhooks(),
     Error,
-    "not covered by AFNOR",
+    "is not supported",
   );
 });
 
@@ -311,7 +311,7 @@ Deno.test("SuperPDPAdapter.createWebhook() - throws NotSupportedError", async ()
   await assertRejects(
     () => adapter.createWebhook({ url: "http://test", events: [] }),
     Error,
-    "not covered by AFNOR",
+    "is not supported",
   );
 });
 
@@ -320,6 +320,6 @@ Deno.test("SuperPDPAdapter.listBusinessEntities() - throws NotSupportedError", a
   await assertRejects(
     () => adapter.listBusinessEntities(),
     Error,
-    "not covered by AFNOR",
+    "is not supported",
   );
 });

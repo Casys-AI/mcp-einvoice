@@ -27,6 +27,7 @@ import type {
 } from "../../adapter.ts";
 import { SuperPDPClient } from "./client.ts";
 import { createOAuth2TokenProvider } from "../shared/oauth2.ts";
+import { requireEnv } from "../shared/env.ts";
 import { env } from "../../runtime.ts";
 
 /**
@@ -244,13 +245,6 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
 // ─── Factory ──────────────────────────────────────────
 
-function requireEnv(name: string, hint: string): string {
-  const value = env(name);
-  if (!value) {
-    throw new Error(`[SuperPDPAdapter] ${name} is required. ${hint}`);
-  }
-  return value;
-}
 
 /**
  * Create a SuperPDPAdapter from environment variables.
@@ -259,15 +253,15 @@ function requireEnv(name: string, hint: string): string {
  * Optional: SUPERPDP_AUTH_URL, SUPERPDP_AFNOR_URL
  */
 export function createSuperPDPAdapter(): SuperPDPAdapter {
-  const baseUrl = requireEnv(
+  const baseUrl = requireEnv("SuperPDPAdapter",
     "SUPERPDP_API_URL",
     "Set it to https://api.superpdp.tech/v1.beta",
   );
-  const clientId = requireEnv(
+  const clientId = requireEnv("SuperPDPAdapter",
     "SUPERPDP_CLIENT_ID",
     "Get your client ID from the Super PDP dashboard.",
   );
-  const clientSecret = requireEnv(
+  const clientSecret = requireEnv("SuperPDPAdapter",
     "SUPERPDP_CLIENT_SECRET",
     "Get your client secret from the Super PDP dashboard.",
   );

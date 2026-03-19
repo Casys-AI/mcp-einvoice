@@ -30,20 +30,12 @@ import type {
   UpdateWebhookRequest,
 } from "../../adapter.ts";
 import { StorecoveClient } from "./client.ts";
+import { NotSupportedError } from "../shared/errors.ts";
+import { requireEnv } from "../shared/env.ts";
+import { uint8ToBase64 } from "../shared/encoding.ts";
 import { env } from "../../runtime.ts";
 
-/**
- * Error for adapter methods that Storecove does not support.
- * Includes an explanation of the Storecove alternative.
- */
-class NotSupportedError extends Error {
-  constructor(method: string, alternative: string) {
-    super(
-      `[StorecoveAdapter] ${method} is not supported by Storecove. ${alternative}`,
-    );
-    this.name = "NotSupportedError";
-  }
-}
+// NotSupportedError and requireEnv imported from shared
 
 /**
  * Storecove adapter for the EInvoice interface.
@@ -88,7 +80,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     // Storecove accepts JSON Pure, JSON Parsed, or JSON Enveloped.
     // For file upload (UBL/CII XML), use JSON Enveloped mode:
     // base64-encode the file and wrap it in the document_submission structure.
-    const base64 = btoa(String.fromCharCode(...req.file));
+    const base64 = uint8ToBase64(req.file);
     const isXml = req.filename.toLowerCase().endsWith(".xml");
     return await this.client.post("/document_submissions", {
       document: {
@@ -103,7 +95,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   }
 
   async searchInvoices(_filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "searchInvoices",
       "Storecove delivers invoices via webhooks (push) or pull queue. " +
       "There is no search endpoint. Use webhook pull mode to retrieve pending documents.",
@@ -132,49 +124,49 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   }
 
   async downloadReadable(_id: string): Promise<DownloadResult> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "downloadReadable",
       "Storecove does not generate readable PDFs. Use getInvoice for JSON or downloadInvoice for the original document.",
     );
   }
 
   async getInvoiceFiles(_id: string): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "getInvoiceFiles",
       "Storecove documents are atomic — no separate files list. Use getInvoice or downloadInvoice.",
     );
   }
 
   async getAttachments(_id: string): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "getAttachments",
       "Attachments are embedded in the Storecove document. Use getInvoice to access them.",
     );
   }
 
   async downloadFile(_fileId: string): Promise<DownloadResult> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "downloadFile",
       "Storecove has no separate file download. Use downloadInvoice for the full document.",
     );
   }
 
   async markInvoiceSeen(_id: string): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "markInvoiceSeen",
       "Storecove does not track seen/unseen state via API.",
     );
   }
 
   async getUnseenInvoices(_pagination: PaginatedRequest): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "getUnseenInvoices",
       "Use Storecove webhook pull mode to poll for new documents.",
     );
   }
 
   async generateCII(_req: GenerateInvoiceRequest): Promise<string> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "generateCII",
       "Storecove auto-generates the compliant format on submission. " +
       "Use emitInvoice with JSON Pure mode instead.",
@@ -182,7 +174,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   }
 
   async generateUBL(_req: GenerateInvoiceRequest): Promise<string> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "generateUBL",
       "Storecove auto-generates the compliant format on submission. " +
       "Use emitInvoice with JSON Pure mode instead.",
@@ -190,7 +182,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   }
 
   async generateFacturX(_req: GenerateFacturXRequest): Promise<DownloadResult> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "generateFacturX",
       "Storecove auto-generates the compliant format on submission. " +
       "Use emitInvoice with JSON Pure mode instead.",
@@ -222,7 +214,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   // ─── Status ───────────────────────────────────────────
 
   async sendStatus(_req: SendStatusRequest): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "sendStatus",
       "Storecove status is managed by the receiving Access Point. " +
       "The sender receives delivery evidence via the evidence endpoint.",
@@ -245,14 +237,14 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   }
 
   async getUnseenStatuses(_pagination: PaginatedRequest): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "getUnseenStatuses",
       "Storecove delivers status changes via webhooks.",
     );
   }
 
   async markStatusSeen(_statusId: string): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "markStatusSeen",
       "Storecove does not track seen/unseen status via API.",
     );
@@ -261,14 +253,14 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   // ─── Reporting ────────────────────────────────────────
 
   async reportInvoiceTransaction(_transaction: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "reportInvoiceTransaction",
       "Storecove handles tax reporting internally based on the destination country.",
     );
   }
 
   async reportTransaction(_businessEntityId: string, _transaction: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "reportTransaction",
       "Storecove handles tax reporting internally based on the destination country.",
     );
@@ -282,21 +274,21 @@ export class StorecoveAdapter implements EInvoiceAdapter {
 
   async getWebhook(_id: string): Promise<unknown> {
     // Storecove has no get-by-id — return the list and let the tool filter
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "getWebhook",
       "Storecove has no get-by-id webhook endpoint. Use listWebhooks instead.",
     );
   }
 
   async createWebhook(_req: CreateWebhookRequest): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "createWebhook",
       "Storecove webhooks are configured via the Storecove dashboard UI, not the API.",
     );
   }
 
   async updateWebhook(_id: string, _req: UpdateWebhookRequest): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "updateWebhook",
       "Storecove webhooks are configured via the Storecove dashboard UI, not the API.",
     );
@@ -309,14 +301,14 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   // ─── Operator Config ───────────────────────────────────
 
   async getCustomerId(): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "getCustomerId",
       "Storecove uses API keys, not customer IDs. Your identity is implicit in the API key.",
     );
   }
 
   async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "listBusinessEntities",
       "Storecove has no list-all endpoint for legal entities. " +
       "Track entity IDs locally after creation, or use getBusinessEntity with a known ID.",
@@ -339,7 +331,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   }
 
   async createOffice(_data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "createOffice",
       "Storecove has no office/establishment concept. Use createLegalUnit for all entities.",
     );
@@ -354,21 +346,21 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   }
 
   async claimBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "claimBusinessEntity",
       "Storecove has no entity claim workflow. Entities are created and owned directly.",
     );
   }
 
   async claimBusinessEntityByIdentifier(_scheme: string, _value: string, _data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "claimBusinessEntityByIdentifier",
       "Storecove has no entity claim workflow. Entities are created and owned directly.",
     );
   }
 
   async enrollFrench(_data: Record<string, unknown>): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "enrollFrench",
       "Use enrollInternational with Peppol identifiers for French entity registration on Storecove.",
     );
@@ -476,7 +468,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   // ─── Claim Management ────────────────────────────────────
 
   async deleteClaim(_entityId: string): Promise<unknown> {
-    throw new NotSupportedError(
+    throw new NotSupportedError("storecove",
       "deleteClaim",
       "Storecove has no entity claim concept. Delete the entity directly with deleteBusinessEntity.",
     );
@@ -485,15 +477,6 @@ export class StorecoveAdapter implements EInvoiceAdapter {
 
 // ─── Factory ──────────────────────────────────────────
 
-/** Require an env var to be set, or throw with a descriptive message. */
-function requireEnv(name: string, hint: string): string {
-  const value = env(name);
-  if (!value) {
-    throw new Error(`[StorecoveAdapter] ${name} is required. ${hint}`);
-  }
-  return value;
-}
-
 /**
  * Create a StorecoveAdapter from environment variables.
  *
@@ -501,11 +484,11 @@ function requireEnv(name: string, hint: string): string {
  * Optional: STORECOVE_LEGAL_ENTITY_ID (default legal entity for submissions)
  */
 export function createStorecoveAdapter(): StorecoveAdapter {
-  const baseUrl = requireEnv(
+  const baseUrl = requireEnv("StorecoveAdapter",
     "STORECOVE_API_URL",
     "Set it to https://api.storecove.com/api/v2 (production/sandbox).",
   );
-  const apiKey = requireEnv(
+  const apiKey = requireEnv("StorecoveAdapter",
     "STORECOVE_API_KEY",
     "Get your API key from the Storecove dashboard.",
   );

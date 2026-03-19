@@ -21,7 +21,7 @@ function uint8ToBase64(data: Uint8Array): string {
 
 
 /**
- * Normalize invoice data before sending to Iopole generate API.
+ * Normalize invoice data before sending to adapter generate API.
  * Adds missing fields that the EN16931 schematron requires
  * but that LLMs often forget (postalAddress, electronicAddress, etc.)
  */
@@ -115,7 +115,7 @@ const GENERATE_AX_HINT =
 
 /** Shared description for the invoice input schema (used by generate_cii/ubl/facturx). */
 const INVOICE_SCHEMA_DESCRIPTION =
-  "Invoice data in Iopole format. Required fields: " +
+  "Invoice data. Required fields: " +
   "invoiceId (string, max 20 chars): invoice number e.g. \"CASYS-001\"; " +
   "invoiceDate (string, YYYY-MM-DD): issue date; " +
   "type (number): invoice type code, usually 380 for commercial invoice; " +
