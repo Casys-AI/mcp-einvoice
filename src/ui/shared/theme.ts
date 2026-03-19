@@ -47,9 +47,8 @@ export const fonts = {
 export const styles = {
   card: {
     background: colors.bg.surface,
-    border: `1px solid ${colors.border}`,
     borderRadius: "8px",
-    padding: "16px",
+    padding: "12px 16px",
   } as CSSProperties,
 
   badge: (color: string, bg: string): CSSProperties => ({

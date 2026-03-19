@@ -5,11 +5,14 @@
  * French e-invoicing statuses (PPF lifecycle).
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef, CSSProperties } from "react";
+import { Fragment, useState, useEffect, useMemo, useCallback, useRef, CSSProperties } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
-import { colors, fonts, styles, formatNumber } from "~/shared/theme";
+import { colors, fonts, styles, formatNumber, formatCurrency } from "~/shared/theme";
 import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
 import { FeedbackBanner } from "~/shared/Feedback";
+import { STATUS_REGISTRY, getStatus, getStatusLabel, canAcceptReject, canSendPayment, canReceivePayment } from "~/shared/status";
+import { ActionButton } from "~/shared/ActionButton";
+import { InfoCard } from "~/shared/InfoCard";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -42,36 +45,9 @@ interface DoclistData {
 
 type SortDir = "asc" | "desc";
 
-// Iopole + French e-invoicing statuses
-const DOC_STATUS: Record<string, { color: string; bg: string }> = {
-  // Iopole API statuses
-  delivered: { color: colors.info, bg: colors.infoDim },
-  in_hand: { color: colors.info, bg: colors.infoDim },
-  approved: { color: colors.success, bg: colors.successDim },
-  partially_approved: { color: colors.warning, bg: colors.warningDim },
-  completed: { color: colors.success, bg: colors.successDim },
-  payment_sent: { color: colors.success, bg: colors.successDim },
-  payment_received: { color: colors.success, bg: colors.successDim },
-  suspended: { color: colors.warning, bg: colors.warningDim },
-  invalid: { color: colors.error, bg: colors.errorDim },
-  // Legacy / French aliases
-  deposited: { color: colors.info, bg: colors.infoDim },
-  accepted: { color: colors.success, bg: colors.successDim },
-  paid: { color: colors.success, bg: colors.successDim },
-  received: { color: colors.info, bg: colors.infoDim },
-  rejected: { color: colors.error, bg: colors.errorDim },
-  refused: { color: colors.error, bg: colors.errorDim },
-  disputed: { color: colors.warning, bg: colors.warningDim },
-  pending: { color: colors.warning, bg: colors.warningDim },
-  active: { color: colors.success, bg: colors.successDim },
-  inactive: { color: colors.text.faint, bg: colors.bg.elevated },
-  cancelled: { color: colors.text.faint, bg: colors.bg.elevated },
-};
-
 function StatusCell({ value }: { value: string }) {
-  const scheme = DOC_STATUS[value.toLowerCase()];
-  if (!scheme) return <span>{value}</span>;
-  return <span style={styles.badge(scheme.color, scheme.bg)}>{value}</span>;
+  const s = getStatus(value);
+  return <span style={styles.badge(s.color, s.bg)}>{s.label}</span>;
 }
 
 function LoadingSkeleton() {
@@ -112,6 +88,7 @@ function DoclistEmptyState() {
 
 const STATUS_FIELDS = new Set(["status", "state", "statut", "lifecycle_status"]);
 const HIDDEN_FIELDS = new Set(["doctype", "owner", "modified_by", "creation", "modified", "idx", "_rowAction"]);
+const FILTERABLE_COLUMNS = new Set(["Direction", "Statut", "Type", "Scope", "Pays", "status", "direction", "type"]);
 
 function isStatusField(key: string): boolean {
   return STATUS_FIELDS.has(key.toLowerCase());
@@ -158,13 +135,26 @@ export function DoclistViewer() {
     dataRef.current = nextData;
     refreshRequestRef.current = resolveUiRefreshRequest(nextData, refreshRequestRef.current);
     setData(nextData);
+    // Note: statusOverrides are cleared in DoclistContent via data dependency
   }
 
   function consumeToolResult(result: ToolResultPayload): boolean {
     const text = extractToolResultText(result);
     if (!text) return false;
     try {
-      hydrateData(JSON.parse(text) as DoclistData);
+      const parsed = JSON.parse(text);
+      if (!parsed) return false;
+      // Detect doclist-shaped results vs drill-down results (invoice, entity).
+      // Doclist results have data[], or doclist markers (_title, _rowAction, count).
+      if (!Array.isArray(parsed.data)) {
+        if (parsed._title || parsed._rowAction) {
+          // Empty doclist (e.g. no unseen invoices) — ensure data is an array
+          parsed.data = [];
+        } else {
+          return false; // Not a doclist — drill-down result handled by InlineDetailPanel
+        }
+      }
+      hydrateData(parsed as DoclistData);
       setError(null);
       setLoading(false);
       return true;
@@ -175,7 +165,7 @@ export function DoclistViewer() {
     }
   }
 
-  async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
+  async function requestRefresh(options: { ignoreInterval?: boolean } = {}): Promise<void> {
     const request = resolveUiRefreshRequest(dataRef.current, refreshRequestRef.current);
     if (!canRequestUiRefresh({
       request,
@@ -184,9 +174,9 @@ export function DoclistViewer() {
       now: Date.now(),
       lastRefreshStartedAt: lastRefreshStartedAtRef.current,
       minIntervalMs: REFRESH_THROTTLE_MS,
-    }, options)) return false;
+    }, options)) return;
 
-    if (!request || !app.getHostCapabilities()?.serverTools) return false;
+    if (!request || !app.getHostCapabilities()?.serverTools) return;
 
     refreshInFlightRef.current = true;
     lastRefreshStartedAtRef.current = Date.now();
@@ -194,12 +184,10 @@ export function DoclistViewer() {
 
     try {
       const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
-      if (result.isError) { setError("Échec du rafraîchissement"); return false; }
-      if (!consumeToolResult(result)) { setError("Aucune donnée"); return false; }
-      return true;
+      if (result.isError) setError("Échec du rafraîchissement");
+      else if (!consumeToolResult(result)) setError("Aucune donnée");
     } catch (cause) {
       setError(normalizeUiRefreshFailureMessage(cause));
-      return false;
     } finally {
       refreshInFlightRef.current = false;
       setRefreshing(false);
@@ -224,8 +212,10 @@ export function DoclistViewer() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }} aria-busy={refreshing}>
       <IopoleBrandHeader />
       <div style={{ flex: 1 }}>
-        {loading ? <LoadingSkeleton /> : !data ? <DoclistEmptyState /> : (
-          <DoclistContent data={data} error={error} refreshing={refreshing} onRefresh={() => void requestRefresh({ ignoreInterval: true })} />
+        {loading && <LoadingSkeleton />}
+        {!loading && !data && <DoclistEmptyState />}
+        {!loading && data && (
+          <DoclistContent data={data} error={error} refreshing={refreshing} onRefresh={() => void requestRefresh({ ignoreInterval: true })} onError={setError} />
         )}
       </div>
       <IopoleBrandFooter />
@@ -245,35 +235,279 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   return current;
 }
 
-function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistData; error: string | null; refreshing: boolean; onRefresh: () => void }) {
+function PageButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{ ...styles.button, padding: "4px 10px", fontSize: 11, opacity: disabled ? 0.4 : 1, cursor: disabled ? "default" : "pointer" }}
+      onMouseEnter={(e) => { if (!disabled) (e.currentTarget as HTMLElement).style.borderColor = colors.accent; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = colors.border; }}
+    >{label}</button>
+  );
+}
+
+// ============================================================================
+// Inline Detail Panel — expanded row with invoice/entity details + actions
+// ============================================================================
+
+function InlineDetailPanel({ data, loading, onClose, onAction }: {
+  data: Record<string, unknown> | null;
+  loading: boolean;
+  onClose: () => void;
+  onAction: (toolName: string, args: Record<string, unknown>) => Promise<boolean>;
+}) {
+  const [actLoading, setActLoading] = useState<string | null>(null);
+  const [actMsg, setActMsg] = useState<string | null>(null);
+  const [actOk, setActOk] = useState(true);
+
+  if (loading) return (
+    <div style={{ padding: 16, background: colors.bg.surface }}>
+      {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 14, width: `${30 + i * 15}%`, marginBottom: 8 }} />)}
+    </div>
+  );
+  if (!data) return null;
+
+  async function act(key: string, tool: string, args: Record<string, unknown>, msg: string) {
+    setActLoading(key);
+    setActMsg(null);
+    const ok = await onAction(tool, args);
+    setActOk(ok);
+    setActMsg(ok ? msg : "Action échouée");
+    setActLoading(null);
+  }
+
+  // Detect invoice data vs generic
+  const inv = data as Record<string, unknown>;
+  const isInvoice = "sender_name" in inv || "invoice_number" in inv || ("id" in inv && "status" in inv && "direction" in inv);
+
+  if (!isInvoice) {
+    // Flatten nested objects for display — show primitives as cards, expand objects one level
+    const flatEntries: [string, string][] = [];
+    for (const [k, v] of Object.entries(inv)) {
+      if (k.startsWith("_") || k === "refreshRequest") continue;
+      if (v == null) continue;
+      if (typeof v === "object" && !Array.isArray(v)) {
+        // Expand one level: postalAddress.city → "city"
+        for (const [sk, sv] of Object.entries(v as Record<string, unknown>)) {
+          if (sv != null && typeof sv !== "object") flatEntries.push([`${k}.${sk}`, String(sv)]);
+        }
+      } else if (Array.isArray(v)) {
+        flatEntries.push([k, `${v.length} élément${v.length > 1 ? "s" : ""}`]);
+      } else {
+        flatEntries.push([k, formatCell(v)]);
+      }
+    }
+    // Extract a title from common name fields
+    const title = String(inv.name ?? inv.corporateName ?? inv.label ?? "Détails");
+    return (
+      <div style={{ padding: 16, background: colors.bg.surface, borderTop: `2px solid ${colors.accent}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: colors.text.primary }}>{title}</span>
+          <button onClick={onClose} style={{ ...styles.button, padding: "2px 8px", fontSize: 11 }}>✕</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 6 }}>
+          {flatEntries.map(([k, v]) => (
+            <InfoCard key={k} label={k.replace(/_/g, " ").replace(/\./g, " › ")} value={v} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Invoice detail
+  const statusStr = String(inv.status ?? "");
+  const statusScheme = getStatus(statusStr);
+  const isReceived = inv.direction === "received";
+  const currency = String(inv.currency ?? "EUR");
+  const hasId = !!inv.id && inv.id !== "(aperçu)";
+  const dir = String(inv.direction ?? "");
+
+  const showAcceptReject = canAcceptReject(statusStr, dir);
+  const showSendPayment = canSendPayment(statusStr, dir);
+  const showReceivePayment = canReceivePayment(statusStr, dir);
+
+  return (
+    <div style={{ padding: 16, background: colors.bg.surface, borderTop: `2px solid ${colors.accent}` }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: colors.text.primary }}>{String(inv.invoice_number ?? inv.id)}</span>
+          <span style={styles.badge(statusScheme.color, statusScheme.bg)}>{statusScheme.label}</span>
+          {inv.direction && <span style={{ fontSize: 11, color: colors.text.muted }}>{isReceived ? "Entrante" : "Sortante"}</span>}
+          {inv.format && <span style={{ ...styles.badge(colors.text.secondary, colors.bg.elevated), fontSize: 10 }}>{String(inv.format).toUpperCase()}</span>}
+        </div>
+        <button onClick={onClose} style={{ ...styles.button, padding: "2px 8px", fontSize: 11 }}>✕</button>
+      </div>
+
+      {/* Info grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 6, marginBottom: 10 }}>
+        {inv.sender_name && <InfoCard label="Émetteur" value={String(inv.sender_name)} sub={inv.sender_id ? `SIRET ${inv.sender_id}` : undefined} />}
+        {inv.receiver_name && <InfoCard label="Destinataire" value={String(inv.receiver_name)} sub={inv.receiver_id ? `SIRET ${inv.receiver_id}` : undefined} />}
+        {inv.issue_date && <InfoCard label="Date d'émission" value={String(inv.issue_date)} />}
+        {inv.due_date && <InfoCard label="Échéance" value={String(inv.due_date)} />}
+        {inv.total_ttc != null && <InfoCard label="Total TTC" value={formatCurrency(Number(inv.total_ttc), currency)} bold />}
+        {inv.total_ht != null && <InfoCard label="Total HT" value={formatCurrency(Number(inv.total_ht), currency)} />}
+      </div>
+
+      {/* Action feedback */}
+      {actMsg && <div style={{ fontSize: 11, color: actOk ? colors.success : colors.error, marginBottom: 8 }}>{actMsg}</div>}
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingTop: 8, borderTop: `1px solid ${colors.border}` }}>
+        {showAcceptReject && (
+          <>
+            <ActionButton size="sm" label="Accepter" variant="success" loading={actLoading === "accept"}
+              onClick={() => act("accept", "einvoice_status_send", { invoice_id: inv.id, code: "APPROVED" }, "Facture acceptée")} />
+            <ActionButton size="sm" label="Rejeter" variant="error" confirm loading={actLoading === "reject"}
+              onClick={() => act("reject", "einvoice_status_send", { invoice_id: inv.id, code: "REFUSED" }, "Facture refusée")} />
+            <ActionButton size="sm" label="Contester" variant="default" confirm loading={actLoading === "dispute"}
+              onClick={() => act("dispute", "einvoice_status_send", { invoice_id: inv.id, code: "DISPUTED" }, "Litige signalé")} />
+          </>
+        )}
+        {showSendPayment && (
+          <ActionButton size="sm" label="Paiement envoyé" variant="success" loading={actLoading === "pay"}
+            onClick={() => act("pay", "einvoice_status_send", { invoice_id: inv.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
+        )}
+        {showReceivePayment && (
+          <ActionButton size="sm" label="Paiement reçu" variant="success" loading={actLoading === "payrcv"}
+            onClick={() => act("payrcv", "einvoice_status_send", { invoice_id: inv.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
+        )}
+        {hasId && (
+          <ActionButton size="sm" label="Détails complets →"
+            onClick={async () => {
+              try { await app.sendMessage({ role: "user", content: [{ type: "text", text: `Montre-moi les détails de la facture ${inv.id}` }] }); } catch {}
+            }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data: DoclistData; error: string | null; refreshing: boolean; onRefresh: () => void; onError: (msg: string | null) => void }) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(0);
-  const [drillLoading, setDrillLoading] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedData, setExpandedData] = useState<Record<string, unknown> | null>(null);
+  const [expandedLoading, setExpandedLoading] = useState(false);
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
+  const [chipFilters, setChipFilters] = useState<Record<string, string>>({});
+  const actionTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const rowAction = data._rowAction;
   const isClickable = !!rowAction;
 
-  async function onRowClick(row: Record<string, unknown>, rowIndex: number) {
+  async function onRowClick(row: Record<string, unknown>) {
     if (!rowAction) return;
     const idValue = getNestedValue(row, rowAction.idField);
     if (idValue == null) return;
+    const idStr = String(idValue);
 
-    setDrillLoading(rowIndex);
+    // Toggle: click same row = collapse
+    if (expandedId === idStr) {
+      setExpandedId(null);
+      setExpandedData(null);
+      return;
+    }
+
+    setExpandedId(idStr);
+    setExpandedData(null);
+    setExpandedLoading(true);
+
     try {
-      await app.callServerTool(
-        { name: rowAction.toolName, arguments: { [rowAction.argName]: String(idValue) } },
+      const result = await app.callServerTool(
+        { name: rowAction.toolName, arguments: { [rowAction.argName]: idStr } },
         { timeout: TOOL_CALL_TIMEOUT_MS },
       );
+      if (!result.isError) {
+        const text = extractToolResultText(result);
+        if (text) {
+          const parsed = JSON.parse(text);
+          const detail = parsed.preview ?? parsed;
+          // Fallback: if detail has no status, use the row's status.
+          // INBOUND invoice copies have no status history in Iopole.
+          if (!detail.status) {
+            const rowStatus = row["Statut"] ?? row["status"] ?? row["state"];
+            if (rowStatus) detail.status = String(rowStatus);
+          }
+          if (!detail.direction) {
+            const rawDir = row["_direction"] ?? row["Direction"];
+            if (rawDir === "INBOUND" || rawDir === "Entrante") detail.direction = "received";
+            else if (rawDir === "OUTBOUND" || rawDir === "Sortante") detail.direction = "sent";
+          }
+          setExpandedData(detail);
+        }
+      } else {
+        onError("Erreur lors du chargement des détails");
+        setExpandedId(null);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors du chargement");
+      onError(err instanceof Error ? err.message : "Erreur lors du chargement");
+      setExpandedId(null);
     } finally {
-      setDrillLoading(null);
+      setExpandedLoading(false);
     }
   }
 
+  async function handleDetailAction(toolName: string, args: Record<string, unknown>): Promise<boolean> {
+    try {
+      const result = await app.callServerTool({ name: toolName, arguments: args }, { timeout: TOOL_CALL_TIMEOUT_MS });
+      if (result.isError) return false;
+      // Optimistic update: if this was a status action, update the row's status locally.
+      // Iopole search state (DELIVERED) never reflects lifecycle actions (APPROVED),
+      // so we override it in the UI for immediate feedback.
+      if (toolName === "einvoice_status_send" && expandedId && args.code) {
+        setStatusOverrides(prev => ({ ...prev, [expandedId]: String(args.code) }));
+      }
+      // Re-fetch detail after delay (cancel previous pending refresh)
+      const currentId = expandedId;
+      clearTimeout(actionTimerRef.current);
+      actionTimerRef.current = setTimeout(async () => {
+        if (currentId && rowAction) {
+          try {
+            const refreshResult = await app.callServerTool(
+              { name: rowAction.toolName, arguments: { [rowAction.argName]: currentId } },
+              { timeout: TOOL_CALL_TIMEOUT_MS },
+            );
+            if (!refreshResult.isError) {
+              const text = extractToolResultText(refreshResult);
+              if (text) {
+                const parsed = JSON.parse(text);
+                setExpandedData(parsed.preview ?? parsed);
+              }
+            }
+          } catch { /* ignore */ }
+        }
+      }, 2500);
+      return true;
+    } catch { return false; }
+  }
+
+  // Collapse when sort/filter/page changes
+  useEffect(() => { setExpandedId(null); setExpandedData(null); }, [sortKey, sortDir, filter, page, chipFilters]);
+  // Clear stale status overrides when list data refreshes from server
+  useEffect(() => { setStatusOverrides({}); }, [data]);
+
   const rows = data.data ?? [];
+
+  // Auto-detect filterable columns: columns with 2-8 distinct values
+  const filterableColumns = useMemo(() => {
+    if (rows.length < 2) return [];
+    const candidates: { col: string; values: string[] }[] = [];
+    for (const col of Object.keys(rows[0] ?? {})) {
+      if (!FILTERABLE_COLUMNS.has(col)) continue;
+      const distinct = new Set<string>();
+      for (const row of rows) {
+        const v = row[col];
+        if (v != null && typeof v === "string") distinct.add(v);
+        if (distinct.size > 8) break;
+      }
+      if (distinct.size >= 2 && distinct.size <= 8) {
+        candidates.push({ col, values: Array.from(distinct).sort() });
+      }
+    }
+    return candidates;
+  }, [rows]);
 
   const columns = useMemo(() => {
     if (rows.length === 0) return [];
@@ -293,10 +527,18 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
   }, [rows]);
 
   const filtered = useMemo(() => {
-    if (!filter) return rows;
-    const q = filter.toLowerCase();
-    return rows.filter((row) => columns.some((col) => formatCell(row[col]).toLowerCase().includes(q)));
-  }, [rows, filter, columns]);
+    let result = rows;
+    // Apply chip filters
+    for (const [col, value] of Object.entries(chipFilters)) {
+      if (value) result = result.filter((row) => row[col] === value);
+    }
+    // Apply text filter
+    if (filter) {
+      const q = filter.toLowerCase();
+      result = result.filter((row) => columns.some((col) => formatCell(row[col]).toLowerCase().includes(q)));
+    }
+    return result;
+  }, [rows, filter, columns, chipFilters]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
@@ -327,7 +569,7 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
           <div aria-live="polite" style={{ fontSize: 11, color: colors.text.faint, marginTop: 4 }}>
             {refreshing ? "Rafraîchissement…" : "Rafraîchissement auto au focus"}
           </div>
-          {error && <FeedbackBanner type="error" message={error} onDismiss={() => setError(null)} />}
+          {error && <FeedbackBanner type="error" message={error} onDismiss={() => onError(null)} />}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input type="text" placeholder="Rechercher..." value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }}
@@ -354,7 +596,35 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
         </div>
       </div>
 
-      <div style={{ border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+      {/* Filter chips */}
+      {filterableColumns.length > 0 && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
+          {filterableColumns.map(({ col, values }) => (
+            <Fragment key={col}>
+              <span style={{ fontSize: 10, color: colors.text.faint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{col}</span>
+              <button
+                onClick={() => { setChipFilters(prev => { const next = { ...prev }; delete next[col]; return next; }); setPage(0); }}
+                style={{ ...styles.button, padding: "2px 8px", fontSize: 10, ...(chipFilters[col] == null ? { background: colors.accentDim, borderColor: colors.accent, color: colors.accent } : {}) }}
+              >Tous</button>
+              {values.map(v => {
+                const isActive = chipFilters[col] === v;
+                const statusScheme = isStatusField(col) ? STATUS_REGISTRY[v.toLowerCase()] : null;
+                return (
+                  <button key={v}
+                    onClick={() => { setChipFilters(prev => ({ ...prev, [col]: v })); setPage(0); }}
+                    style={{
+                      ...styles.button, padding: "2px 8px", fontSize: 10,
+                      ...(isActive ? { background: statusScheme?.bg ?? colors.accentDim, borderColor: statusScheme?.color ?? colors.accent, color: statusScheme?.color ?? colors.accent } : {}),
+                    }}
+                  >{getStatusLabel(v)}</button>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
+      )}
+
+      <div style={{ border: `1px solid ${colors.border}`, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: Math.max(600, columns.length * 120) }}>
             <thead>
@@ -373,14 +643,15 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
               {pageRows.length === 0 ? (
                 <tr><td colSpan={columns.length} style={{ ...styles.tableCell, textAlign: "center", color: colors.text.muted, padding: 32 }}>Aucun résultat</td></tr>
               ) : pageRows.map((row, idx) => {
-                const globalIdx = page * PAGE_SIZE + idx;
-                const isDrilling = drillLoading === globalIdx;
+                const rowId = rowAction ? String(getNestedValue(row, rowAction.idField) ?? "") : "";
+                const isExpanded = expandedId === rowId && rowId !== "";
                 return (
-                <tr key={idx}
-                  style={{ transition: "background 0.1s", cursor: isClickable ? "pointer" : "default", opacity: isDrilling ? 0.5 : 1 }}
-                  onClick={isClickable ? () => void onRowClick(row, globalIdx) : undefined}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = colors.bg.hover; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                <Fragment key={idx}>
+                <tr
+                  style={{ transition: "background 0.1s", cursor: isClickable ? "pointer" : "default", background: isExpanded ? colors.bg.hover : undefined }}
+                  onClick={isClickable ? () => void onRowClick(row) : undefined}
+                  onMouseEnter={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = colors.bg.hover; }}
+                  onMouseLeave={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
                   {columns.map((col, colIdx) => {
                     const val = row[col];
@@ -388,18 +659,32 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
                     const isStatus = isStatusField(col) && typeof val === "string";
                     return (
                       <td key={col} style={{ ...styles.tableCell, ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 12 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
-                        {isDrilling && colIdx === 0 ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                            <span className="skeleton" style={{ width: 14, height: 14, borderRadius: "50%", display: "inline-block" }} />
-                            {isStatus ? <StatusCell value={val as string} /> : formatCell(val)}
-                          </span>
-                        ) : (
-                          isStatus ? <StatusCell value={val as string} /> : formatCell(val)
-                        )}
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          {isClickable && colIdx === 0 && (
+                            <span style={{ fontSize: 10, color: colors.text.faint, transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block", flexShrink: 0 }}>▶</span>
+                          )}
+                          {expandedLoading && isExpanded && colIdx === 0 && (
+                            <span className="skeleton" style={{ width: 12, height: 12, borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
+                          )}
+                          {isStatus ? <StatusCell value={statusOverrides[rowId] ?? val as string} /> : formatCell(val)}
+                        </span>
                       </td>
                     );
                   })}
                 </tr>
+                {isExpanded && (
+                  <tr>
+                    <td colSpan={columns.length} style={{ padding: 0, borderBottom: `1px solid ${colors.border}` }}>
+                      <InlineDetailPanel
+                        data={expandedData}
+                        loading={expandedLoading}
+                        onClose={() => { setExpandedId(null); setExpandedData(null); }}
+                        onAction={handleDetailAction}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
                 );
               })}
             </tbody>
@@ -411,13 +696,10 @@ function DoclistContent({ data, error, refreshing, onRefresh }: { data: DoclistD
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 12, color: colors.text.muted }}>Page {page + 1} / {totalPages}</div>
           <div style={{ display: "flex", gap: 4 }}>
-            {[["Début", 0, page === 0], ["Préc", page - 1, page === 0], ["Suiv", page + 1, page >= totalPages - 1], ["Fin", totalPages - 1, page >= totalPages - 1]].map(([label, target, disabled]) => (
-              <button key={label as string} onClick={() => setPage(target as number)} disabled={disabled as boolean}
-                style={{ ...styles.button, padding: "4px 10px", fontSize: 11, opacity: (disabled as boolean) ? 0.4 : 1, cursor: (disabled as boolean) ? "default" : "pointer" }}
-                onMouseEnter={(e) => { if (!(disabled as boolean)) (e.currentTarget as HTMLElement).style.borderColor = colors.accent; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = colors.border; }}
-              >{label as string}</button>
-            ))}
+            <PageButton label="Début" onClick={() => setPage(0)} disabled={page === 0} />
+            <PageButton label="Préc" onClick={() => setPage(page - 1)} disabled={page === 0} />
+            <PageButton label="Suiv" onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1} />
+            <PageButton label="Fin" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} />
           </div>
         </div>
       )}

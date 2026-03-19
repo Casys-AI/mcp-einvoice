@@ -293,7 +293,7 @@ export class IopoleClient {
 
   /**
    * POST with query parameters.
-   * Used for /tools/{cii,ubl,facturx}/generate which require `flavor` as query param.
+   * Used for /tools/{cii,ubl}/generate which return text (XML).
    */
   async postWithQuery<T = unknown>(
     path: string,
@@ -301,6 +301,48 @@ export class IopoleClient {
     query: Record<string, string | number | boolean | undefined>,
   ): Promise<T> {
     return this.request<T>("POST", path, { body, query });
+  }
+
+  /**
+   * POST with query parameters, returning raw binary.
+   * Used for /tools/facturx/generate which returns a PDF (binary).
+   * Using request() would corrupt binary data by treating it as text.
+   */
+  async postBinary(
+    path: string,
+    body: unknown,
+    query: Record<string, string | number | boolean | undefined>,
+  ): Promise<{ data: Uint8Array; contentType: string }> {
+    const url = new URL(`${this.config.baseUrl}${path}`);
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) url.searchParams.set(key, String(value));
+    }
+    const token = await this.config.getToken();
+    const controller = new AbortController();
+    // Longer timeout for binary generation (PDF can take 30-60s)
+    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 60_000);
+    try {
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "customer-id": this.config.customerId,
+          "Content-Type": "application/json",
+          Accept: "*/*",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new IopoleAPIError(`[IopoleClient] POST ${path} → ${response.status}: ${errBody.slice(0, 500)}`, response.status, errBody);
+      }
+      const data = new Uint8Array(await response.arrayBuffer());
+      const contentType = response.headers.get("content-type") ?? "application/octet-stream";
+      return { data, contentType };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   /**

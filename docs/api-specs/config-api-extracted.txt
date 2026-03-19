@@ -1,0 +1,1418 @@
+================================================================================
+OPERATOR CONFIGURATION API - COMPLETE ENDPOINT REFERENCE
+================================================================================
+
+OpenAPI: 3.0.1, Title: Configuration operator Iopole API, Version: 1.0.0
+
+Auth: oauth2 client_credentials
+Token URL: https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token
+
+Total paths: 21
+
+============================================================
+GET /v1/config/customer/id
+============================================================
+Summary: Retrieve the current operator customer id
+Tags: ['Operator User']
+Response 200: Current operator uuid
+  Content-Type: application/json
+    type=string, format=uuid
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found for given id
+
+============================================================
+GET /v1/config/business/entity
+============================================================
+Summary: Retrieve list of operator business entity
+Tags: ['Operator Business Entity Directory']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  q (in=query, req=False): 🔎 **Search query**
+
+Define the **search expression** used to filter the operator [type=string]
+  offset (in=query, req=False): ⏭️ **Offset** : Starting position in the result set
+
+**Default / Min / Max:** 0  [type=integer]
+  limit (in=query, req=False): 🔢 **Limit** : Maximum number of records returned
+
+**Default / Min / Max:** 50 /  [type=integer]
+Response 200: Retrieve list of business entity matching given criteria
+  Content-Type: application/json
+    type: object
+    required: ['data', 'meta']
+      data: [type=array]
+        items:
+          type: object
+          required: ['businessEntityId', 'name', 'country', 'type', 'scope', 'identifierScheme', 'identifierValue', 'identifiers']
+            businessEntityId: [type=string, format=uuid] - Unique identifier for the business entity.
+            name: [type=string] - Name of the business entity.
+            country: [type=string, enum=[251 vals]]
+            type: [type=string, enum=['LEGAL_UNIT', 'OFFICE'], nullable=True] - The type of the business entity
+            scope: [type=string, enum=['PRIVATE_TAX_PAYER', 'PUBLIC', 'PRIMARY', 'SECONDARY']] - Scope of the office or legal unit business entity.
+            identifierScheme: [type=string] - {"text":"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties i
+            identifierValue: [type=string] - The value of the electronic address.
+            postalAddress: [type=object]
+              type: object
+              required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+                countrySubdivision: [type=string] - The country subdivision.
+                city: [type=string] - The name of the city.
+                postalCode: [type=string] - The postal code of the address.
+                addressLine1: [type=string] - The first line of the address.
+                addressLine2: [type=string] - The second line of the address (optional).
+                addressLine3: [type=string] - The third line of the address (optional).
+            operatorRelation: [type=object]
+              type: object
+                data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+                  type: object
+                    header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+                      items:
+                        type: object
+                        required: ['key', 'value']
+                          key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                          value: [type=string, minLength=1, pattern=^\S+$]
+                    query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+                      items:
+                        type: object
+                        required: ['key', 'value']
+                          key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                          value: [type=string, minLength=1, pattern=^\S+$]
+                    param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+                      items:
+                        type: object
+                        required: ['key', 'value']
+                          key: [type=string, pattern=^:]
+                          value: [type=string, minLength=1, pattern=^\S+$]
+                    custom: [type=object]
+                direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+            identifiers: [type=array] - List of business entity identifiers.
+              items:
+                type: object
+                required: ['businessEntityIdentifierId', 'type', 'scheme', 'value']
+                  businessEntityIdentifierId: [type=string, format=uuid] - Unique identifier for the identifier.
+                  type: [type=string, enum=['LEGAL_IDENTIFIER', 'OFFICE_IDENTIFIER', 'ROUTING_CODE', 'SUFFIX']] - All possible identifier types.
+                  scheme: [type=string, pattern=^\d{4}$] - Scheme of the identifier.
+                  value: [type=string, pattern=^[a-zA-Z0-9-_]+$] - Value of the identifier.
+                  label: [type=string] - Label of the identifier.
+                  networksRegistered: [type=array] - List of registered networks.
+                    items:
+                      type: object
+                      required: ['directoryId', 'networkId', 'networkIdentifier', 'directoryAddress']
+                        directoryId: [type=string, format=uuid] - Unique identifier for the directory entry.
+                        networkId: [type=string, format=uuid] - Unique identifier for the registered network.
+                        networkIdentifier: [type=string, enum=['DOMESTIC_FR', 'PEPPOL_INTERNATIONAL']] - Name of the registered network (e.g., "DOMESTIC_FR").
+                        directoryAddress: [type=string] - Address used in the network to identify the business entity
+                        validFrom: [type=string] - Address validity start date
+                        validTo: [type=string] - Address validity end date
+                  postalAddress: [type=object]
+                    type: object
+                    required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+                      countrySubdivision: [type=string] - The country subdivision.
+                      city: [type=string] - The name of the city.
+                      postalCode: [type=string] - The postal code of the address.
+                      addressLine1: [type=string] - The first line of the address.
+                      addressLine2: [type=string] - The second line of the address (optional).
+                      addressLine3: [type=string] - The third line of the address (optional).
+      meta: [type=object]
+        type: object
+        required: ['offset', 'limit', 'count']
+          offset: [type=number]
+          limit: [type=number]
+          count: [type=number]
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found for given criteria
+
+============================================================
+GET /v1/config/business/entity/{businessEntityId}
+============================================================
+Summary: Retrieve an operator business entity for a given id
+Tags: ['Operator Business Entity Directory']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityId (in=path, req=True): The business entity id. [type=string, format=uuid]
+Response 200: Retrieve list of business entity matching given criteria
+  Content-Type: application/json
+    type: array
+    items:
+      type: object
+      required: ['businessEntityId', 'name', 'country', 'type', 'scope', 'identifierScheme', 'identifierValue', 'identifiers']
+        businessEntityId: [type=string, format=uuid] - Unique identifier for the business entity.
+        name: [type=string] - Name of the business entity.
+        country: [type=string, enum=[251 vals]]
+        type: [type=string, enum=['LEGAL_UNIT', 'OFFICE'], nullable=True] - The type of the business entity
+        scope: [type=string, enum=['PRIVATE_TAX_PAYER', 'PUBLIC', 'PRIMARY', 'SECONDARY']] - Scope of the office or legal unit business entity.
+        identifierScheme: [type=string] - {"text":"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties i
+        identifierValue: [type=string] - The value of the electronic address.
+        postalAddress: [type=object]
+          type: object
+          required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+            countrySubdivision: [type=string] - The country subdivision.
+            city: [type=string] - The name of the city.
+            postalCode: [type=string] - The postal code of the address.
+            addressLine1: [type=string] - The first line of the address.
+            addressLine2: [type=string] - The second line of the address (optional).
+            addressLine3: [type=string] - The third line of the address (optional).
+        operatorRelation: [type=object]
+          type: object
+            data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+              type: object
+                header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+                  items:
+                    type: object
+                    required: ['key', 'value']
+                      key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                      value: [type=string, minLength=1, pattern=^\S+$]
+                query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+                  items:
+                    type: object
+                    required: ['key', 'value']
+                      key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                      value: [type=string, minLength=1, pattern=^\S+$]
+                param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+                  items:
+                    type: object
+                    required: ['key', 'value']
+                      key: [type=string, pattern=^:]
+                      value: [type=string, minLength=1, pattern=^\S+$]
+                custom: [type=object]
+            direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+        identifiers: [type=array] - List of business entity identifiers.
+          items:
+            type: object
+            required: ['businessEntityIdentifierId', 'type', 'scheme', 'value']
+              businessEntityIdentifierId: [type=string, format=uuid] - Unique identifier for the identifier.
+              type: [type=string, enum=['LEGAL_IDENTIFIER', 'OFFICE_IDENTIFIER', 'ROUTING_CODE', 'SUFFIX']] - All possible identifier types.
+              scheme: [type=string, pattern=^\d{4}$] - Scheme of the identifier.
+              value: [type=string, pattern=^[a-zA-Z0-9-_]+$] - Value of the identifier.
+              label: [type=string] - Label of the identifier.
+              networksRegistered: [type=array] - List of registered networks.
+                items:
+                  type: object
+                  required: ['directoryId', 'networkId', 'networkIdentifier', 'directoryAddress']
+                    directoryId: [type=string, format=uuid] - Unique identifier for the directory entry.
+                    networkId: [type=string, format=uuid] - Unique identifier for the registered network.
+                    networkIdentifier: [type=string, enum=['DOMESTIC_FR', 'PEPPOL_INTERNATIONAL']] - Name of the registered network (e.g., "DOMESTIC_FR").
+                    directoryAddress: [type=string] - Address used in the network to identify the business entity
+                    validFrom: [type=string] - Address validity start date
+                    validTo: [type=string] - Address validity end date
+              postalAddress: [type=object]
+                type: object
+                required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+                  countrySubdivision: [type=string] - The country subdivision.
+                  city: [type=string] - The name of the city.
+                  postalCode: [type=string] - The postal code of the address.
+                  addressLine1: [type=string] - The first line of the address.
+                  addressLine2: [type=string] - The second line of the address (optional).
+                  addressLine3: [type=string] - The third line of the address (optional).
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found for given id
+
+============================================================
+DELETE /v1/config/business/entity/{businessEntityId}
+============================================================
+Summary: Remove a business entity
+Tags: ['Operator Business Entity Management']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityId (in=path, req=True): The business entity id. [type=string, format=uuid]
+Response 204: Business entity removed
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Failed to remove business entity
+
+============================================================
+POST /v1/config/business/entity/legalunit
+============================================================
+Summary: Create a new legal unit
+Tags: ['Operator Business Entity Management']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+    required: ['name', 'country', 'scope', 'identifierScheme', 'identifierValue']
+      name: [type=string] - Name of the business entity.
+      country: [type=string, enum=[251 vals]]
+      type: [type=string, default=LEGAL_UNIT]
+      scope: [type=string, enum=['PRIVATE_TAX_PAYER', 'PUBLIC', 'PRIMARY', 'SECONDARY']] - Scope of the office or legal unit business entity.
+      identifierScheme: [type=string] - {"text":"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties i
+      identifierValue: [type=string] - The value of the electronic address.
+      operatorRelation: [type=object, nullable=True]
+        type: object
+          data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+            type: object
+              header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, pattern=^:]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              custom: [type=object]
+          direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+      identifiers: [type=array]
+        items:
+          type: object
+          required: ['type', 'scheme', 'value']
+            type: [type=string, enum=['LEGAL_IDENTIFIER', 'OFFICE_IDENTIFIER', 'ROUTING_CODE', 'SUFFIX']] - All possible identifier types.
+            scheme: [type=string, pattern=^\d{4}$] - Scheme of the identifier.
+            value: [type=string, pattern=^[a-zA-Z0-9-_]+$] - Value of the identifier.
+            label: [type=string] - Label of the identifier.
+            networksRegistered: [type=array] - List of registered networks.
+              items:
+                type: object
+                required: ['directoryId', 'networkId', 'networkIdentifier', 'directoryAddress']
+                  directoryId: [type=string, format=uuid] - Unique identifier for the directory entry.
+                  networkId: [type=string, format=uuid] - Unique identifier for the registered network.
+                  networkIdentifier: [type=string, enum=['DOMESTIC_FR', 'PEPPOL_INTERNATIONAL']] - Name of the registered network (e.g., "DOMESTIC_FR").
+                  directoryAddress: [type=string] - Address used in the network to identify the business entity
+                  validFrom: [type=string] - Address validity start date
+                  validTo: [type=string] - Address validity end date
+            postalAddress: [type=object]
+              type: object
+              required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+                countrySubdivision: [type=string] - The country subdivision.
+                city: [type=string] - The name of the city.
+                postalCode: [type=string] - The postal code of the address.
+                addressLine1: [type=string] - The first line of the address.
+                addressLine2: [type=string] - The second line of the address (optional).
+                addressLine3: [type=string] - The third line of the address (optional).
+Response 201: Created business entity id and identifier id
+  Content-Type: application/json
+    type: array
+    items:
+      type: object
+      required: ['type', 'id']
+        type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+        id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request or data validation failure (ex : invalid identifier, ...).
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 409: Conflict - The request could not be completed. A business unit with the same identifiers already exists.
+
+============================================================
+POST /v1/config/business/entity/{businessEntityId}/configure
+============================================================
+Summary: Configure business entity
+Tags: ['Business Entity Configure']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityId (in=path, req=True): The business entity id. [type=string, format=uuid]
+RequestBody (required=False):
+  Content-Type: application/json
+    type: object
+    required: ['vatRegime']
+      vatRegime: [type=string, enum=['REAL_MONTHLY_TAX_REGIME', 'REAL_QUARTERLY_TAX_REGIME', 'SIMPLIFIED_TAX_REGIME', 'VAT_EXEMPTION_REGIME']]
+Response 201: Business entity configuration done
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+
+============================================================
+POST /v1/config/business/entity/office
+============================================================
+Summary: Create a new office for a given legal unit
+Tags: ['Operator Business Entity Management']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  legalBusinessEntityId (in=query, req=False): businessEntityId of the parent legal unit (if required) [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+    required: ['name', 'country', 'scope', 'identifierScheme', 'identifierValue']
+      name: [type=string] - Name of the business entity.
+      country: [type=string, enum=[251 vals]]
+      type: [type=string, default=OFFICE]
+      scope: [type=string, enum=['PRIVATE_TAX_PAYER', 'PUBLIC', 'PRIMARY', 'SECONDARY']] - Scope of the office or legal unit business entity.
+      identifierScheme: [type=string] - {"text":"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties i
+      identifierValue: [type=string] - The value of the electronic address.
+      postalAddress: [type=object]
+        type: object
+        required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+          countrySubdivision: [type=string] - The country subdivision.
+          city: [type=string] - The name of the city.
+          postalCode: [type=string] - The postal code of the address.
+          addressLine1: [type=string] - The first line of the address.
+          addressLine2: [type=string] - The second line of the address (optional).
+          addressLine3: [type=string] - The third line of the address (optional).
+      operatorRelation: [type=object, nullable=True]
+        type: object
+          data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+            type: object
+              header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, pattern=^:]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              custom: [type=object]
+          direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+      identifiers: [type=array]
+        items:
+          type: object
+          required: ['businessEntityIdentifierId', 'type', 'scheme', 'value']
+            businessEntityIdentifierId: [type=string, format=uuid] - Unique identifier for the identifier.
+            type: [type=string, enum=['LEGAL_IDENTIFIER', 'OFFICE_IDENTIFIER', 'ROUTING_CODE', 'SUFFIX']] - All possible identifier types.
+            scheme: [type=string, pattern=^\d{4}$] - Scheme of the identifier.
+            value: [type=string, pattern=^[a-zA-Z0-9-_]+$] - Value of the identifier.
+            label: [type=string] - Label of the identifier.
+            networksRegistered: [type=array] - List of registered networks.
+              items:
+                type: object
+                required: ['directoryId', 'networkId', 'networkIdentifier', 'directoryAddress']
+                  directoryId: [type=string, format=uuid] - Unique identifier for the directory entry.
+                  networkId: [type=string, format=uuid] - Unique identifier for the registered network.
+                  networkIdentifier: [type=string, enum=['DOMESTIC_FR', 'PEPPOL_INTERNATIONAL']] - Name of the registered network (e.g., "DOMESTIC_FR").
+                  directoryAddress: [type=string] - Address used in the network to identify the business entity
+                  validFrom: [type=string] - Address validity start date
+                  validTo: [type=string] - Address validity end date
+            postalAddress: [type=object]
+              type: object
+              required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+                countrySubdivision: [type=string] - The country subdivision.
+                city: [type=string] - The name of the city.
+                postalCode: [type=string] - The postal code of the address.
+                addressLine1: [type=string] - The first line of the address.
+                addressLine2: [type=string] - The second line of the address (optional).
+                addressLine3: [type=string] - The third line of the address (optional).
+Response 201: Created office business entity id and identifier id
+  Content-Type: application/json
+    type: array
+    items:
+      type: object
+      required: ['type', 'id']
+        type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+        id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request or data validation failure (ex : invalid identifier, ...).
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 409: Conflict - The request could not be completed. A business entity with the same identifiers already exists.
+
+============================================================
+POST /v1/config/business/entity/{businessEntityId}/claim
+============================================================
+Summary: Configure an operator business entity management
+Tags: ['Business Entity Claim']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityId (in=path, req=True): The business entity id. [type=string, format=uuid]
+RequestBody (required=False):
+  Content-Type: application/json
+    type: object
+      data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+        type: object
+          header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, pattern=^:]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          custom: [type=object]
+      direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+Response 201: Business entity configuration done
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found
+Response 409: Business entity already belong to current operator
+
+============================================================
+PUT /v1/config/business/entity/{businessEntityId}/claim
+============================================================
+Summary: Update an operator business entity management configuration
+Tags: ['Business Entity Claim']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityId (in=path, req=True): The business entity id. [type=string, format=uuid]
+RequestBody (required=False):
+  Content-Type: application/json
+    type: object
+      data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+        type: object
+          header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, pattern=^:]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          custom: [type=object]
+      direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+Response 201: Business entity configuration done
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found or not belong to given operator
+
+============================================================
+DELETE /v1/config/business/entity/{businessEntityId}/claim
+============================================================
+Summary: Remove an operator business entity management
+Tags: ['Business Entity Claim']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityId (in=path, req=True): The business entity id. [type=string, format=uuid]
+Response 204: Business entity link with operator removed
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Failed to remove link with operator
+
+============================================================
+POST /v1/config/business/entity/scheme/{identifierScheme}/value/{identifierValue}/claim
+============================================================
+Summary: Configure an operator business entity management
+Tags: ['Business Entity Claim']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  identifierScheme (in=path, req=True): The business entity identifier scheme. [type=string]
+  identifierValue (in=path, req=True): The business entity identifier value. [type=string]
+RequestBody (required=False):
+  Content-Type: application/json
+    type: object
+      data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+        type: object
+          header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+            items:
+              type: object
+              required: ['key', 'value']
+                key: [type=string, pattern=^:]
+                value: [type=string, minLength=1, pattern=^\S+$]
+          custom: [type=object]
+      direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+Response 201: Business entity configuration done
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found
+Response 409: Business entity already belong to current operator
+
+============================================================
+POST /v1/config/business/entity/{businessEntityId}/identifier
+============================================================
+Summary: Create a new identifier for a given business entity
+Tags: ['Operator Business Entity Identifiers Management']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityId (in=path, req=True): Business Entity id to link with the identifier [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+    required: ['scheme', 'value', 'type']
+      scheme: [type=string] - {"text":"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties i
+      value: [type=string, pattern=^[a-zA-Z0-9-_]+$] - Value associated with the identifier (e.g., 'SIREN').
+      label: [type=string] - Label of the identifier.
+      postalAddress: [type=object]
+        type: object
+        required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+          countrySubdivision: [type=string] - The country subdivision.
+          city: [type=string] - The name of the city.
+          postalCode: [type=string] - The postal code of the address.
+          addressLine1: [type=string] - The first line of the address.
+          addressLine2: [type=string] - The second line of the address (optional).
+          addressLine3: [type=string] - The third line of the address (optional).
+      type: [type=string, enum=['ROUTING_CODE', 'SUFFIX']] - Identifier types allowed for creation.
+Response 201: Created identifier id
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found or not properly configured
+
+============================================================
+POST /v1/config/business/entity/scheme/{identifierScheme}/value/{identifierValue}/identifier
+============================================================
+Summary: Create a new identifier for a given business entity
+Tags: ['Operator Business Entity Identifiers Management']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  identifierScheme (in=path, req=True): The business entity identifier scheme. [type=string]
+  identifierValue (in=path, req=True): The business entity identifier value. [type=string]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+    required: ['scheme', 'value', 'type']
+      scheme: [type=string] - {"text":"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties i
+      value: [type=string, pattern=^[a-zA-Z0-9-_]+$] - Value associated with the identifier (e.g., 'SIREN').
+      label: [type=string] - Label of the identifier.
+      postalAddress: [type=object]
+        type: object
+        required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+          countrySubdivision: [type=string] - The country subdivision.
+          city: [type=string] - The name of the city.
+          postalCode: [type=string] - The postal code of the address.
+          addressLine1: [type=string] - The first line of the address.
+          addressLine2: [type=string] - The second line of the address (optional).
+          addressLine3: [type=string] - The third line of the address (optional).
+      type: [type=string, enum=['ROUTING_CODE', 'SUFFIX']] - Identifier types allowed for creation.
+Response 201: Created identifier id
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Business entity not found or not properly configured
+
+============================================================
+DELETE /v1/config/business/entity/identifier/{businessEntityIdentifierId}
+============================================================
+Summary: Remove a business entity identifier
+Tags: ['Operator Business Entity Identifiers Management']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityIdentifierId (in=path, req=True):  [type=string, format=uuid]
+Response 204: Business identifier entity removed
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+
+============================================================
+POST /v1/config/business/entity/identifier/{businessEntityIdentifierId}/network/{networkIdentifier}
+============================================================
+Summary: Register identifier in a network
+Tags: ['Operator Business Entity Registration']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  businessEntityIdentifierId (in=path, req=True): The unique Iopole Id representing an identifier [type=string, format=uuid]
+  networkIdentifier (in=path, req=True):  [type=string, enum=['DOMESTIC_FR', 'PEPPOL_INTERNATIONAL']]
+  targetDirectoryId (in=query, req=False): To be used only when multiple validity periods already exist [type=string, format=uuid]
+RequestBody (required=False):
+  Content-Type: application/json
+    type: object
+      validityStartDate: [type=string] - {"text":"The date when the business entity will start to be considered as yours (only valid for Fren
+      validityEndDate: [type=string] - {"text":"The date when the business entity will no longer be considered as yours (only valid for Fre
+      peppolMigrationKey: [type=string] - Migration Key to be used for migration from another SMP
+      allowRequestMigrationKey: [type=boolean] - If true, the system will try to retrieve a migration key from remote SMP
+Response 201: Business entity registered
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Not found - Network not found or operator not connected with it. Or business entity not found
+
+============================================================
+POST /v1/config/business/entity/identifier/scheme/{identifierScheme}/value/{identifierValue}/network/{networkIdentifier}
+============================================================
+Summary: Register identifier in a network
+Tags: ['Operator Business Entity Registration']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  identifierScheme (in=path, req=True): The business entity identifier scheme. [type=string]
+  identifierValue (in=path, req=True): The business entity identifier value. [type=string]
+  networkIdentifier (in=path, req=True):  [type=string, enum=['DOMESTIC_FR', 'PEPPOL_INTERNATIONAL']]
+  targetStartDate (in=query, req=False): To be used only when multiple validity periods already exist [type=string]
+RequestBody (required=False):
+  Content-Type: application/json
+    type: object
+      validityStartDate: [type=string] - {"text":"The date when the business entity will start to be considered as yours (only valid for Fren
+      validityEndDate: [type=string] - {"text":"The date when the business entity will no longer be considered as yours (only valid for Fre
+      peppolMigrationKey: [type=string] - Migration Key to be used for migration from another SMP
+      allowRequestMigrationKey: [type=boolean] - If true, the system will try to retrieve a migration key from remote SMP
+Response 201: Business entity registered
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Error - Network not found or operator not connected with it or business entity identifier not found
+Response 409: Conflict - The request could not be completed. The given linked between business entity and network identifier already exist
+
+============================================================
+DELETE /v1/config/business/entity/identifier/directory/{directoryId}
+============================================================
+Summary: Unregister identifier from a network
+Tags: ['Operator Business Entity Registration']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  directoryId (in=path, req=True):  [type=string, format=uuid]
+Response 204: Successfully removed the business entity identifier from network.
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Error - directory id not found.
+
+============================================================
+POST /v1/config/business/entity/batch
+============================================================
+Summary: Update Business Entity Directory as Batch
+Tags: ['Business Entity Batch']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+      businessEntity: [type=array]
+        items:
+          type: object
+          required: ['action', 'references']
+            action: [type=string, enum=['CLAIM']]
+            references: [type=object] - Reference of business entity (Legal unit or Office) to claim
+              type: object
+              required: ['scheme', 'value']
+                scheme: [type=string, maxLength=4, minLength=4]
+                value: [type=string]
+            operatorRelation: [type=object, nullable=True]
+              type: object
+                data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+                  type: object
+                    header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+                      items:
+                        type: object
+                        required: ['key', 'value']
+                          key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                          value: [type=string, minLength=1, pattern=^\S+$]
+                    query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+                      items:
+                        type: object
+                        required: ['key', 'value']
+                          key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                          value: [type=string, minLength=1, pattern=^\S+$]
+                    param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+                      items:
+                        type: object
+                        required: ['key', 'value']
+                          key: [type=string, pattern=^:]
+                          value: [type=string, minLength=1, pattern=^\S+$]
+                    custom: [type=object]
+                direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+      businessEntityIdentifiers: [type=array]
+        items:
+          type: object
+          required: ['action', 'references', 'data']
+            action: [type=string, enum=['CREATE']]
+            references: [type=object] - Reference of business entity (Legal unit or Office) to link the ROUTING_CODE / SUFFIX with
+              type: object
+              required: ['scheme', 'value']
+                scheme: [type=string, maxLength=4, minLength=4]
+                value: [type=string]
+            data: [type=object]
+              type: object
+              required: ['type', 'scheme', 'value']
+                type: [type=string, enum=['ROUTING_CODE', 'SUFFIX']]
+                scheme: [type=string, maxLength=4, minLength=4] - Use 0000 when type is suffix
+                value: [type=string]
+                label: [type=string]
+                postalAddress: [type=object]
+                  type: object
+                  required: ['countrySubdivision', 'city', 'postalCode', 'addressLine1']
+                    countrySubdivision: [type=string] - The country subdivision.
+                    city: [type=string] - The name of the city.
+                    postalCode: [type=string] - The postal code of the address.
+                    addressLine1: [type=string] - The first line of the address.
+                    addressLine2: [type=string] - The second line of the address (optional).
+                    addressLine3: [type=string] - The third line of the address (optional).
+      businessEntityRegistrations: [type=array]
+        items:
+          type: object
+          required: ['action', 'references']
+            action: [type=string, enum=['REGISTER', 'UNREGISTER']]
+            references: [type=object]
+              type: object
+              required: ['networkIdentifier', 'address']
+                networkIdentifier: [type=string, enum=['DOMESTIC_FR', 'PEPPOL_INTERNATIONAL']]
+                targetStartDate: [type=string] - Targeted directory line start date (Mandatory only when multiple lines exist for the same address)
+                address: [type=object] - Reference of identifier to register/unregister (For routing code or suffix registration, scheme 0225
+                  type: object
+                  required: ['scheme', 'value']
+                    scheme: [type=string, maxLength=4, minLength=4]
+                    value: [type=string]
+            data: [type=object] - To be used only for French entities
+              type: object
+                validityStartDate: [type=string] - {"text":"The date when the business entity will start to be considered as yours (only valid for Fren
+                validityEndDate: [type=string] - {"text":"The date when the business entity will no longer be considered as yours (only valid for Fre
+Response 204: Business entity batch processed
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+
+============================================================
+PUT /v1/config/french/enrollment
+============================================================
+Summary: Enroll a french business entity
+Tags: ['Operator Business Entity Enrollment']
+Parameters:
+  customer-id (in=header, req=False):  [type=string, format=uuid]
+RequestBody (required=False):
+  Content-Type: application/json
+    type: object
+    required: ['siren']
+      siren: [type=string, pattern=^[0-9]{9}$] - The SIREN number (9-digit identifier) of the business entity
+      registerInPeppolInternational: [type=boolean]
+      registrationStrategy: [type=string, enum=['AUTO', 'MANUAL', 'NONE']] - Electronic address registration mode. AUTO: triggered immediately on acceptance, MANUAL: requires ma
+      businessEntityDetails: [type=object]
+        type: object
+        required: ['contactEmail', 'address']
+          readonly: [type=boolean]
+          contactEmail: [type=string, format=email, minLength=1]
+          address: [type=string, minLength=1]
+      legalRepresentative: [type=object]
+        type: object
+        required: ['firstName', 'lastName', 'position']
+          readonly: [type=boolean]
+          firstName: [type=string, minLength=1]
+          lastName: [type=string, minLength=1]
+          position: [type=string, minLength=1]
+      eInvoicingAddresses: [type=object]
+        type: object
+        required: ['value']
+          readonly: [type=boolean]
+          value: [type=array]
+            items:
+              type: object
+              required: ['electronicAddress', 'addressType']
+                electronicAddress: [type=string]
+                addressType: [type=string, enum=['SIREN', 'SUFFIX']]
+      operatorRelation: [type=object]
+        type: object
+          data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+            type: object
+              header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, pattern=^:]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              custom: [type=object]
+          direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+Response 200: Business entity enrollment done
+  Content-Type: application/json
+    type: object
+    required: ['enrollmentId', 'onboardingUrl']
+      enrollmentId: [type=string]
+      onboardingUrl: [type=string]
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 409: Conflict - The request could not be completed. An enrollment with the same identifiers already exists.
+
+============================================================
+PUT /v1/config/international/enrollment
+============================================================
+Summary: Enroll a "not" french business entity
+Tags: ['Operator Business Entity Enrollment']
+Parameters:
+  customer-id (in=header, req=False):  [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+    required: ['identifierScheme', 'identifierValue', 'name', 'country']
+      identifierScheme: [type=string, pattern=^\d{4}$] - Scheme of the identifier.
+      identifierValue: [type=string, pattern=^[a-zA-Z0-9-_]+$] - Value of the identifier.
+      name: [type=string] - Name of the business entity.
+      country: [type=string, enum=[251 vals]]
+      registrationStrategy: [type=string, enum=['AUTO', 'MANUAL', 'NONE']] - Electronic address registration mode. AUTO: triggered immediately on acceptance, MANUAL: requires ma
+      operatorRelation: [type=object]
+        type: object
+          data: [type=object] - {"text":"Any kind of specific data","more":"Included in the webhook payload sent to your endpoint."}
+            type: object
+              header: [type=array, maxItems=5] - Will be added to the webhook request into the header.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              query: [type=array, maxItems=5] - Will be added to the webhook request as query parameter.
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, minLength=1, pattern=^[!#$%&'*+.^_`|~0-9A-Za-z-]+$]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              param: [type=array, maxItems=3] - {"text":"Will be added to the webhook request as path parameter.","more":"Use the :$key format for k
+                items:
+                  type: object
+                  required: ['key', 'value']
+                    key: [type=string, pattern=^:]
+                    value: [type=string, minLength=1, pattern=^\S+$]
+              custom: [type=object]
+          direction: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Direction of the stream. "INBOUND" for inbound, "OUTBOUND" for outbound, null for both
+      businessEntityDetails: [type=object]
+        type: object
+        required: ['contactEmail', 'address']
+          readonly: [type=boolean]
+          contactEmail: [type=string, format=email, minLength=1]
+          address: [type=string, minLength=1]
+      legalRepresentative: [type=object]
+        type: object
+        required: ['firstName', 'lastName', 'position']
+          readonly: [type=boolean]
+          firstName: [type=string, minLength=1]
+          lastName: [type=string, minLength=1]
+          position: [type=string, minLength=1]
+Response 200: Business entity enrollment done
+  Content-Type: application/json
+    type: object
+    required: ['enrollmentId', 'onboardingUrl']
+      enrollmentId: [type=string]
+      onboardingUrl: [type=string]
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 409: Conflict - The request could not be completed. An enrollment with the same identifiers already exists.
+
+============================================================
+GET /v1/config/enrollment/{enrollmentId}/evidences
+============================================================
+Summary: Download enrollment evidences
+Tags: ['Operator Business Entity Enrollment']
+Parameters:
+  enrollmentId (in=path, req=True):  [type=string, format=uuid]
+Response 200: ZIP archive containing the enrollment evidence files
+  Content-Type: application/zip
+    type=string, format=binary
+Response 400: Validation - Request validation failure.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Not Found - No enrollment exists for the given enrollmentId.
+Response 409: Conflict - The enrollment is not yet fully completed.
+
+============================================================
+GET /v1/config/webhook/{webhookId}
+============================================================
+Summary: Retrieve webhook details
+Tags: ['Webhook']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  webhookId (in=path, req=True):  [type=string, format=uuid]
+Response 200: Returns webhook details
+  Content-Type: application/json
+    type: object
+    required: ['webhookId', 'interopData']
+      webhookId: [type=string, format=uuid] - Unique webhook identifier
+      filterStreamDirection: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Optional direction filter for the webhook stream (bidirectional if null or omitted)
+      status: [type=string, enum=['ACTIVE', 'INACTIVE'], default=ACTIVE] - Status of the webhook, either ACTIVE or INACTIVE
+      adapterCode: [type=string, default=standardAdapter] - The adapter code to use for the webhook, default is "standardAdapter"
+      label: [type=string, minLength=3] - An optional label for the webhook
+      interopData: [type=object] - The interop data that configures webhook behavior
+        type: object
+        required: ['endpoints']
+          endpoints: [type=object] - The endpoints related to webhooks
+            type: object
+              status: [type=object] - Endpoints related to status updates
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for status updates
+                  idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+              invoice: [type=object] - Endpoints related to invoices
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for invoice data
+                  idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+              onboarding: [type=object] - Endpoints related to onboarding
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for the onboarding events
+                  stages: [type=array] - the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED an
+                    items:
+                      type=string, enum=['STARTED', 'ACTION_REQUIRED', 'IDENTITY_CHECK_STARTED', 'IDENTITY_CHECK_SUBMITTED', 'IDENTITY_CHECK_ACTION_REQUIRED', 'IDENTITY_CHECK_ACCEPTED', 'MANDATE_SIGNED', 'ACCEPTED', 'REGISTERING', 'REGISTERED']
+              events: [type=object, nullable=True] - Endpoints related to generic operator events (e.g., invalid invoices). Set to null to remove.
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for generic operator events
+                  subscribedEvents: [type=array] - List of event types to subscribe to. If not specified, all events are delivered.
+                    items:
+                      type=string, enum=['INVOICE_INBOUND_INVALID']
+              authentication: [type=object] - Authentication mechanisms for webhooks
+                type: object
+                  basic: [type=object]
+                    type: object
+                    required: ['username', 'password']
+                      username: [type=string] - The username for basic authentication
+                      password: [type=string, maxLength=256, minLength=12] - The password for basic authentication
+                  hmac: [type=object] - {"text":"Requests are signed with an HMAC-SHA256 signature.","valueDescription":"min: 32 char","more
+                    type: object
+                    required: ['secretKey']
+                      secretKey: [type=string, maxLength=512, minLength=32]
+                  oauth2Password: [type=object]
+                    type: object
+                    required: ['callbackUrl', 'clientId', 'clientSecret', 'username', 'password']
+                      callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 password authentication
+                      clientId: [type=string] - The client ID for OAuth2 password authentication
+                      clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 password authentication
+                      username: [type=string] - The username for OAuth2 password authentication
+                      password: [type=string] - The password for OAuth2 password authentication
+                      scope: [type=string, nullable=True] - The scope for OAuth2 password authentication
+                  oauth2ClientCredentials: [type=object]
+                    type: object
+                    required: ['callbackUrl', 'clientId', 'clientSecret']
+                      callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 client credentials authentication
+                      clientId: [type=string] - The client ID for OAuth2 client credentials authentication
+                      clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 client credentials authentication
+                      scope: [type=string, nullable=True] - The scope for OAuth2 client credentials authentication
+                  perRequestHeaders: [type=object]
+                    type: object
+                      ocpApimSubscriptionKey: [type=string] - Required HTTP header in Azure API Management that provides the client's subscription key for authent
+          workflowConfig: [type=object]
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+
+============================================================
+PUT /v1/config/webhook/{webhookId}
+============================================================
+Summary: Update an existing webhook
+Tags: ['Webhook']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  webhookId (in=path, req=True):  [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+      filterStreamDirection: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Optional direction filter for the webhook stream (bidirectional if null or omitted)
+      status: [type=string, enum=['ACTIVE', 'INACTIVE'], default=ACTIVE] - Status of the webhook, either ACTIVE or INACTIVE
+      adapterCode: [type=string, default=standardAdapter] - The adapter code to use for the webhook, default is "standardAdapter"
+      label: [type=string, minLength=3] - An optional label for the webhook
+      interopData: [type=object] - The interop data that configures webhook behavior
+        type: object
+        required: ['endpoints']
+          endpoints: [type=object] - The endpoints related to webhooks
+            type: object
+              status: [type=object] - Endpoints related to status updates
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for status updates
+                  idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+              invoice: [type=object] - Endpoints related to invoices
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for invoice data
+                  idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+              onboarding: [type=object] - Endpoints related to onboarding
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for the onboarding events
+                  stages: [type=array] - the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED an
+                    items:
+                      type=string, enum=['STARTED', 'ACTION_REQUIRED', 'IDENTITY_CHECK_STARTED', 'IDENTITY_CHECK_SUBMITTED', 'IDENTITY_CHECK_ACTION_REQUIRED', 'IDENTITY_CHECK_ACCEPTED', 'MANDATE_SIGNED', 'ACCEPTED', 'REGISTERING', 'REGISTERED']
+              events: [type=object, nullable=True] - Endpoints related to generic operator events (e.g., invalid invoices). Set to null to remove.
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for generic operator events
+                  subscribedEvents: [type=array] - List of event types to subscribe to. If not specified, all events are delivered.
+                    items:
+                      type=string, enum=['INVOICE_INBOUND_INVALID']
+              authentication: [type=object] - Authentication mechanisms for webhooks
+                type: object
+                  basic: [type=object]
+                    type: object
+                    required: ['username', 'password']
+                      username: [type=string] - The username for basic authentication
+                      password: [type=string, maxLength=256, minLength=12] - The password for basic authentication
+                  hmac: [type=object] - {"text":"Requests are signed with an HMAC-SHA256 signature.","valueDescription":"min: 32 char","more
+                    type: object
+                    required: ['secretKey']
+                      secretKey: [type=string, maxLength=512, minLength=32]
+                  oauth2Password: [type=object]
+                    type: object
+                    required: ['callbackUrl', 'clientId', 'clientSecret', 'username', 'password']
+                      callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 password authentication
+                      clientId: [type=string] - The client ID for OAuth2 password authentication
+                      clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 password authentication
+                      username: [type=string] - The username for OAuth2 password authentication
+                      password: [type=string] - The password for OAuth2 password authentication
+                      scope: [type=string, nullable=True] - The scope for OAuth2 password authentication
+                  oauth2ClientCredentials: [type=object]
+                    type: object
+                    required: ['callbackUrl', 'clientId', 'clientSecret']
+                      callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 client credentials authentication
+                      clientId: [type=string] - The client ID for OAuth2 client credentials authentication
+                      clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 client credentials authentication
+                      scope: [type=string, nullable=True] - The scope for OAuth2 client credentials authentication
+                  perRequestHeaders: [type=object]
+                    type: object
+                      ocpApimSubscriptionKey: [type=string] - Required HTTP header in Azure API Management that provides the client's subscription key for authent
+          workflowConfig: [type=object]
+Response 201: Returns updated webhook id
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Error - No webhook found for given id
+
+============================================================
+DELETE /v1/config/webhook/{webhookId}
+============================================================
+Summary: Remove a webhook
+Tags: ['Webhook']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+  webhookId (in=path, req=True):  [type=string, format=uuid]
+Response 200: Returns deleted webhook id.
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+Response 404: Error - No webhook found for given id
+
+============================================================
+GET /v1/config/webhook
+============================================================
+Summary: Retrieve list of configured webhooks
+Tags: ['Webhook']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+Response 200: Returns list of configured webhooks
+  Content-Type: application/json
+    type: array
+    items:
+      type: object
+      required: ['webhookId', 'interopData']
+        webhookId: [type=string, format=uuid] - Unique webhook identifier
+        filterStreamDirection: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Optional direction filter for the webhook stream (bidirectional if null or omitted)
+        status: [type=string, enum=['ACTIVE', 'INACTIVE'], default=ACTIVE] - Status of the webhook, either ACTIVE or INACTIVE
+        adapterCode: [type=string, default=standardAdapter] - The adapter code to use for the webhook, default is "standardAdapter"
+        label: [type=string, minLength=3] - An optional label for the webhook
+        interopData: [type=object] - The interop data that configures webhook behavior
+          type: object
+          required: ['endpoints']
+            endpoints: [type=object] - The endpoints related to webhooks
+              type: object
+                status: [type=object] - Endpoints related to status updates
+                  type: object
+                  required: ['callbackUrl']
+                    callbackUrl: [type=string, format=uri] - The callback URL for status updates
+                    idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+                invoice: [type=object] - Endpoints related to invoices
+                  type: object
+                  required: ['callbackUrl']
+                    callbackUrl: [type=string, format=uri] - The callback URL for invoice data
+                    idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+                onboarding: [type=object] - Endpoints related to onboarding
+                  type: object
+                  required: ['callbackUrl']
+                    callbackUrl: [type=string, format=uri] - The callback URL for the onboarding events
+                    stages: [type=array] - the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED an
+                      items:
+                        type=string, enum=['STARTED', 'ACTION_REQUIRED', 'IDENTITY_CHECK_STARTED', 'IDENTITY_CHECK_SUBMITTED', 'IDENTITY_CHECK_ACTION_REQUIRED', 'IDENTITY_CHECK_ACCEPTED', 'MANDATE_SIGNED', 'ACCEPTED', 'REGISTERING', 'REGISTERED']
+                events: [type=object, nullable=True] - Endpoints related to generic operator events (e.g., invalid invoices). Set to null to remove.
+                  type: object
+                  required: ['callbackUrl']
+                    callbackUrl: [type=string, format=uri] - The callback URL for generic operator events
+                    subscribedEvents: [type=array] - List of event types to subscribe to. If not specified, all events are delivered.
+                      items:
+                        type=string, enum=['INVOICE_INBOUND_INVALID']
+                authentication: [type=object] - Authentication mechanisms for webhooks
+                  type: object
+                    basic: [type=object]
+                      type: object
+                      required: ['username', 'password']
+                        username: [type=string] - The username for basic authentication
+                        password: [type=string, maxLength=256, minLength=12] - The password for basic authentication
+                    hmac: [type=object] - {"text":"Requests are signed with an HMAC-SHA256 signature.","valueDescription":"min: 32 char","more
+                      type: object
+                      required: ['secretKey']
+                        secretKey: [type=string, maxLength=512, minLength=32]
+                    oauth2Password: [type=object]
+                      type: object
+                      required: ['callbackUrl', 'clientId', 'clientSecret', 'username', 'password']
+                        callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 password authentication
+                        clientId: [type=string] - The client ID for OAuth2 password authentication
+                        clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 password authentication
+                        username: [type=string] - The username for OAuth2 password authentication
+                        password: [type=string] - The password for OAuth2 password authentication
+                        scope: [type=string, nullable=True] - The scope for OAuth2 password authentication
+                    oauth2ClientCredentials: [type=object]
+                      type: object
+                      required: ['callbackUrl', 'clientId', 'clientSecret']
+                        callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 client credentials authentication
+                        clientId: [type=string] - The client ID for OAuth2 client credentials authentication
+                        clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 client credentials authentication
+                        scope: [type=string, nullable=True] - The scope for OAuth2 client credentials authentication
+                    perRequestHeaders: [type=object]
+                      type: object
+                        ocpApimSubscriptionKey: [type=string] - Required HTTP header in Azure API Management that provides the client's subscription key for authent
+            workflowConfig: [type=object]
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it.
+
+============================================================
+POST /v1/config/webhook
+============================================================
+Summary: Create a new webhook configuration.
+Tags: ['Webhook']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+    required: ['interopData']
+      filterStreamDirection: [type=string, enum=['INBOUND', 'OUTBOUND'], nullable=True] - Optional direction filter for the webhook stream (bidirectional if null or omitted)
+      status: [type=string, enum=['ACTIVE', 'INACTIVE'], default=ACTIVE] - Status of the webhook, either ACTIVE or INACTIVE
+      adapterCode: [type=string, default=standardAdapter] - The adapter code to use for the webhook, default is "standardAdapter"
+      label: [type=string, minLength=3] - An optional label for the webhook
+      interopData: [type=object] - The interop data that configures webhook behavior and requires endpoints
+        type: object
+        required: ['endpoints']
+          endpoints: [type=object] - The endpoints related to webhooks
+            type: object
+              status: [type=object] - Endpoints related to status updates
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for status updates
+                  idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+              invoice: [type=object] - Endpoints related to invoices
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for invoice data
+                  idPath: [type=string] - The json field in the response to be used as external id (under format fieldA.fieldB...
+              onboarding: [type=object] - Endpoints related to onboarding
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for the onboarding events
+                  stages: [type=array] - the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED an
+                    items:
+                      type=string, enum=['STARTED', 'ACTION_REQUIRED', 'IDENTITY_CHECK_STARTED', 'IDENTITY_CHECK_SUBMITTED', 'IDENTITY_CHECK_ACTION_REQUIRED', 'IDENTITY_CHECK_ACCEPTED', 'MANDATE_SIGNED', 'ACCEPTED', 'REGISTERING', 'REGISTERED']
+              events: [type=object, nullable=True] - Endpoints related to generic operator events (e.g., invalid invoices). Set to null to remove.
+                type: object
+                required: ['callbackUrl']
+                  callbackUrl: [type=string, format=uri] - The callback URL for generic operator events
+                  subscribedEvents: [type=array] - List of event types to subscribe to. If not specified, all events are delivered.
+                    items:
+                      type=string, enum=['INVOICE_INBOUND_INVALID']
+              authentication: [type=object] - Authentication mechanisms for webhooks
+                type: object
+                  basic: [type=object]
+                    type: object
+                    required: ['username', 'password']
+                      username: [type=string] - The username for basic authentication
+                      password: [type=string, maxLength=256, minLength=12] - The password for basic authentication
+                  hmac: [type=object] - {"text":"Requests are signed with an HMAC-SHA256 signature.","valueDescription":"min: 32 char","more
+                    type: object
+                    required: ['secretKey']
+                      secretKey: [type=string, maxLength=512, minLength=32]
+                  oauth2Password: [type=object]
+                    type: object
+                    required: ['callbackUrl', 'clientId', 'clientSecret', 'username', 'password']
+                      callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 password authentication
+                      clientId: [type=string] - The client ID for OAuth2 password authentication
+                      clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 password authentication
+                      username: [type=string] - The username for OAuth2 password authentication
+                      password: [type=string] - The password for OAuth2 password authentication
+                      scope: [type=string, nullable=True] - The scope for OAuth2 password authentication
+                  oauth2ClientCredentials: [type=object]
+                    type: object
+                    required: ['callbackUrl', 'clientId', 'clientSecret']
+                      callbackUrl: [type=string, format=uri] - The callback URL for OAuth2 client credentials authentication
+                      clientId: [type=string] - The client ID for OAuth2 client credentials authentication
+                      clientSecret: [type=string, maxLength=512, minLength=24] - The client secret for OAuth2 client credentials authentication
+                      scope: [type=string, nullable=True] - The scope for OAuth2 client credentials authentication
+                  perRequestHeaders: [type=object]
+                    type: object
+                      ocpApimSubscriptionKey: [type=string] - Required HTTP header in Azure API Management that provides the client's subscription key for authent
+          workflowConfig: [type=object]
+Response 201: Returns created webhook id
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 400: Validation - Request validation failure.
+  Content-Type: application/json
+    type=
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it. Note: This endpoint requires an admin account.
+Response 409: Conflict - The request could not be completed. A webhook with the same direction already exists.
+
+============================================================
+POST /v1/config/retry/strategy
+============================================================
+Summary: Create a new retry strategy.
+Tags: ['Retry Strategy']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+RequestBody (required=True):
+  Content-Type: application/json
+    type: object
+    required: ['active']
+      active: [type=boolean]
+      retryDelays: [type=array, maxItems=6] - Explicit list of delays (in seconds) between retries
+        items:
+          type=number
+      retryOn: [type=array] - List of HTTP status codes that should trigger a retry
+        items:
+          type=integer
+      networkRetryOn: [type=object] - Retry strategy based on low-level network errors.
+
+ ⚠️ Activating some of these options can lead to 
+        type: object
+          retryOnEtimedout: [type=boolean, default=False] - Retry when the request times out (ETIMEDOUT).
+          retryOnEservfail: [type=boolean, default=False] - Retry when the DNS server returns a failure (ESERVFAIL).
+          retryOnEconnreset: [type=boolean, default=False] - Retry when the connection is unexpectedly closed by the peer (ECONNRESET).
+          retryOnEconnrefused: [type=boolean, default=False] - Retry when the connection attempt is refused by the remote host (ECONNREFUSED).
+          retryOnEnotfound: [type=boolean, default=False] - Retry when the target host or domain cannot be found (ENOTFOUND).
+          retryOnEaiAgain: [type=boolean, default=False] - Retry when a temporary DNS resolution error occurs (EAI_AGAIN).
+          retryOnEpipe: [type=boolean, default=False] - Retry when a broken pipe error occurs during a write operation (EPIPE).
+          retryOnEhostunreach: [type=boolean, default=False] - Retry when the target host is unreachable (EHOSTUNREACH).
+          retryOnEnetunreach: [type=boolean, default=False] - Retry when the network is unreachable (ENETUNREACH).
+Response 201: Returns created retry strategy id
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it. Note: This endpoint requires an admin account.
+Response 409: Conflict - The request could not be completed. A retry strategy already exists.
+
+============================================================
+GET /v1/config/retry/strategy
+============================================================
+Summary: Retrieve retry strategy.
+Tags: ['Retry Strategy']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+Response 200: Returns retry strategy
+  Content-Type: application/json
+    type: object
+    required: ['active']
+      active: [type=boolean]
+      retryDelays: [type=array, maxItems=6] - Explicit list of delays (in seconds) between retries
+        items:
+          type=number
+      retryOn: [type=array] - List of HTTP status codes that should trigger a retry
+        items:
+          type=integer
+      networkRetryOn: [type=object] - Retry strategy based on low-level network errors.
+
+ ⚠️ Activating some of these options can lead to 
+        type: object
+          retryOnEtimedout: [type=boolean, default=False] - Retry when the request times out (ETIMEDOUT).
+          retryOnEservfail: [type=boolean, default=False] - Retry when the DNS server returns a failure (ESERVFAIL).
+          retryOnEconnreset: [type=boolean, default=False] - Retry when the connection is unexpectedly closed by the peer (ECONNRESET).
+          retryOnEconnrefused: [type=boolean, default=False] - Retry when the connection attempt is refused by the remote host (ECONNREFUSED).
+          retryOnEnotfound: [type=boolean, default=False] - Retry when the target host or domain cannot be found (ENOTFOUND).
+          retryOnEaiAgain: [type=boolean, default=False] - Retry when a temporary DNS resolution error occurs (EAI_AGAIN).
+          retryOnEpipe: [type=boolean, default=False] - Retry when a broken pipe error occurs during a write operation (EPIPE).
+          retryOnEhostunreach: [type=boolean, default=False] - Retry when the target host is unreachable (EHOSTUNREACH).
+          retryOnEnetunreach: [type=boolean, default=False] - Retry when the network is unreachable (ENETUNREACH).
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it. Note: This endpoint requires an admin account.
+
+============================================================
+DELETE /v1/config/retry/strategy
+============================================================
+Summary: Delete retry strategy.
+Tags: ['Retry Strategy']
+Parameters:
+  customer-id (in=header, req=False): The unique identifier for the customer. [type=string, format=uuid]
+Response 201: Returns deleted retry strategy id
+  Content-Type: application/json
+    type: object
+    required: ['type', 'id']
+      type: [type=string, enum=['WEBHOOK', 'SECRET', 'STREAM', 'INVOICE', 'STATUS', 'BUSINESS_ENTITY', 'BUSINESS_ENTITY_IDENTIFIER', 'DIRECTORY', 'EDI_MESSAGE']] - The type of the response object.
+      id: [type=string, format=uuid] - The unique identifier for the created element.
+Response 401: Unauthorized - Authentication is required and has failed or has not yet been provided.
+Response 403: Forbidden - The server understood the request, but it refuses to authorize it. Note: This endpoint requires an admin account.
+Response 409: Conflict - The request could not be completed. A retry strategy already exists.

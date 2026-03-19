@@ -110,7 +110,8 @@ export class IopoleAdapter implements EInvoiceAdapter {
   }
 
   async generateFacturX(req: GenerateFacturXRequest): Promise<unknown> {
-    return await this.client.postWithQuery("/tools/facturx/generate", req.invoice, {
+    // Factur-X returns a PDF (binary) — use postBinary to avoid text corruption
+    return await this.client.postBinary("/tools/facturx/generate", req.invoice, {
       flavor: req.flavor,
       language: req.language,
     });
@@ -196,6 +197,84 @@ export class IopoleAdapter implements EInvoiceAdapter {
   async deleteWebhook(id: string): Promise<unknown> {
     return await this.client.delete(`/config/webhook/${id}`);
   }
+
+  // ─── Operator Config ───────────────────────────────────
+
+  async getCustomerId(): Promise<unknown> {
+    return await this.client.get("/config/customer/id");
+  }
+
+  async listBusinessEntities(): Promise<unknown> {
+    return await this.client.get("/config/business/entity");
+  }
+
+  async getBusinessEntity(id: string): Promise<unknown> {
+    return await this.client.get(`/config/business/entity/${id}`);
+  }
+
+  async createLegalUnit(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post("/config/business/entity/legalunit", data);
+  }
+
+  async createOffice(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post("/config/business/entity/office", data);
+  }
+
+  async deleteBusinessEntity(id: string): Promise<unknown> {
+    return await this.client.delete(`/config/business/entity/${id}`);
+  }
+
+  async configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/${id}/configure`, data);
+  }
+
+  async claimBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/${id}/claim`, data);
+  }
+
+  async claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/scheme/${scheme}/value/${value}/claim`, data);
+  }
+
+  async enrollFrench(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.put("/config/french/enrollment", data);
+  }
+
+  async enrollInternational(data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.put("/config/international/enrollment", data);
+  }
+
+  async registerNetwork(identifierId: string, network: string): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/identifier/${identifierId}/network/${network}`);
+  }
+
+  async registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/identifier/scheme/${scheme}/value/${value}/network/${network}`);
+  }
+
+  async unregisterNetwork(directoryId: string): Promise<unknown> {
+    return await this.client.delete(`/config/business/entity/identifier/directory/${directoryId}`);
+  }
+
+  // ─── Identifier Management ───────────────────────────────
+
+  async createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/${entityId}/identifier`, data);
+  }
+
+  async createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post(`/config/business/entity/scheme/${scheme}/value/${value}/identifier`, data);
+  }
+
+  async deleteIdentifier(identifierId: string): Promise<unknown> {
+    return await this.client.delete(`/config/business/entity/identifier/${identifierId}`);
+  }
+
+  // ─── Claim Management ────────────────────────────────────
+
+  async deleteClaim(entityId: string): Promise<unknown> {
+    return await this.client.delete(`/config/business/entity/${entityId}/claim`);
+  }
 }
 
 // ─── Factory ──────────────────────────────────────────
@@ -206,37 +285,33 @@ export class IopoleAdapter implements EInvoiceAdapter {
  * Required: IOPOLE_API_URL, IOPOLE_CLIENT_ID, IOPOLE_CLIENT_SECRET, IOPOLE_CUSTOMER_ID
  * Optional: IOPOLE_AUTH_URL (default: production Keycloak)
  */
-export function createIopoleAdapter(): IopoleAdapter {
-  const baseUrl = env("IOPOLE_API_URL");
-  const clientId = env("IOPOLE_CLIENT_ID");
-  const clientSecret = env("IOPOLE_CLIENT_SECRET");
-  const customerId = env("IOPOLE_CUSTOMER_ID");
-  const authUrl = env("IOPOLE_AUTH_URL") || IOPOLE_DEFAULT_AUTH_URL;
+/** Require an env var to be set, or throw with a descriptive message. */
+function requireEnv(name: string, hint: string): string {
+  const value = env(name);
+  if (!value) {
+    throw new Error(`[IopoleAdapter] ${name} is required. ${hint}`);
+  }
+  return value;
+}
 
-  if (!baseUrl) {
-    throw new Error(
-      "[IopoleAdapter] IOPOLE_API_URL is required. " +
-        "Set it to https://api.ppd.iopole.fr/v1 (sandbox) or https://api.iopole.com/v1 (production).",
-    );
-  }
-  if (!clientId) {
-    throw new Error(
-      "[IopoleAdapter] IOPOLE_CLIENT_ID is required. " +
-        "Get your client ID from the Iopole dashboard or admin console.",
-    );
-  }
-  if (!clientSecret) {
-    throw new Error(
-      "[IopoleAdapter] IOPOLE_CLIENT_SECRET is required. " +
-        "Get your client secret from the Iopole dashboard or admin console.",
-    );
-  }
-  if (!customerId) {
-    throw new Error(
-      "[IopoleAdapter] IOPOLE_CUSTOMER_ID is required (since 2026-02-01). " +
-        "Find it in Settings → Unique Identifier (sandbox) or admin console.",
-    );
-  }
+export function createIopoleAdapter(): IopoleAdapter {
+  const baseUrl = requireEnv(
+    "IOPOLE_API_URL",
+    "Set it to https://api.ppd.iopole.fr/v1 (sandbox) or https://api.iopole.com/v1 (production).",
+  );
+  const clientId = requireEnv(
+    "IOPOLE_CLIENT_ID",
+    "Get your client ID from the Iopole dashboard or admin console.",
+  );
+  const clientSecret = requireEnv(
+    "IOPOLE_CLIENT_SECRET",
+    "Get your client secret from the Iopole dashboard or admin console.",
+  );
+  const customerId = requireEnv(
+    "IOPOLE_CUSTOMER_ID",
+    "Find it in Settings → Unique Identifier (sandbox) or admin console.",
+  );
+  const authUrl = env("IOPOLE_AUTH_URL") || IOPOLE_DEFAULT_AUTH_URL;
 
   const getToken = createOAuth2TokenProvider({ authUrl, clientId, clientSecret });
   const client = new IopoleClient({ baseUrl, customerId, getToken });

@@ -13,6 +13,7 @@ import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
 import { FeedbackBanner, EmptyTimelineIcon } from "~/shared/Feedback";
+import { getStatus } from "~/shared/status";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -46,29 +47,10 @@ interface TimelineData {
   refreshRequest?: UiRefreshRequestData;
 }
 
-// ============================================================================
-// Status colors — lifecycle stage mapping
-// ============================================================================
-
-const STATUS_SCHEME: Record<string, { color: string; bg: string; label: string }> = {
-  DEPOSITED:        { color: colors.info,        bg: colors.infoDim,      label: "Déposée" },
-  DELIVERED:        { color: colors.info,        bg: colors.infoDim,      label: "Livrée" },
-  RECEIVED:         { color: colors.info,        bg: colors.infoDim,      label: "Reçue" },
-  ACCEPTED:         { color: colors.success,     bg: colors.successDim,   label: "Acceptée" },
-  PAYMENT_SENT:     { color: colors.success,     bg: colors.successDim,   label: "Paiement envoyé" },
-  PAYMENT_RECEIVED: { color: colors.success,     bg: colors.successDim,   label: "Paiement reçu" },
-  REJECTED:         { color: colors.error,       bg: colors.errorDim,     label: "Rejetée" },
-  REFUSED:          { color: colors.error,       bg: colors.errorDim,     label: "Refusée" },
-  DISPUTED:         { color: colors.warning,     bg: colors.warningDim,   label: "Litigieuse" },
-  CANCELLED:        { color: colors.text.faint,  bg: colors.bg.elevated,  label: "Annulée" },
-};
+// Status colors — uses shared registry (~/shared/status.ts)
 
 function getStatusScheme(code: string) {
-  return STATUS_SCHEME[code.toUpperCase()] ?? {
-    color: colors.text.muted,
-    bg: colors.bg.elevated,
-    label: code,
-  };
+  return getStatus(code);
 }
 
 // ============================================================================
