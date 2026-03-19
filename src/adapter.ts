@@ -57,10 +57,22 @@ export interface GenerateFacturXRequest extends GenerateInvoiceRequest {
 
 // ─── Status Types ─────────────────────────────────────────
 
+/** A single entry in invoice status history. PA-agnostic. */
+export interface StatusEntry {
+  date: string;
+  code: string;
+  message?: string;
+  destType?: string;
+}
+
+/** Normalized return type for getStatusHistory. */
+export interface StatusHistoryResult {
+  entries: StatusEntry[];
+}
+
 /**
- * Status codes per Iopole Swagger spec:
- * IN_HAND, APPROVED, PARTIALLY_APPROVED, DISPUTED, SUSPENDED,
- * COMPLETED, REFUSED, PAYMENT_SENT, PAYMENT_RECEIVED
+ * Status codes — PA-specific (Iopole: IN_HAND, APPROVED, etc.;
+ * SuperPDP: fr:212, etc.; Storecove: delivery evidence)
  */
 export interface SendStatusRequest {
   invoiceId: string;
@@ -125,7 +137,7 @@ export interface EInvoiceAdapter {
   // ─── Status ───────────────────────────────────────────
 
   sendStatus(req: SendStatusRequest): Promise<unknown>;
-  getStatusHistory(invoiceId: string): Promise<unknown>;
+  getStatusHistory(invoiceId: string): Promise<StatusHistoryResult>;
   getUnseenStatuses(pagination: PaginatedRequest): Promise<unknown>;
   markStatusSeen(statusId: string): Promise<unknown>;
 

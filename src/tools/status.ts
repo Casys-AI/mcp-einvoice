@@ -90,17 +90,8 @@ export const statusTools: EInvoiceTool[] = [
       if (!input.invoice_id) {
         throw new Error("[einvoice_status_history] 'invoice_id' is required");
       }
-      const raw = await ctx.adapter.getStatusHistory(input.invoice_id as string);
-      // Normalize: StatusTimeline expects { entries: StatusEntry[] }.
-      // Iopole may return an array directly or a wrapper with data/entries/history.
-      if (Array.isArray(raw)) return { entries: raw };
-      if (raw && typeof raw === "object") {
-        const obj = raw as Record<string, unknown>;
-        if (Array.isArray(obj.data)) return { entries: obj.data };
-        if (Array.isArray(obj.entries)) return raw;
-        if (Array.isArray(obj.history)) return { entries: obj.history };
-      }
-      return { entries: [] };
+      // Adapter returns normalized StatusHistoryResult { entries: StatusEntry[] }
+      return await ctx.adapter.getStatusHistory(input.invoice_id as string);
     },
   },
 

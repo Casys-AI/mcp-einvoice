@@ -58,10 +58,11 @@ Deno.test("einvoice_status_history - throws without invoice_id", async () => {
 
 // seen/notSeen tools removed in v0.2.0 — see docs/CHANGELOG.md
 
-// ── H4 fix: status_history normalizes response shape ─────
+// ── status_history now passes through normalized StatusHistoryResult from adapter ─────
 
-Deno.test("einvoice_status_history - normalizes array response to { entries }", async () => {
-  const mockResponse = [{ statusId: "s1", status: { code: "DELIVERED" } }];
+Deno.test("einvoice_status_history - passes through adapter StatusHistoryResult", async () => {
+  // Mock adapter returns { entries: [] } by default; override with actual entries
+  const mockResponse = { entries: [{ date: "2026-03-19", code: "DELIVERED" }] };
   const { adapter } = createMockAdapter(mockResponse);
   const tool = findTool("einvoice_status_history");
 
@@ -70,35 +71,7 @@ Deno.test("einvoice_status_history - normalizes array response to { entries }", 
   assertEquals((result.entries as unknown[]).length, 1);
 });
 
-Deno.test("einvoice_status_history - normalizes { data: [...] } wrapper", async () => {
-  const mockResponse = { data: [{ statusId: "s1", status: { code: "APPROVED" } }] };
-  const { adapter } = createMockAdapter(mockResponse);
-  const tool = findTool("einvoice_status_history");
-
-  const result = (await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
-  assertEquals(Array.isArray(result.entries), true);
-  assertEquals((result.entries as unknown[]).length, 1);
-});
-
-Deno.test("einvoice_status_history - normalizes { history: [...] } wrapper", async () => {
-  const mockResponse = { history: [{ statusId: "s1", status: { code: "REFUSED" } }] };
-  const { adapter } = createMockAdapter(mockResponse);
-  const tool = findTool("einvoice_status_history");
-
-  const result = (await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
-  assertEquals(Array.isArray(result.entries), true);
-});
-
-Deno.test("einvoice_status_history - passes through { entries: [...] } as-is", async () => {
-  const mockResponse = { entries: [{ statusId: "s1", status: { code: "DELIVERED" } }] };
-  const { adapter } = createMockAdapter(mockResponse);
-  const tool = findTool("einvoice_status_history");
-
-  const result = (await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
-  assertEquals(Array.isArray(result.entries), true);
-});
-
-Deno.test("einvoice_status_history - returns empty entries for unexpected shape", async () => {
+Deno.test("einvoice_status_history - returns empty entries when adapter has none", async () => {
   const mockResponse = "unexpected";
   const { adapter } = createMockAdapter(mockResponse);
   const tool = findTool("einvoice_status_history");

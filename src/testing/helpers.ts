@@ -155,7 +155,12 @@ export function createMockAdapter(
 
     // Status
     sendStatus: (r) => record("sendStatus", r),
-    getStatusHistory: (invoiceId) => record("getStatusHistory", invoiceId),
+    getStatusHistory: (invoiceId) => record("getStatusHistory", invoiceId).then((r) => {
+      // Ensure return matches StatusHistoryResult shape
+      const result = r as Record<string, unknown>;
+      if (result && Array.isArray(result.entries)) return r as { entries: Array<{ date: string; code: string }> };
+      return { entries: [] };
+    }),
     getUnseenStatuses: (p) => record("getUnseenStatuses", p),
     markStatusSeen: (statusId) => record("markStatusSeen", statusId),
 

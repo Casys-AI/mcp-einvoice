@@ -12,6 +12,7 @@
 
 import type {
   EInvoiceAdapter,
+  StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
   EmitInvoiceRequest,
@@ -211,11 +212,19 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async getStatusHistory(invoiceId: string): Promise<unknown> {
+  async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
     // Map to document submission evidence (proof of delivery)
-    return await this.client.get(
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.get(
       `/document_submissions/${invoiceId}/evidence/delivery`,
-    );
+    ) as any;
+    return {
+      entries: raw ? [{
+        date: raw.timestamp ?? raw.date ?? "",
+        code: raw.status ?? "delivered",
+        message: raw.description,
+      }] : [],
+    };
   }
 
   async getUnseenStatuses(_pagination: PaginatedRequest): Promise<unknown> {

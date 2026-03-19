@@ -13,6 +13,7 @@
 import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import { AfnorClient } from "../afnor/client.ts";
 import type {
+  StatusHistoryResult,
   DownloadResult,
   EmitInvoiceRequest,
   InvoiceSearchFilters,
@@ -108,10 +109,20 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async getStatusHistory(invoiceId: string): Promise<unknown> {
-    return await this.client.get("/invoice_events", {
+  override async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.get("/invoice_events", {
       invoice_id: invoiceId,
-    });
+    }) as any;
+    const data = Array.isArray(raw) ? raw : (raw?.data ?? []);
+    return {
+      // deno-lint-ignore no-explicit-any
+      entries: data.map((e: any) => ({
+        date: e.created_at ?? e.date ?? "",
+        code: e.status_code ?? e.code ?? "",
+        message: e.message,
+      })),
+    };
   }
 
   // ─── Reporting (AFNOR — inherited) ────────────────────

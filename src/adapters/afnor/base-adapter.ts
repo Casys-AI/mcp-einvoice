@@ -18,6 +18,7 @@
 
 import type {
   EInvoiceAdapter,
+  StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
   EmitInvoiceRequest,
@@ -120,12 +121,20 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     );
   }
 
-  async getStatusHistory(invoiceId: string): Promise<unknown> {
+  async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
     if (!this.afnor) throw this.noAfnor("getStatusHistory");
-    return await this.afnor.searchFlows({
+    const result = await this.afnor.searchFlows({
       flowType: ["CustomerInvoiceLC", "SupplierInvoiceLC"],
       trackingId: invoiceId,
     });
+    // deno-lint-ignore no-explicit-any
+    const entries = (result.results ?? []).map((r: any) => ({
+      date: r.updatedAt ?? r.submittedAt ?? "",
+      code: r.ackStatus ?? "",
+      message: r.flowType,
+      destType: r.flowDirection === "In" ? "PLATFORM" : "OPERATOR",
+    }));
+    return { entries };
   }
 
   // ─── Reporting (AFNOR: e-reporting flows) ──────────────

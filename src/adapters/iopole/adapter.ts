@@ -12,6 +12,8 @@
 
 import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import type {
+  StatusHistoryResult,
+  StatusEntry,
   DownloadResult,
   PaginatedRequest,
   EmitInvoiceRequest,
@@ -167,8 +169,9 @@ export class IopoleAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async getStatusHistory(invoiceId: string): Promise<unknown> {
-    return await this.client.get(`/invoice/${invoiceId}/status-history`);
+  override async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
+    const raw = await this.client.get(`/invoice/${invoiceId}/status-history`);
+    return normalizeStatusHistory(raw);
   }
 
   override async getUnseenStatuses(pagination: PaginatedRequest): Promise<unknown> {
@@ -291,6 +294,30 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   override async deleteClaim(entityId: string): Promise<unknown> {
     return await this.client.delete(`/config/business/entity/${entityId}/claim`);
   }
+}
+
+// ─── Helpers ──────────────────────────────────────────
+
+/** Normalize Iopole status history response (array, {data}, {entries}, {history}) into StatusHistoryResult. */
+function normalizeStatusHistory(raw: unknown): StatusHistoryResult {
+  // deno-lint-ignore no-explicit-any
+  let entries: any[] = [];
+  if (Array.isArray(raw)) {
+    entries = raw;
+  } else if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.data)) entries = obj.data;
+    else if (Array.isArray(obj.entries)) entries = obj.entries;
+    else if (Array.isArray(obj.history)) entries = obj.history;
+  }
+  return {
+    entries: entries.map((e): StatusEntry => ({
+      date: e.date ?? e.createdAt ?? "",
+      code: e.status?.code ?? e.code ?? e.statusCode ?? "",
+      message: e.status?.message ?? e.message,
+      destType: e.destType,
+    })),
+  };
 }
 
 // ─── Factory ──────────────────────────────────────────

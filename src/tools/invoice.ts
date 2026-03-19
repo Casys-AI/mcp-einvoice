@@ -114,24 +114,18 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
 }
 
 /**
- * Extract the latest status code from a status history response.
- * Optionally filter by destType to avoid cross-contamination:
- * - OUTBOUND invoices should show OPERATOR statuses (sender-side lifecycle)
- * - INBOUND invoices should show PLATFORM statuses (receiver-side lifecycle)
+ * Extract the latest status code from a normalized StatusHistoryResult.
+ * Optionally filter by destType to avoid cross-contamination.
  */
-function extractLatestStatusCode(historyRaw: unknown, destTypeFilter?: string): string | undefined {
-  // deno-lint-ignore no-explicit-any
-  let entries = (historyRaw as any)?.data ?? historyRaw;
-  if (!Array.isArray(entries) || entries.length === 0) return undefined;
-  // Filter by destType if specified
+function extractLatestStatusCode(history: { entries: Array<{ date: string; code: string; destType?: string }> }, destTypeFilter?: string): string | undefined {
+  let entries = history.entries;
+  if (!entries || entries.length === 0) return undefined;
   if (destTypeFilter) {
-    const filtered = entries.filter((e: Record<string, unknown>) => e.destType === destTypeFilter);
+    const filtered = entries.filter((e) => e.destType === destTypeFilter);
     if (filtered.length > 0) entries = filtered;
-    // If no entries match the filter, fall back to all entries
   }
-  // deno-lint-ignore no-explicit-any
-  entries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  return entries[0].status?.code;
+  entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return entries[0].code;
 }
 
 /** Shared AX hint for generate tools — tells the LLM to check entities first. */
