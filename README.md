@@ -184,7 +184,7 @@ L'interface `EInvoiceAdapter` est définie dans `src/adapter.ts` — 43 méthode
 ├── deno.json              # Package @casys/mcp-einvoice
 ├── mod.ts                 # Public API
 ├── server.ts              # MCP server (stdio + HTTP)
-├── .env.example           # Template variables (iopole + storecove)
+├── .env.example           # Template variables (iopole + storecove + superpdp)
 └── src/
     ├── adapter.ts         # EInvoiceAdapter interface (43 methods + capabilities)
     ├── generated-store.ts # Temp file store (generate → submit flow)
@@ -192,16 +192,23 @@ L'interface `EInvoiceAdapter` est définie dans `src/adapter.ts` — 43 méthode
     ├── adapters/
     │   ├── mod.ts         # Adapter exports
     │   ├── README.md      # Guide: adding new adapters
-    │   ├── iopole/        # Iopole PDP (French B2B)
+    │   ├── afnor/         # Shared AFNOR XP Z12-013 socle
+    │   │   ├── base-adapter.ts  # AfnorBaseAdapter (abstract)
+    │   │   └── client.ts  # AfnorClient (3 flow endpoints)
+    │   ├── shared/        # Shared utilities
+    │   │   └── oauth2.ts  # OAuth2 token provider
+    │   ├── iopole/        # Iopole PA (French B2B) — extends AfnorBaseAdapter
     │   │   ├── adapter.ts
     │   │   ├── client.ts  # HTTP + OAuth2
-    │   │   ├── README.md  # Iopole-specific docs
     │   │   └── api-specs/ # 6 OpenAPI JSON specs
-    │   └── storecove/     # Storecove Peppol AP (international)
-    │       ├── adapter.ts
-    │       ├── client.ts  # HTTP + API key
-    │       ├── README.md  # Storecove-specific docs + mapping
-    │       └── api-specs/ # OpenAPI Swagger 2.0 spec
+    │   ├── storecove/     # Storecove Peppol AP — implements EInvoiceAdapter
+    │   │   ├── adapter.ts
+    │   │   ├── client.ts  # HTTP + API key
+    │   │   └── api-specs/ # OpenAPI Swagger 2.0 spec
+    │   └── superpdp/      # Super PDP PA — extends AfnorBaseAdapter
+    │       ├── adapter.ts # AFNOR (reporting) + native (rest)
+    │       ├── client.ts  # HTTP + OAuth2
+    │       └── api-specs/ # Native + AFNOR OpenAPI specs
     ├── runtime.ts         # Deno runtime (env vars)
     ├── runtime.node.ts    # Node.js runtime
     ├── tools/
@@ -227,7 +234,8 @@ L'interface `EInvoiceAdapter` est définie dans `src/adapter.ts` — 43 méthode
 
 ## Adapters
 
-| Adapter | Scope | Auth | Sandbox | Status |
-|---------|-------|------|---------|--------|
-| **Iopole** | PDP française (B2B) | OAuth2 client_credentials | api.ppd.iopole.fr | 39/39 tools |
-| **Storecove** | Peppol AP (40+ pays) | API key (Bearer) | 30-day free sandbox | 21/39 tools |
+| Adapter | Scope | Auth | Base | Status |
+|---------|-------|------|------|--------|
+| **Iopole** | PA française (B2B) | OAuth2 | AfnorBaseAdapter | 39/39 tools |
+| **Storecove** | Peppol AP (40+ pays) | API key | EInvoiceAdapter | 21/39 tools |
+| **Super PDP** | PA française (B2B) | OAuth2 | AfnorBaseAdapter | 22/39 tools |

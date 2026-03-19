@@ -1,30 +1,49 @@
 # Adapters — PA-agnostic e-invoicing
 
-Each PA (Plateforme Agréée / PDP) has its own subdirectory with adapter, client, tests, and API specs.
+Each PA (Plateforme Agréée / Access Point) has its own subdirectory with adapter, client, tests, and API specs.
+
+## Architecture
+
+```
+EInvoiceAdapter (interface, 43 methods + capabilities)
+├── AfnorBaseAdapter (abstract)          ← AFNOR XP Z12-013 socle
+│   ├── IopoleAdapter (afnor=null)       ← all native overrides (passe-plat)
+│   └── SuperPDPAdapter (afnor=active)   ← AFNOR + native extensions
+└── StorecoveAdapter                     ← implements directly (Peppol, not French)
+```
+
+Shared: `afnor/client.ts` (AfnorClient), `shared/oauth2.ts` (OAuth2 token provider).
 
 ## Current Adapters
 
-| Adapter | Directory | Status |
-|---------|-----------|--------|
-| [Iopole](./iopole/) | `src/adapters/iopole/` | 39/39 tools, production-ready |
-| [Storecove](./storecove/) | `src/adapters/storecove/` | 21/39 tools, implemented |
+| Adapter | Directory | Base | Status |
+|---------|-----------|------|--------|
+| [Iopole](./iopole/) | `src/adapters/iopole/` | AfnorBaseAdapter | 39/39 tools, production-ready |
+| [Storecove](./storecove/) | `src/adapters/storecove/` | EInvoiceAdapter | 21/39 tools, implemented |
+| [Super PDP](./superpdp/) | `src/adapters/superpdp/` | AfnorBaseAdapter | 22/39 tools, implemented |
 
-## Adding a New Adapter
+## Adding a New French PA Adapter
 
-1. Create a subdirectory: `src/adapters/<name>/`
-2. Implement `EInvoiceAdapter` interface from `../adapter.ts` in `adapter.ts`
-3. Add a factory function: `export function create<Name>Adapter()`
-4. Add HTTP client if needed: `client.ts`
-5. Register in `src/adapters/mod.ts`
-6. Add to `createAdapter()` switch in `server.ts`
-7. Add API specs in `api-specs/` subdirectory
-8. Add `README.md` with PA-specific docs (lifecycle, enums, sandbox behavior)
+1. Create `src/adapters/<name>/`
+2. Extend `AfnorBaseAdapter` from `../afnor/base-adapter.ts`
+3. Override methods with native API when better than AFNOR default
+4. Set `capabilities` to the methods you support
+5. Add factory function: `export function create<Name>Adapter()`
+6. Add HTTP client in `client.ts` (use `createOAuth2TokenProvider` from `../shared/oauth2.ts`)
+7. Register in `src/adapters/mod.ts` and `server.ts`
+8. Add API specs and `README.md`
+
+## Adding a Non-French Adapter
+
+1. Create `src/adapters/<name>/`
+2. Implement `EInvoiceAdapter` interface directly
+3. Follow same registration steps as above
 
 ## Interface
 
-All adapters implement `EInvoiceAdapter` from `src/adapter.ts`. The interface covers:
-- Invoice operations (submit, search, get, download)
+`EInvoiceAdapter` from `src/adapter.ts` — 43 methods covering:
+- Invoice operations (submit, search, get, download, generate)
 - Status management (send, history)
 - Directory search (French PPF, Peppol international)
 - Operator config (entities, enrollment, network registration)
-- Webhooks, reporting
+- Webhooks, reporting, identifiers, claims

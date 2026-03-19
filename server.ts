@@ -41,6 +41,7 @@ import { EInvoiceToolsClient } from "./src/client.ts";
 import type { EInvoiceAdapter } from "./src/adapter.ts";
 import { createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
 import { createStorecoveAdapter } from "./src/adapters/storecove/adapter.ts";
+import { createSuperPDPAdapter } from "./src/adapters/superpdp/adapter.ts";
 import {
   env,
   getArgs,
@@ -63,10 +64,12 @@ function createAdapter(adapterName: string): EInvoiceAdapter {
       return createIopoleAdapter();
     case "storecove":
       return createStorecoveAdapter();
+    case "superpdp":
+      return createSuperPDPAdapter();
     default:
       throw new Error(
         `${LOG_PREFIX} Unknown adapter: "${adapterName}". ` +
-          `Available adapters: iopole, storecove`,
+          `Available adapters: iopole, storecove, superpdp`,
       );
   }
 }
