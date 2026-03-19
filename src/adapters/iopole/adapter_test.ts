@@ -8,9 +8,9 @@
  */
 
 import { assertEquals } from "jsr:@std/assert";
-import { IopoleAdapter } from "./iopole.ts";
-import { IopoleClient } from "../api/iopole-client.ts";
-import { mockFetch } from "../testing/helpers.ts";
+import { IopoleAdapter } from "./adapter.ts";
+import { IopoleClient } from "./client.ts";
+import { mockFetch } from "../../testing/helpers.ts";
 
 function makeAdapter() {
   const client = new IopoleClient({

@@ -7,8 +7,8 @@
  */
 
 import { assertEquals, assertRejects } from "jsr:@std/assert";
-import { IopoleClient, IopoleAPIError, createOAuth2TokenProvider } from "./iopole-client.ts";
-import { mockFetch } from "../testing/helpers.ts";
+import { IopoleClient, IopoleAPIError, createOAuth2TokenProvider } from "./client.ts";
+import { mockFetch } from "../../testing/helpers.ts";
 
 const TEST_CUSTOMER_ID = "test-customer-id";
 

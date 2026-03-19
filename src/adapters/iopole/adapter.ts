@@ -23,9 +23,9 @@ import type {
   GenerateFacturXRequest,
   CreateWebhookRequest,
   UpdateWebhookRequest,
-} from "../adapter.ts";
-import { IopoleClient, createOAuth2TokenProvider } from "../api/iopole-client.ts";
-import { env } from "../runtime.ts";
+} from "../../adapter.ts";
+import { IopoleClient, createOAuth2TokenProvider } from "./client.ts";
+import { env } from "../../runtime.ts";
 
 const IOPOLE_DEFAULT_AUTH_URL =
   "https://auth.iopole.com/realms/iopole/protocol/openid-connect/token";

@@ -34,7 +34,7 @@ export type {
 } from "./src/adapter.ts";
 
 // Adapters
-export { IopoleAdapter, createIopoleAdapter } from "./src/adapters/iopole.ts";
+export { IopoleAdapter, createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
 
 // Tools registry
 export {

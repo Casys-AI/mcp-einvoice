@@ -10,7 +10,7 @@
  */
 
 import { assertEquals, assert } from "jsr:@std/assert";
-import { createIopoleAdapter } from "./adapters/iopole.ts";
+import { createIopoleAdapter } from "./adapters/iopole/adapter.ts";
 import { allTools, getToolByName } from "./tools/mod.ts";
 import type { EInvoiceToolContext } from "./tools/types.ts";
 

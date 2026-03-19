@@ -39,7 +39,7 @@
 import { ConcurrentMCPServer, launchInspector } from "@casys/mcp-server";
 import { EInvoiceToolsClient } from "./src/client.ts";
 import type { EInvoiceAdapter } from "./src/adapter.ts";
-import { createIopoleAdapter } from "./src/adapters/iopole.ts";
+import { createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
 import {
   env,
   getArgs,
