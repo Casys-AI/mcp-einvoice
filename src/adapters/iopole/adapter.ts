@@ -14,6 +14,8 @@ import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import type {
   InvoiceDetail,
   InvoiceDirection,
+  InvoiceSearchRow,
+  SearchInvoicesResult,
   StatusHistoryResult,
   StatusEntry,
   DownloadResult,
@@ -70,14 +72,51 @@ export class IopoleAdapter extends AfnorBaseAdapter {
     return await this.client.upload("/invoice", req.file, req.filename);
   }
 
-  override async searchInvoices(filters: InvoiceSearchFilters): Promise<unknown> {
-    // Search endpoint is v1.1, not v1. We use getV11() to swap the version prefix.
-    return await this.client.getV11("/invoice/search", {
+  override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.getV11("/invoice/search", {
       q: filters.q,
-      expand: filters.expand,
+      expand: filters.expand ?? "businessData",
       offset: filters.offset ?? 0,
       limit: filters.limit ?? 50,
+    }) as any;
+
+    const data = (raw.data ?? []) as Array<Record<string, unknown>>;
+    const count = raw.meta?.count ?? raw.count ?? data.length;
+
+    // Build normalized rows
+    // deno-lint-ignore no-explicit-any
+    const rows: InvoiceSearchRow[] = data.map((row: any) => {
+      const m = row.metadata ?? {};
+      const bd = row.businessData ?? {};
+      return {
+        id: m.invoiceId ?? "",
+        invoiceNumber: bd.invoiceId,
+        status: m.state, // will be enriched below
+        direction: normalizeDirection(m.direction),
+        senderName: bd.seller?.name,
+        receiverName: bd.buyer?.name,
+        date: bd.invoiceDate ?? m.createDate?.split("T")[0],
+        amount: bd.monetary?.invoiceAmount?.amount,
+        currency: bd.monetary?.invoiceCurrency ?? "EUR",
+      };
     });
+
+    // Enrich with lifecycle status in parallel (Iopole getInvoice has no state)
+    await Promise.all(rows.map(async (row) => {
+      if (!row.id) return;
+      try {
+        const history = await this.getStatusHistory(row.id);
+        if (history.entries.length > 0) {
+          const sorted = [...history.entries].sort((a, b) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          row.status = sorted[0].code;
+        }
+      } catch { /* keep row.status as fallback */ }
+    }));
+
+    return { rows, count };
   }
 
   override async getInvoice(id: string): Promise<InvoiceDetail> {

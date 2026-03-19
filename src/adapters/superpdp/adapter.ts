@@ -14,6 +14,7 @@ import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import { AfnorClient } from "../afnor/client.ts";
 import type {
   InvoiceDetail,
+  SearchInvoicesResult,
   StatusHistoryResult,
   DownloadResult,
   EmitInvoiceRequest,
@@ -66,12 +67,27 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async searchInvoices(filters: InvoiceSearchFilters): Promise<unknown> {
-    return await this.client.get("/invoices", {
+  override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.get("/invoices", {
       direction: filters.q,  // Super PDP uses direction param, not Lucene
       limit: filters.limit,
       ...(filters.offset ? { starting_after_id: String(filters.offset) } : {}),
-    });
+    }) as any;
+    const data = Array.isArray(raw) ? raw : (raw?.data ?? []);
+    // deno-lint-ignore no-explicit-any
+    const rows = data.map((inv: any) => ({
+      id: inv.id ?? "",
+      invoiceNumber: inv.invoice_id ?? inv.external_id,
+      status: inv.status,
+      direction: (inv.direction === "incoming" ? "received" : "sent") as "received" | "sent",
+      senderName: inv.sender?.name,
+      receiverName: inv.receiver?.name,
+      date: inv.issue_date,
+      amount: inv.total_amount,
+      currency: inv.currency ?? "EUR",
+    }));
+    return { rows, count: raw?.count ?? rows.length };
   }
 
   override async getInvoice(id: string): Promise<InvoiceDetail> {

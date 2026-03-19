@@ -370,13 +370,13 @@ Deno.test("einvoice_invoice_generate_cii - stores generated XML and returns gene
 // ── Search _rowAction.idField matches formatted rows ─────
 
 Deno.test("einvoice_invoice_search - _rowAction.idField is '_id' (matches formatted rows)", async () => {
-  const mockResponse = {
-    meta: { count: 1 },
-    data: [
-      { metadata: { invoiceId: "inv-42", state: "DEPOSITED", direction: "OUTBOUND", createDate: "2026-01-01T00:00:00Z" }, businessData: { seller: { name: "Foo" }, buyer: { name: "Bar" } } },
-    ],
-  };
-  const { adapter } = createMockAdapter(mockResponse);
+  // Mock adapter returns normalized SearchInvoicesResult
+  const { adapter, calls } = createMockAdapter();
+  // Override searchInvoices to return test data
+  adapter.searchInvoices = async () => ({
+    rows: [{ id: "inv-42", invoiceNumber: "F-001", status: "DELIVERED", direction: "sent" as const, senderName: "Foo", receiverName: "Bar" }],
+    count: 1,
+  });
   const tool = findTool("einvoice_invoice_search");
 
   const result = (await tool.handler({ q: "test" }, { adapter })) as Record<string, unknown>;

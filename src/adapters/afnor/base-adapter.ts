@@ -19,6 +19,7 @@
 import type {
   EInvoiceAdapter,
   InvoiceDetail,
+  SearchInvoicesResult,
   StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
@@ -77,15 +78,23 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     );
   }
 
-  async searchInvoices(filters: InvoiceSearchFilters): Promise<unknown> {
+  async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
     if (!this.afnor) throw this.noAfnor("searchInvoices");
-    return await this.afnor.searchFlows(
+    const result = await this.afnor.searchFlows(
       {
         flowType: ["CustomerInvoice", "SupplierInvoice"],
         ...(filters.q ? { trackingId: filters.q } : {}),
       },
       filters.limit,
     );
+    // deno-lint-ignore no-explicit-any
+    const rows = (result.results ?? []).map((r: any) => ({
+      id: r.flowId ?? "",
+      status: r.ackStatus,
+      direction: (r.flowDirection === "In" ? "received" : "sent") as "received" | "sent",
+      date: r.updatedAt ?? r.submittedAt,
+    }));
+    return { rows, count: rows.length };
   }
 
   async getInvoice(id: string): Promise<InvoiceDetail> {

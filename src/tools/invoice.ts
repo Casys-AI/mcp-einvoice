@@ -106,20 +106,6 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
   };
 }
 
-/**
- * Extract the latest status code from a normalized StatusHistoryResult.
- * Optionally filter by destType to avoid cross-contamination.
- */
-function extractLatestStatusCode(history: { entries: Array<{ date: string; code: string; destType?: string }> }, destTypeFilter?: string): string | undefined {
-  let entries = history.entries;
-  if (!entries || entries.length === 0) return undefined;
-  if (destTypeFilter) {
-    const filtered = entries.filter((e) => e.destType === destTypeFilter);
-    if (filtered.length > 0) entries = filtered;
-  }
-  entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  return entries[0].code;
-}
 
 /** Shared AX hint for generate tools — tells the LLM to check entities first. */
 const GENERATE_AX_HINT =
@@ -258,88 +244,48 @@ export const invoiceTools: EInvoiceTool[] = [
       let q = input.q as string | undefined;
       if (q != null && /^\s*\*?\s*$/.test(q)) q = undefined;
 
-      const result = await ctx.adapter.searchInvoices({
+      // Adapter returns normalized SearchInvoicesResult (with status enrichment done internally)
+      const { rows, count } = await ctx.adapter.searchInvoices({
         q,
-        expand: (input.expand as string | undefined) ?? "businessData",
         offset: input.offset as number | undefined,
         limit: input.limit as number | undefined,
-      }) as Record<string, unknown>;
+      });
 
-      // Lift meta.count to top-level for doclist-viewer
-      const meta = result.meta as Record<string, unknown> | undefined;
-      if (meta?.count != null && result.count == null) result.count = meta.count;
-
-      // Server-side direction filter (Iopole doesn't support direction in Lucene)
+      // Direction filter
       const dirFilter = input.direction as string | undefined;
-      if (dirFilter && Array.isArray(result.data)) {
-        const iopoleDir = dirFilter === "received" ? "INBOUND" : dirFilter === "sent" ? "OUTBOUND" : null;
-        if (iopoleDir) {
-          // deno-lint-ignore no-explicit-any
-          result.data = (result.data as any[]).filter((row: any) => row.metadata?.direction === iopoleDir);
-          result.count = (result.data as unknown[]).length;
-        }
+      let filtered = rows;
+      if (dirFilter) {
+        filtered = filtered.filter((r) => r.direction === dirFilter);
       }
 
-      // Flatten + format for a chat-friendly table
-      const data = result.data as Record<string, unknown>[] | undefined;
-      if (Array.isArray(data)) {
-        // deno-lint-ignore no-explicit-any
-        const rows = data.map((row: any) => {
-          const m = row.metadata ?? {};
-          const bd = row.businessData ?? {};
-          const dateRaw = bd.invoiceDate ?? m.createDate?.split("T")[0];
-          const amount = bd.monetary?.invoiceAmount?.amount;
-          const currency = bd.monetary?.invoiceCurrency ?? "EUR";
-          return {
-            _id: m.invoiceId,
-            _state: m.state,
-            _direction: m.direction, // raw INBOUND/OUTBOUND for drill-down fallback
-            "N°": bd.invoiceId ?? "—",
-            "Statut": m.state, // will be enriched with lifecycle status below
-            "Direction": m.direction === "INBOUND" ? "Entrante" : m.direction === "OUTBOUND" ? "Sortante" : m.direction,
-            "Émetteur": bd.seller?.name ?? "—",
-            "Destinataire": bd.buyer?.name ?? "—",
-            "Date": dateRaw ? new Date(dateRaw).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—",
-            "Montant": amount != null ? `${Number(amount).toLocaleString("fr-FR")} ${currency}` : "—",
-          };
-        });
-
-        // Enrich with lifecycle status — batch fetch status history in parallel.
-        // Both OUTBOUND and INBOUND show the latest status (Iopole replicates
-        // receiver actions into sender history, so the sender sees APPROVED etc.)
-        const enrichPromises = rows.map(async (row) => {
-          if (!row._id) return;
-          try {
-            const history = await ctx.adapter.getStatusHistory(row._id);
-            const code = extractLatestStatusCode(history);
-            if (code) row["Statut"] = code;
-          } catch { /* keep processing state as fallback */ }
-        });
-        await Promise.all(enrichPromises);
-
-        // Server-side status filter (after lifecycle enrichment)
-        const statusFilter = input.status as string | undefined;
-        let filteredRows = rows;
-        if (statusFilter) {
-          filteredRows = rows.filter((row) => row["Statut"] === statusFilter);
-        }
-
-        // Hide Direction column when filtered (redundant)
-        if (dirFilter) {
-          for (const row of filteredRows) delete (row as Record<string, unknown>)["Direction"];
-        }
-
-        result.data = filteredRows;
-        result.count = filteredRows.length;
+      // Status filter
+      const statusFilter = input.status as string | undefined;
+      if (statusFilter) {
+        filtered = filtered.filter((r) => r.status === statusFilter);
       }
+
+      // Format for French doclist-viewer
+      const data = filtered.map((r) => ({
+        _id: r.id,
+        "N°": r.invoiceNumber ?? "—",
+        "Statut": r.status ?? "—",
+        ...(dirFilter ? {} : {
+          "Direction": r.direction === "received" ? "Entrante" : r.direction === "sent" ? "Sortante" : "—",
+        }),
+        "Émetteur": r.senderName ?? "—",
+        "Destinataire": r.receiverName ?? "—",
+        "Date": r.date ? new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—",
+        "Montant": r.amount != null ? `${Number(r.amount).toLocaleString("fr-FR")} ${r.currency ?? "EUR"}` : "—",
+      }));
 
       // Dynamic title
       const dirLabel = dirFilter === "received" ? "reçues" : dirFilter === "sent" ? "envoyées" : "";
-      const statusLabel = (input.status as string) ?? "";
+      const statusLabel = statusFilter ?? "";
       const titleParts = ["Factures", dirLabel, statusLabel ? `(${statusLabel})` : ""].filter(Boolean);
 
       return {
-        ...result,
+        data,
+        count: filtered.length,
         _title: titleParts.join(" "),
         _rowAction: {
           toolName: "einvoice_invoice_get",

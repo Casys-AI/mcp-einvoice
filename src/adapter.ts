@@ -34,6 +34,27 @@ export interface InvoiceSearchFilters extends PaginatedRequest {
   expand?: string;
 }
 
+// ─── Search Result Types ──────────────────────────────────
+
+/** A single row in invoice search results. Adapter normalizes from native format. */
+export interface InvoiceSearchRow {
+  id: string;
+  invoiceNumber?: string;
+  status?: string;
+  direction?: InvoiceDirection;
+  senderName?: string;
+  receiverName?: string;
+  date?: string;
+  amount?: number;
+  currency?: string;
+}
+
+/** Normalized return type for searchInvoices. */
+export interface SearchInvoicesResult {
+  rows: InvoiceSearchRow[];
+  count: number;
+}
+
 // ─── Directory Types ──────────────────────────────────────
 
 export interface DirectoryFrSearchFilters extends PaginatedRequest {
@@ -158,7 +179,7 @@ export interface EInvoiceAdapter {
   // ─── Invoice Operations ───────────────────────────────
 
   emitInvoice(req: EmitInvoiceRequest): Promise<unknown>;
-  searchInvoices(filters: InvoiceSearchFilters): Promise<unknown>;
+  searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult>;
   getInvoice(id: string): Promise<InvoiceDetail>;
   downloadInvoice(id: string): Promise<DownloadResult>;
   downloadReadable(id: string): Promise<DownloadResult>;

@@ -13,6 +13,7 @@
 import type {
   EInvoiceAdapter,
   InvoiceDetail,
+  SearchInvoicesResult,
   StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
@@ -99,7 +100,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     });
   }
 
-  async searchInvoices(_filters: InvoiceSearchFilters): Promise<unknown> {
+  async searchInvoices(_filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
     throw new NotSupportedError(
       "searchInvoices",
       "Storecove delivers invoices via webhooks (push) or pull queue. " +

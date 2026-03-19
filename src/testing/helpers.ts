@@ -123,7 +123,10 @@ export function createMockAdapter(
 
     // Invoice
     emitInvoice: (req) => record("emitInvoice", req),
-    searchInvoices: (filters) => record("searchInvoices", filters),
+    searchInvoices: (filters) => record("searchInvoices", filters).then(() => ({
+      rows: [],
+      count: 0,
+    })),
     getInvoice: (id) => record("getInvoice", id).then(() => ({
       id: id as string,
       status: "DELIVERED",
