@@ -161,6 +161,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_submit",
+    requires: ["emitInvoice"],
     description:
       "Submit an invoice to the e-invoicing platform. " +
       "Provide EITHER a generated_id (from a generate preview) OR file_base64 + filename. " +
@@ -232,6 +233,7 @@ export const invoiceTools: EInvoiceTool[] = [
   {
     name: "einvoice_invoice_search",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    requires: ["searchInvoices"],
     description:
       "Search invoices. Use direction and status to filter. " +
       "Query uses Lucene syntax — valid fields: senderName, receiverName, invoiceId. " +
@@ -366,6 +368,7 @@ export const invoiceTools: EInvoiceTool[] = [
   {
     name: "einvoice_invoice_get",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
+    requires: ["getInvoice"],
     description:
       "Get a single invoice by its ID. Returns full invoice details including " +
       "status history, sender/receiver info, and line items.",
@@ -457,6 +460,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_download",
+    requires: ["downloadInvoice"],
     description:
       "Download the source file of an invoice (original CII/UBL/Factur-X XML). " +
       "Returns base64-encoded content.",
@@ -481,6 +485,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_download_readable",
+    requires: ["downloadReadable"],
     description:
       "Download a human-readable PDF version of an invoice. Returns base64-encoded PDF.",
     category: "invoice",
@@ -504,6 +509,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_files",
+    requires: ["getInvoiceFiles"],
     description: "Get metadata of ALL related files for an invoice (source XML, readable PDF, attachments). Use einvoice_invoice_attachments for only business attachments.",
     category: "invoice",
     inputSchema: {
@@ -525,6 +531,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_attachments",
+    requires: ["getAttachments"],
     description: "Get only business attachments (supporting documents, purchase orders, etc.) for an invoice. Use einvoice_invoice_files for ALL related files including source XML and PDF.",
     category: "invoice",
     inputSchema: {
@@ -546,6 +553,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_download_file",
+    requires: ["downloadFile"],
     description:
       "Download a specific file by its file ID. Returns base64-encoded content.",
     category: "invoice",
@@ -575,6 +583,7 @@ export const invoiceTools: EInvoiceTool[] = [
   {
     name: "einvoice_invoice_generate_cii",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
+    requires: ["generateCII"],
     description:
       GENERATE_AX_HINT +
       "Generate a CII invoice preview. Validates and converts to CII XML. " +
@@ -622,6 +631,7 @@ export const invoiceTools: EInvoiceTool[] = [
   {
     name: "einvoice_invoice_generate_ubl",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
+    requires: ["generateUBL"],
     description:
       GENERATE_AX_HINT +
       "Generate a UBL invoice preview. Validates and converts to UBL XML. " +
@@ -669,6 +679,7 @@ export const invoiceTools: EInvoiceTool[] = [
   {
     name: "einvoice_invoice_generate_facturx",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
+    requires: ["generateFacturX"],
     description:
       GENERATE_AX_HINT +
       "Generate a Factur-X invoice preview. Creates a hybrid PDF/XML. " +

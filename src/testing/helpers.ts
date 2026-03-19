@@ -105,6 +105,21 @@ export function createMockAdapter(
 
   const adapter: EInvoiceAdapter = {
     name: "mock",
+    capabilities: new Set([
+      "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
+      "downloadReadable", "getInvoiceFiles", "getAttachments", "downloadFile",
+      "markInvoiceSeen", "getUnseenInvoices", "generateCII", "generateUBL", "generateFacturX",
+      "searchDirectoryFr", "searchDirectoryInt", "checkPeppolParticipant",
+      "sendStatus", "getStatusHistory", "getUnseenStatuses", "markStatusSeen",
+      "reportInvoiceTransaction", "reportTransaction",
+      "listWebhooks", "getWebhook", "createWebhook", "updateWebhook", "deleteWebhook",
+      "getCustomerId", "listBusinessEntities", "getBusinessEntity",
+      "createLegalUnit", "createOffice", "deleteBusinessEntity",
+      "configureBusinessEntity", "claimBusinessEntity", "claimBusinessEntityByIdentifier",
+      "enrollFrench", "enrollInternational", "registerNetwork", "registerNetworkByScheme",
+      "unregisterNetwork", "createIdentifier", "createIdentifierByScheme", "deleteIdentifier",
+      "deleteClaim",
+    ]),
 
     // Invoice
     emitInvoice: (req) => record("emitInvoice", req),
@@ -154,6 +169,26 @@ export function createMockAdapter(
     createWebhook: (r) => record("createWebhook", r),
     updateWebhook: (id, r) => record("updateWebhook", id, r),
     deleteWebhook: (id) => record("deleteWebhook", id),
+
+    // Config
+    getCustomerId: () => record("getCustomerId"),
+    listBusinessEntities: () => record("listBusinessEntities"),
+    getBusinessEntity: (id) => record("getBusinessEntity", id),
+    createLegalUnit: (data) => record("createLegalUnit", data),
+    createOffice: (data) => record("createOffice", data),
+    deleteBusinessEntity: (id) => record("deleteBusinessEntity", id),
+    configureBusinessEntity: (id, data) => record("configureBusinessEntity", id, data),
+    claimBusinessEntity: (id, data) => record("claimBusinessEntity", id, data),
+    claimBusinessEntityByIdentifier: (scheme, value, data) => record("claimBusinessEntityByIdentifier", scheme, value, data),
+    enrollFrench: (data) => record("enrollFrench", data),
+    enrollInternational: (data) => record("enrollInternational", data),
+    registerNetwork: (id, network) => record("registerNetwork", id, network),
+    registerNetworkByScheme: (scheme, value, network) => record("registerNetworkByScheme", scheme, value, network),
+    unregisterNetwork: (id) => record("unregisterNetwork", id),
+    createIdentifier: (entityId, data) => record("createIdentifier", entityId, data),
+    createIdentifierByScheme: (scheme, value, data) => record("createIdentifierByScheme", scheme, value, data),
+    deleteIdentifier: (id) => record("deleteIdentifier", id),
+    deleteClaim: (id) => record("deleteClaim", id),
   };
 
   return { adapter, calls };

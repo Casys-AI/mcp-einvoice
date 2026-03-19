@@ -92,8 +92,13 @@ export interface UpdateWebhookRequest {
  * PA adapters translate these calls to their concrete APIs.
  */
 export interface EInvoiceAdapter {
-  /** Adapter identifier (e.g. "iopole") */
+  /** Adapter identifier (e.g. "iopole", "storecove") */
   readonly name: string;
+
+  /** Set of adapter method names that this adapter actually supports.
+   *  Used to filter MCP tools at registration time — unsupported tools
+   *  are not exposed to the LLM, saving context tokens. */
+  readonly capabilities: Set<string>;
 
   // ─── Invoice Operations ───────────────────────────────
 

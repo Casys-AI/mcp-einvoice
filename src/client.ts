@@ -58,9 +58,16 @@ export class EInvoiceToolsClient {
     return this.tools;
   }
 
-  /** Convert tools to MCP wire format (for server registration) */
-  toMCPFormat(): MCPToolWireFormat[] {
-    return this.tools.map((t) => {
+  /** Filter tools to only those supported by the given adapter's capabilities. */
+  private supportedTools(adapter: EInvoiceAdapter): EInvoiceTool[] {
+    return this.tools.filter((t) =>
+      !t.requires || t.requires.every((m) => adapter.capabilities.has(m))
+    );
+  }
+
+  /** Convert tools to MCP wire format, filtered by adapter capabilities. */
+  toMCPFormat(adapter: EInvoiceAdapter): MCPToolWireFormat[] {
+    return this.supportedTools(adapter).map((t) => {
       const wire: MCPToolWireFormat = {
         name: t.name,
         description: t.description,
@@ -74,12 +81,13 @@ export class EInvoiceToolsClient {
   /**
    * Build a handlers Map for ConcurrentMCPServer.registerTools().
    * Each handler wraps the tool to inject the adapter context.
+   * Only includes tools supported by the adapter's capabilities.
    */
   buildHandlersMap(
     adapter: EInvoiceAdapter,
   ): Map<string, (args: Record<string, unknown>) => Promise<unknown>> {
     const handlers = new Map<string, (args: Record<string, unknown>) => Promise<unknown>>();
-    for (const tool of this.tools) {
+    for (const tool of this.supportedTools(adapter)) {
       handlers.set(tool.name, async (args: Record<string, unknown>) => {
         return await tool.handler(args, { adapter });
       });

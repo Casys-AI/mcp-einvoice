@@ -40,6 +40,7 @@ import { ConcurrentMCPServer, launchInspector } from "@casys/mcp-server";
 import { EInvoiceToolsClient } from "./src/client.ts";
 import type { EInvoiceAdapter } from "./src/adapter.ts";
 import { createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
+import { createStorecoveAdapter } from "./src/adapters/storecove/adapter.ts";
 import {
   env,
   getArgs,
@@ -60,10 +61,12 @@ function createAdapter(adapterName: string): EInvoiceAdapter {
   switch (adapterName) {
     case "iopole":
       return createIopoleAdapter();
+    case "storecove":
+      return createStorecoveAdapter();
     default:
       throw new Error(
         `${LOG_PREFIX} Unknown adapter: "${adapterName}". ` +
-          `Available adapters: iopole`,
+          `Available adapters: iopole, storecove`,
       );
   }
 }
@@ -114,8 +117,8 @@ async function main() {
     logger: (msg: string) => console.error(`${LOG_PREFIX} ${msg}`),
   });
 
-  // Register all tools with their handlers (injecting adapter)
-  const mcpTools = toolsClient.toMCPFormat();
+  // Register tools supported by this adapter (filtered by capabilities)
+  const mcpTools = toolsClient.toMCPFormat(adapter);
   const handlers = toolsClient.buildHandlersMap(adapter);
   server.registerTools(mcpTools, handlers);
 

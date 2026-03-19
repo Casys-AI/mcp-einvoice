@@ -9,3 +9,4 @@
  */
 
 export { IopoleAdapter, createIopoleAdapter } from "./iopole/adapter.ts";
+export { StorecoveAdapter, createStorecoveAdapter } from "./storecove/adapter.ts";

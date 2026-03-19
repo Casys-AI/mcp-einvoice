@@ -71,6 +71,7 @@ export const directoryTools: EInvoiceTool[] = [
   {
     name: "einvoice_directory_fr_search",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    requires: ["searchDirectoryFr"],
     description:
       "Search the French PPF directory (Portail Public de Facturation). " +
       "Find companies registered for e-invoicing in France. " +
@@ -122,6 +123,7 @@ export const directoryTools: EInvoiceTool[] = [
   {
     name: "einvoice_directory_int_search",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    requires: ["searchDirectoryInt"],
     description:
       "Search the international Peppol directory. " +
       "Find companies registered on the Peppol network across 40+ countries. " +
@@ -157,6 +159,7 @@ export const directoryTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_directory_peppol_check",
+    requires: ["checkPeppolParticipant"],
     description:
       "Verify whether a specific Peppol participant exists in the international directory. " +
       "Checks by scheme and identifier value.",

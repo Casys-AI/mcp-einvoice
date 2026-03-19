@@ -18,6 +18,7 @@ export const webhookTools: EInvoiceTool[] = [
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
     description: "List all configured webhooks for your account.",
     category: "webhook",
+    requires: ["listWebhooks"],
     inputSchema: {
       type: "object",
       properties: {},
@@ -33,6 +34,7 @@ export const webhookTools: EInvoiceTool[] = [
     name: "einvoice_webhook_get",
     description: "Get a single webhook configuration by its ID.",
     category: "webhook",
+    requires: ["getWebhook"],
     inputSchema: {
       type: "object",
       properties: {
@@ -52,6 +54,7 @@ export const webhookTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_webhook_create",
+    requires: ["createWebhook"],
     description:
       "Create a new webhook to receive real-time notifications. " +
       "Specify the target URL and which events to subscribe to " +
@@ -102,6 +105,7 @@ export const webhookTools: EInvoiceTool[] = [
     name: "einvoice_webhook_update",
     description: "Update an existing webhook configuration.",
     category: "webhook",
+    requires: ["updateWebhook"],
     inputSchema: {
       type: "object",
       properties: {
@@ -136,6 +140,7 @@ export const webhookTools: EInvoiceTool[] = [
     name: "einvoice_webhook_delete",
     description: "Delete a webhook configuration.",
     category: "webhook",
+    requires: ["deleteWebhook"],
     inputSchema: {
       type: "object",
       properties: {

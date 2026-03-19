@@ -16,30 +16,33 @@ import {
 } from "./mod.ts";
 
 Deno.test("allTools contains the expected number of tools", () => {
-  // 13 invoice + 3 directory + 4 status + 2 reporting + 5 webhook = 27
-  assertEquals(allTools.length, 27);
+  // 11 invoice + 3 directory + 2 status + 2 reporting + 5 webhook + 16 config = 39
+  assertEquals(allTools.length, 39);
 });
 
-Deno.test("toolsByCategory has all 5 categories", () => {
+Deno.test("toolsByCategory has all 6 categories", () => {
   const cats = Object.keys(toolsByCategory);
-  assertEquals(cats.length, 5);
+  assertEquals(cats.length, 6);
   assertEquals(cats.includes("invoice"), true);
   assertEquals(cats.includes("directory"), true);
   assertEquals(cats.includes("status"), true);
   assertEquals(cats.includes("reporting"), true);
   assertEquals(cats.includes("webhook"), true);
+  assertEquals(cats.includes("config"), true);
 });
 
 Deno.test("category tool counts are correct", () => {
-  assertEquals(toolsByCategory["invoice"].length, 13);
+  assertEquals(toolsByCategory["invoice"].length, 11);
   assertEquals(toolsByCategory["directory"].length, 3);
-  assertEquals(toolsByCategory["status"].length, 4);
+  assertEquals(toolsByCategory["status"].length, 2);
   assertEquals(toolsByCategory["reporting"].length, 2);
   assertEquals(toolsByCategory["webhook"].length, 5);
+  assertEquals(toolsByCategory["config"].length, 16);
 });
 
 Deno.test("getToolsByCategory returns correct tools", () => {
-  assertEquals(getToolsByCategory("invoice").length, 13);
+  assertEquals(getToolsByCategory("invoice").length, 11);
+  assertEquals(getToolsByCategory("config").length, 16);
   assertEquals(getToolsByCategory("nonexistent").length, 0);
 });
 
@@ -55,7 +58,7 @@ Deno.test("getToolByName returns undefined for unknown", () => {
 
 Deno.test("getCategories returns all categories", () => {
   const cats = getCategories();
-  assertEquals(cats.length, 5);
+  assertEquals(cats.length, 6);
 });
 
 Deno.test("no duplicate tool names across all categories", () => {
@@ -79,5 +82,15 @@ Deno.test("all tools have einvoice_ prefix", () => {
 Deno.test("all tools have handler function", () => {
   for (const tool of allTools) {
     assertEquals(typeof tool.handler, "function", `${tool.name} missing handler`);
+  }
+});
+
+Deno.test("all tools have requires array", () => {
+  for (const tool of allTools) {
+    assertEquals(
+      Array.isArray(tool.requires) && tool.requires.length > 0,
+      true,
+      `Tool ${tool.name} missing requires`,
+    );
   }
 });

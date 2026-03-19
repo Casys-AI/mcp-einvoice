@@ -1,0 +1,206 @@
+Storecove API — Endpoint Reference
+Extracted from openapi.json (Swagger 2.0)
+Host: api.storecove.com
+Base path: /api/v2
+============================================================
+
+── AdditionalTaxIdentifiers (4 endpoints) ──
+
+  POST    /legal_entities/{legal_entity_id}/additional_tax_identifiers
+        Summary: Create a new AdditionalTaxIdentifier
+        Params: legal_entity_id
+        Returns: AdditionalTaxIdentifier
+
+  GET     /legal_entities/{legal_entity_id}/additional_tax_identifiers/{id}
+        Summary: Get AdditionalTaxIdentifier
+        Params: legal_entity_id, id
+        Returns: AdditionalTaxIdentifier
+
+  DELETE  /legal_entities/{legal_entity_id}/additional_tax_identifiers/{id}
+        Summary: Delete AdditionalTaxIdentifier
+        Params: legal_entity_id, id
+
+  PATCH   /legal_entities/{legal_entity_id}/additional_tax_identifiers/{id}
+        Summary: Update AdditionalTaxIdentifier
+        Params: legal_entity_id, id
+        Returns: AdditionalTaxIdentifier
+
+
+── Administrations (4 endpoints) ──
+
+  POST    /legal_entities/{legal_entity_id}/administrations
+        Summary: DEPRECATED. Create a new Administration
+        Params: legal_entity_id
+        Returns: Administration
+
+  GET     /legal_entities/{legal_entity_id}/administrations/{id}
+        Summary: DEPRECATED. Get Administration
+        Params: legal_entity_id, id
+        Returns: Administration
+
+  DELETE  /legal_entities/{legal_entity_id}/administrations/{id}
+        Summary: DEPRECATED. Delete Administration
+        Params: legal_entity_id, id
+
+  PATCH   /legal_entities/{legal_entity_id}/administrations/{id}
+        Summary: DEPRECATED. Update Administration
+        Params: legal_entity_id, id
+        Returns: Administration
+
+
+── C5Activation (8 endpoints) ──
+
+  POST    /api/v2/legal_entities/{legal_entity_id}/c5/iras/email/activate
+        Summary: Request a new C5 Email Activation
+        Params: legal_entity_id
+
+  PUT     /api/v2/legal_entities/{legal_entity_id}/c5/iras/email/cancel
+        Summary: Cancel a C5 email activation or deactivation
+        Params: legal_entity_id
+
+  POST    /api/v2/legal_entities/{legal_entity_id}/c5/iras/email/deactivate
+        Summary: Request a new C5 Email Deactivation
+        Params: legal_entity_id
+
+  POST    /api/v2/legal_entities/{legal_entity_id}/c5/iras/redirect/activate
+        Summary: Request a new C5 Redirect Activation
+        Params: legal_entity_id
+        Returns: C5RedirectResponse
+
+  PUT     /api/v2/legal_entities/{legal_entity_id}/c5/iras/redirect/cancel
+        Summary: Cancel a C5 redirect activation or deactivation
+        Params: legal_entity_id
+
+  POST    /api/v2/legal_entities/{legal_entity_id}/c5/iras/redirect/deactivate
+        Summary: Request a new C5 Redirect Deactivation
+        Params: legal_entity_id
+        Returns: C5RedirectResponse
+
+  POST    /api/v2/legal_entities/{legal_entity_id}/c5_activation/activate
+        Summary: DEPRECATED. Request a new C5 Activation
+        Params: legal_entity_id
+        Returns: C5ActivationResponse
+
+  POST    /api/v2/legal_entities/{legal_entity_id}/c5_deactivation/deactivate
+        Summary: DEPRECATED. Request a new C5 Deactivation
+        Params: legal_entity_id
+        Returns: C5DeactivationResponse
+
+
+── Discovery (3 endpoints) ──
+
+  POST    /discovery/exists
+        Summary: Discover Network Participant Existence
+        Returns: DiscoveredParticipant
+
+  GET     /discovery/identifiers
+        Summary: Discover Country Identifiers ** EXPERIMENTAL
+        Returns: CountrySpecifications
+
+  POST    /discovery/receives
+        Summary: Discover Network Participant Capabilites
+        Returns: DiscoveredParticipant
+
+
+── DocumentSubmissions (2 endpoints) ──
+
+  POST    /document_submissions
+        Summary: Submit a new document.
+        Returns: DocumentSubmissionResult
+
+  GET     /document_submissions/{guid}/evidence/{evidence_type}
+        Summary: Get DocumentSubmission Evidence
+        Params: guid, evidence_type
+        Returns: DocumentSubmissionEvidence
+
+
+── InvoiceSubmissions (3 endpoints) ──
+
+  POST    /invoice_submissions
+        Summary: DEPRECATED. Submit a new invoice
+        Returns: InvoiceSubmissionResult
+
+  POST    /invoice_submissions/preflight
+        Summary: DEPRECATED. Preflight an invoice recipient
+        Returns: PreflightInvoiceRecipientResult
+
+  GET     /invoice_submissions/{guid}/evidence
+        Summary: DEPRECATED. Get InvoiceSubmission Evidence
+        Params: guid
+        Returns: InvoiceSubmissionEvidence
+
+
+── LegalEntities (4 endpoints) ──
+
+  POST    /legal_entities
+        Summary: Create a new LegalEntity
+        Returns: LegalEntity
+
+  GET     /legal_entities/{id}
+        Summary: Get LegalEntity
+        Params: id
+        Returns: LegalEntity
+
+  DELETE  /legal_entities/{id}
+        Summary: Delete LegalEntity
+        Params: id
+
+  PATCH   /legal_entities/{id}
+        Summary: Update LegalEntity
+        Params: id
+        Returns: LegalEntity
+
+
+── PeppolIdentifiers (2 endpoints) ──
+
+  POST    /legal_entities/{legal_entity_id}/peppol_identifiers
+        Summary: Create a new PeppolIdentifier
+        Params: legal_entity_id
+        Returns: PeppolIdentifier
+
+  DELETE  /legal_entities/{legal_entity_id}/peppol_identifiers/{superscheme}/{scheme}/{identifier}
+        Summary: Delete PeppolIdentifier
+        Params: legal_entity_id, superscheme, scheme, identifier
+
+
+── PurchaseInvoices (3 endpoints) ──
+
+  GET     /purchase_invoices/{guid}
+        Summary: DEPRECATED. Get Purchase invoice data as JSON
+        Params: guid, pmv, version
+        Returns: PurchaseInvoice
+
+  GET     /purchase_invoices/{guid}/{packaging}
+        Summary: DEPRECATED. Get Purchase invoice data in a selectable format
+        Params: guid, packaging, pmv, version
+        Returns: PurchaseInvoiceUbl
+
+  GET     /purchase_invoices/{guid}/{packaging}/{package_version}
+        Summary: DEPRECATED. Get Purchase invoice data as JSON with a Base64-encoded UBL string in the specified version
+        Params: guid, packaging, package_version
+        Returns: PurchaseInvoiceUbl
+
+
+── ReceivedDocuments (2 endpoints) ──
+
+  POST    /legal_entities/{legal_entity_id}/received_documents
+        Summary: Receive a new Document
+        Params: legal_entity_id
+        Returns: ReceivedDocument
+
+  GET     /received_documents/{guid}/{format}
+        Summary: Get a new ReceivedDocument
+        Params: guid, format, version
+        Returns: Transportable
+
+
+── WebhookInstances (2 endpoints) ──
+
+  GET     /webhook_instances/
+        Summary: GET a WebhookInstance
+        Returns: WebhookInstance
+
+  DELETE  /webhook_instances/{guid}
+        Summary: DELETE a WebhookInstance
+        Params: guid
+

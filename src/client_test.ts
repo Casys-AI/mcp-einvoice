@@ -15,15 +15,15 @@ import { createMockAdapter } from "./testing/helpers.ts";
 
 Deno.test("EInvoiceToolsClient - loads all tools by default", () => {
   const client = new EInvoiceToolsClient();
-  assertEquals(client.count, 27);
+  assertEquals(client.count, 39);
 });
 
 Deno.test("EInvoiceToolsClient - filters by category", () => {
   const invoiceOnly = new EInvoiceToolsClient({ categories: ["invoice"] });
-  assertEquals(invoiceOnly.count, 13);
+  assertEquals(invoiceOnly.count, 11);
 
   const statusOnly = new EInvoiceToolsClient({ categories: ["status"] });
-  assertEquals(statusOnly.count, 4);
+  assertEquals(statusOnly.count, 2);
 
   const webhookOnly = new EInvoiceToolsClient({ categories: ["webhook"] });
   assertEquals(webhookOnly.count, 5);
@@ -37,7 +37,7 @@ Deno.test("EInvoiceToolsClient - filters by category", () => {
 
 Deno.test("EInvoiceToolsClient - multi-category filter", () => {
   const client = new EInvoiceToolsClient({ categories: ["invoice", "status"] });
-  assertEquals(client.count, 17); // 13 + 4
+  assertEquals(client.count, 13); // 11 + 2
 });
 
 Deno.test("EInvoiceToolsClient - unknown category returns 0 tools", () => {
@@ -69,7 +69,8 @@ Deno.test("EInvoiceToolsClient - tool names are unique", () => {
 
 Deno.test("EInvoiceToolsClient.toMCPFormat() - returns correct shape", () => {
   const client = new EInvoiceToolsClient({ categories: ["webhook"] });
-  const wire = client.toMCPFormat();
+  const { adapter } = createMockAdapter();
+  const wire = client.toMCPFormat(adapter);
 
   assertEquals(wire.length, 5);
   for (const tool of wire) {
@@ -84,7 +85,8 @@ Deno.test("EInvoiceToolsClient.toMCPFormat() - returns correct shape", () => {
 
 Deno.test("EInvoiceToolsClient.toMCPFormat() - preserves _meta.ui", () => {
   const client = new EInvoiceToolsClient({ categories: ["invoice"] });
-  const wire = client.toMCPFormat();
+  const { adapter } = createMockAdapter();
+  const wire = client.toMCPFormat(adapter);
 
   const searchTool = wire.find((t) => t.name === "einvoice_invoice_search");
   assertEquals(searchTool?._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
@@ -117,9 +119,10 @@ Deno.test("EInvoiceToolsClient.buildHandlersMap() - handlers call adapter", asyn
   assertEquals(handler !== undefined, true);
 
   await handler!({ id: "test-inv" });
-  assertEquals(calls.length, 1);
-  assertEquals(calls[0].method, "getInvoice");
-  assertEquals(calls[0].args, ["test-inv"]);
+  // einvoice_invoice_get calls getInvoice + getStatusHistory in parallel
+  const getCall = calls.find((c) => c.method === "getInvoice");
+  assertEquals(getCall !== undefined, true);
+  assertEquals(getCall!.args, ["test-inv"]);
 });
 
 // ── Execute ──────────────────────────────────────────────
@@ -171,7 +174,7 @@ Deno.test("EInvoiceToolsClient - all tools have non-empty descriptions", () => {
 });
 
 Deno.test("EInvoiceToolsClient - all tools have a valid category", () => {
-  const validCategories = new Set(["invoice", "directory", "status", "reporting", "webhook"]);
+  const validCategories = new Set(["invoice", "directory", "status", "reporting", "webhook", "config"]);
   const client = new EInvoiceToolsClient();
   for (const tool of client.listTools()) {
     assertEquals(

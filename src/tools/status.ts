@@ -14,6 +14,7 @@ export const statusTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_status_send",
+    requires: ["sendStatus"],
     description:
       "Send a lifecycle status update for an invoice. " +
       "Uses Iopole status codes: IN_HAND, APPROVED, PARTIALLY_APPROVED, DISPUTED, " +
@@ -73,6 +74,7 @@ export const statusTools: EInvoiceTool[] = [
   {
     name: "einvoice_status_history",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/status-timeline" } },
+    requires: ["getStatusHistory"],
     description:
       "Get the status history for an invoice. Returns all status changes " +
       "in chronological order.",

@@ -49,6 +49,9 @@ export interface EInvoiceTool {
   inputSchema: JSONSchema;
   /** MCP Apps UI metadata (optional) */
   _meta?: { ui: { resourceUri: string } };
+  /** Adapter method names this tool requires. Tool is hidden when the
+   *  active adapter doesn't support all listed methods. */
+  requires?: string[];
   /** Execute the tool and return a JSON-serializable result */
   handler: (
     input: Record<string, unknown>,

@@ -6,8 +6,8 @@ Each PA (Plateforme Agréée / PDP) has its own subdirectory with adapter, clien
 
 | Adapter | Directory | Status |
 |---------|-----------|--------|
-| [Iopole](./iopole/) | `src/adapters/iopole/` | 39 tools, production-ready |
-| Storecove | `src/adapters/storecove/` | Planned |
+| [Iopole](./iopole/) | `src/adapters/iopole/` | 39/39 tools, production-ready |
+| [Storecove](./storecove/) | `src/adapters/storecove/` | 21/39 tools, implemented |
 
 ## Adding a New Adapter
 

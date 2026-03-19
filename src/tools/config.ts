@@ -22,6 +22,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_customer_id",
+    requires: ["getCustomerId"],
     description:
       "Get the current operator customer ID. " +
       "This is your unique operator identifier on the e-invoicing platform.",
@@ -40,6 +41,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_entities_list",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    requires: ["listBusinessEntities"],
     description:
       "List all business entities managed by your operator account. " +
       "Shows which companies/offices are enrolled for e-invoicing under your management. " +
@@ -87,6 +89,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_entity_get",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/directory-card" } },
+    requires: ["getBusinessEntity"],
     description:
       "Get details of a specific business entity managed by your operator. " +
       "Shows registration info, identifiers, and enrollment status.",
@@ -110,6 +113,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_create_legal",
+    requires: ["createLegalUnit"],
     description:
       "Create a new legal unit (company) under your operator account. " +
       "A legal unit represents a legally registered entity with a unique SIREN. " +
@@ -157,6 +161,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_create_office",
+    requires: ["createOffice"],
     description:
       "Create a new office (establishment) for an existing legal unit. " +
       "An office represents a physical location with a unique SIRET. " +
@@ -205,6 +210,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_enroll_fr",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    requires: ["enrollFrench"],
     description:
       "Enroll a French business entity for e-invoicing on the PPF (Portail Public de Facturation). " +
       "REQUIRED before an entity can send or receive invoices. " +
@@ -240,6 +246,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_claim",
+    requires: ["claimBusinessEntityByIdentifier"],
     description:
       "Claim management of a business entity by its identifier (SIRET scheme 0009). " +
       "Use this to take over management of an entity that exists in the directory " +
@@ -275,6 +282,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_delete",
+    requires: ["deleteBusinessEntity"],
     description:
       "Remove a business entity from your operator account. " +
       "This does not delete the entity from the national directory, " +
@@ -300,6 +308,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_network_register",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    requires: ["registerNetwork"],
     description:
       "Register a business entity identifier on an e-invoicing network (DOMESTIC_FR or PEPPOL_INTERNATIONAL). " +
       "REQUIRED for invoice routing. An entity can be enrolled but still get WRONG_ROUTING " +
@@ -337,6 +346,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_network_register_by_id",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    requires: ["registerNetworkByScheme"],
     description:
       "Register an entity on an e-invoicing network using its identifier scheme and value directly. " +
       "Shortcut when you know the SIRET but not the identifier UUID. " +
@@ -379,6 +389,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_identifier_create",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    requires: ["createIdentifier"],
     description:
       "Add a new identifier to a business entity. " +
       "Identifiers are how entities are found in the directory and how invoices are routed. " +
@@ -419,6 +430,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_identifier_create_by_scheme",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    requires: ["createIdentifierByScheme"],
     description:
       "Add a new identifier to a business entity, looking up the entity by an existing identifier. " +
       "Shortcut when you know a SIRET/SIREN but not the entity UUID.",
@@ -449,6 +461,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_identifier_delete",
+    requires: ["deleteIdentifier"],
     description:
       "Remove an identifier from a business entity. " +
       "WARNING: if the identifier is registered on a network, unregister it first. " +
@@ -474,6 +487,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_entity_configure",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    requires: ["configureBusinessEntity"],
     description:
       "Configure a business entity's settings (e.g. VAT regime). " +
       "Use einvoice_config_entity_get to see current configuration first.",
@@ -504,6 +518,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_claim_delete",
+    requires: ["deleteClaim"],
     description:
       "Remove your operator's claim on a business entity. " +
       "The entity remains in the national directory but is no longer managed by your operator. " +
@@ -529,6 +544,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_network_unregister",
+    requires: ["unregisterNetwork"],
     description:
       "Unregister an entity from a network. Removes the directory entry. " +
       "After unregistration, the entity will no longer receive invoices on that network. " +

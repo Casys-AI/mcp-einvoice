@@ -1,27 +1,29 @@
 # @casys/mcp-einvoice
 
-MCP server for French e-invoicing — PA-agnostic via the adapter pattern.
+MCP server for e-invoicing — PA-agnostic via the adapter pattern.
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────┐
-│  MCP Tools (27 tools, einvoice_*)                │
-│  invoice · directory · status · reporting · webhook │
-├──────────────────────────────────────────────────┤
-│  MCP Apps (4 viewers)                            │
-│  invoice-viewer · doclist-viewer                 │
-│  status-timeline · directory-card                │
-├──────────────────────────────────────────────────┤
-│  EInvoiceAdapter (interface)                     │
-│  PA-agnostic: emitInvoice, searchInvoices, ...   │
-├──────────┬───────────────────────────────────────┤
-│  Iopole  │  Autres PA via EInvoiceAdapter        │
-│ (REST)   │  (ajout sans toucher aux tools)       │
-└──────────┴───────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  MCP Tools (39 tools, einvoice_*)                    │
+│  invoice · directory · status · reporting            │
+│  webhook · config                                    │
+├──────────────────────────────────────────────────────┤
+│  MCP Apps (5 viewers)                                │
+│  invoice-viewer · doclist-viewer · action-result     │
+│  status-timeline · directory-card                    │
+├──────────────────────────────────────────────────────┤
+│  EInvoiceAdapter (interface) + capabilities filter   │
+│  PA-agnostic: emitInvoice, searchInvoices, ...       │
+├──────────┬───────────┬───────────────────────────────┤
+│  Iopole  │ Storecove │  Other adapters via interface │
+│ (PDP FR) │(Peppol AP)│                               │
+│ 39 tools │ 21 tools  │                               │
+└──────────┴───────────┴───────────────────────────────┘
 ```
 
-Chaque PA (Plateforme Agréée) implémente `EInvoiceAdapter`. Les tools MCP appellent l'adapter, jamais l'API directement.
+Chaque PA (Plateforme Agréée / Access Point) implémente `EInvoiceAdapter`. Les tools MCP appellent l'adapter, jamais l'API directement. Seuls les tools supportés par l'adaptateur actif sont exposés au LLM (filtrage par `capabilities`).
 
 ## Configuration
 
@@ -29,27 +31,26 @@ Chaque PA (Plateforme Agréée) implémente `EInvoiceAdapter`. Les tools MCP app
 
 ```bash
 # Choix du provider (default: iopole)
-EINVOICE_ADAPTER=iopole
+EINVOICE_ADAPTER=iopole   # ou storecove
 
-# Config Iopole — OAuth2 client credentials
+# ── Iopole (PDP française, B2B) ──
 IOPOLE_API_URL=https://api.ppd.iopole.fr/v1      # sandbox
 IOPOLE_CLIENT_ID=your-client-id
 IOPOLE_CLIENT_SECRET=your-client-secret
 IOPOLE_CUSTOMER_ID=your-customer-id               # required since 2026-02-01
-
 # Optionnel — token endpoint Keycloak (default: production)
-# Sandbox : https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token
-IOPOLE_AUTH_URL=https://auth.iopole.com/realms/iopole/protocol/openid-connect/token
+IOPOLE_AUTH_URL=https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token
 
-# Sécurité (optionnel — mode HTTP du serveur MCP)
-MCP_AUTH_PROVIDER=oidc
-MCP_AUTH_ISSUER=https://auth.example.com
-MCP_AUTH_AUDIENCE=mcp-einvoice
-MCP_AUTH_JWKS_URI=https://auth.example.com/.well-known/jwks.json
+# ── Storecove (Peppol Access Point, international) ──
+STORECOVE_API_URL=https://api.storecove.com/api/v2
+STORECOVE_API_KEY=your-api-key
+# Optionnel — default legal entity for submissions
+STORECOVE_LEGAL_ENTITY_ID=12345
 ```
 
 ### MCP config (stdio mode)
 
+**Iopole :**
 ```json
 {
   "mcpServers": {
@@ -68,6 +69,23 @@ MCP_AUTH_JWKS_URI=https://auth.example.com/.well-known/jwks.json
 }
 ```
 
+**Storecove :**
+```json
+{
+  "mcpServers": {
+    "einvoice": {
+      "command": "deno",
+      "args": ["run", "--allow-all", "server.ts"],
+      "env": {
+        "EINVOICE_ADAPTER": "storecove",
+        "STORECOVE_API_URL": "https://api.storecove.com/api/v2",
+        "STORECOVE_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
 ### HTTP mode
 
 ```bash
@@ -78,39 +96,55 @@ Options :
 - `--http` — mode HTTP (default: stdio)
 - `--port=3015` — port HTTP (default: 3015)
 - `--hostname=0.0.0.0` — hostname (default: 0.0.0.0)
-- `--adapter=iopole` — override le provider (default: env `EINVOICE_ADAPTER` ou `iopole`)
+- `--adapter=storecove` — override le provider (default: env `EINVOICE_ADAPTER` ou `iopole`)
 - `--categories=invoice,status` — filtrer les catégories de tools
 
-**Note** : en mode HTTP, le `generated-store` (flow generate → emit) est in-memory et single-instance. Ne pas déployer derrière un load-balancer sans sticky sessions.
+**Note** : en mode HTTP, le `generated-store` (flow generate → submit) est in-memory et single-instance. Ne pas déployer derrière un load-balancer sans sticky sessions.
 
-## Tools (27)
+## Tools (39)
 
 | Catégorie | N | Tools | Description |
 |-----------|---|-------|-------------|
-| **invoice** | 13 | `emit`, `search`, `get`, `download`, `download_readable`, `files`, `attachments`, `download_file`, `mark_seen`, `not_seen`, `generate_cii`, `generate_ubl`, `generate_facturx` | Émission, recherche, téléchargement, génération CII/UBL/Factur-X |
+| **invoice** | 11 | `submit`, `search`, `get`, `download`, `download_readable`, `files`, `attachments`, `download_file`, `generate_cii`, `generate_ubl`, `generate_facturx` | Soumission, recherche, téléchargement, génération CII/UBL/Factur-X |
 | **directory** | 3 | `fr_search`, `int_search`, `peppol_check` | Annuaire PPF (France) + Peppol (international) |
-| **status** | 4 | `send`, `history`, `not_seen`, `mark_seen` | Cycle de vie facture (APPROVED, REFUSED, DISPUTED, PAYMENT_SENT...) |
+| **status** | 2 | `send`, `history` | Cycle de vie facture (APPROVED, REFUSED, DISPUTED, PAYMENT_SENT...) |
 | **reporting** | 2 | `invoice_transaction`, `transaction` | E-reporting DGFiP (B2C, international) |
 | **webhook** | 5 | `list`, `get`, `create`, `update`, `delete` | Notifications temps réel |
+| **config** | 16 | `customer_id`, `entities_list`, `entity_get`, `entity_create_legal`, `entity_create_office`, `enroll_fr`, `entity_claim`, `entity_delete`, `network_register`, `network_register_by_id`, `network_unregister`, `identifier_create`, `identifier_create_by_scheme`, `identifier_delete`, `entity_configure`, `claim_delete` | Entités, inscription, réseaux, identifiants |
 
-Tous les noms de tools sont préfixés `einvoice_<category>_` (ex: `einvoice_invoice_search`).
+Tous les noms sont préfixés `einvoice_<category>_` (ex: `einvoice_invoice_search`).
 
-### Flow generate → preview → emit
+Chaque tool déclare ses `requires` (méthodes adapter nécessaires). Seuls les tools dont l'adaptateur supporte toutes les `requires` sont exposés au LLM.
+
+### Couverture par adaptateur
+
+| Catégorie | Iopole | Storecove |
+|-----------|--------|-----------|
+| invoice (11) | 11 | 3 (submit, get, download) |
+| directory (3) | 3 | 3 |
+| status (2) | 2 | 1 (history) |
+| reporting (2) | 2 | 0 |
+| webhook (5) | 5 | 2 (list, delete) |
+| config (16) | 16 | 10 |
+| **Total** | **39** | **~21** |
+
+### Flow generate → preview → submit
 
 1. **Generate** (`generate_cii`, `generate_ubl`, `generate_facturx`) : Génère le XML/PDF, stocke le fichier côté serveur, retourne un `generated_id` + preview pour le viewer
 2. **Preview** : Le `invoice-viewer` affiche la facture avec un bouton "Déposer"
-3. **Emit** (`emit`) : Accepte `generated_id` (consomme le fichier stocké) ou `file_base64` + `filename` direct
+3. **Submit** (`submit`) : Accepte `generated_id` (consomme le fichier stocké) ou `file_base64` + `filename` direct
 
 Les fichiers générés expirent après 10 minutes.
 
-## MCP Apps (4 viewers)
+## MCP Apps (5 viewers)
 
 | Viewer | Tools associés | Description |
 |--------|---------------|-------------|
-| **invoice-viewer** | `get`, `generate_*` | Facture détaillée avec actions (accepter, rejeter, contester, marquer lu, télécharger, déposer) |
-| **doclist-viewer** | `search`, `not_seen`, `fr_search`, `int_search`, `webhook_list` | Table générique avec drill-down (clic → appel tool) |
+| **invoice-viewer** | `get`, `generate_*` | Facture détaillée avec actions (accepter, rejeter, contester, télécharger, déposer) |
+| **doclist-viewer** | `search`, `fr_search`, `int_search`, `webhook_list`, `entities_list` | Table générique avec drill-down (clic → appel tool) |
 | **status-timeline** | `history` | Timeline verticale des changements de statut |
-| **directory-card** | `fr_search` (single result) | Fiche entreprise avec SIREN/SIRET, réseaux, détails |
+| **directory-card** | `entity_get` | Fiche entreprise avec SIREN/SIRET, réseaux, détails |
+| **action-result** | `enroll_fr`, `network_register`, etc. | Résultat d'action avec feedback visuel |
 
 Build des viewers :
 
@@ -118,66 +152,31 @@ Build des viewers :
 cd src/ui && node build-all.mjs
 ```
 
-## Utilisation directe de l'adapter
+## Ajouter un adapter
+
+1. Créer `src/adapters/<name>/adapter.ts` implémentant `EInvoiceAdapter`
+2. Déclarer les `capabilities` (méthodes supportées)
+3. Ajouter le client HTTP dans `client.ts`
+4. Exporter dans `src/adapters/mod.ts`
+5. Ajouter le case dans `server.ts` → `createAdapter()`
+6. Ajouter les API specs dans `api-specs/` et un `README.md`
 
 ```typescript
-import { createIopoleAdapter } from "@casys/mcp-einvoice";
+import type { EInvoiceAdapter } from "../../adapter.ts";
 
-const adapter = createIopoleAdapter();
-
-// Rechercher des factures (Lucene syntax)
-const results = await adapter.searchInvoices({
-  q: 'status:accepted AND direction:received',
-  expand: "businessData",
-  offset: 0,
-  limit: 20,
-});
-
-// Envoyer un statut
-await adapter.sendStatus({
-  invoiceId: "uuid-de-la-facture",
-  code: "APPROVED",
-  message: "Facture validée",
-});
-
-// Chercher dans l'annuaire PPF
-const company = await adapter.searchDirectoryFr({
-  q: 'siret:"43446637100011"',
-});
-
-// Générer une facture CII
-const xml = await adapter.generateCII({
-  invoice: { invoiceId: "F-001", seller: { ... }, buyer: { ... }, ... },
-  flavor: "EN16931",
-});
-```
-
-## Ajouter un adapter (nouveau PA)
-
-1. Créer `src/adapters/my-pa.ts` implémentant `EInvoiceAdapter`
-2. Ajouter le case dans `server.ts` → `createAdapter()`
-
-```typescript
-import type { EInvoiceAdapter } from "../adapter.ts";
-
-export class MyPAAdapter implements EInvoiceAdapter {
-  readonly name = "my-pa";
-  // Implémenter les 27 méthodes de l'interface
+export class MyAdapter implements EInvoiceAdapter {
+  readonly name = "my-adapter";
+  readonly capabilities = new Set([
+    "emitInvoice", "getInvoice", "searchDirectoryFr",
+    // ... only methods this adapter actually supports
+  ]);
+  // Implement all 43 interface methods
+  // Supported methods → real API calls
+  // Unsupported methods → throw NotSupportedError with alternative
 }
 ```
 
-L'interface `EInvoiceAdapter` est définie dans `src/adapter.ts` — 27 méthodes couvrant factures, annuaire, statuts, reporting et webhooks.
-
-## Node.js
-
-Build single-file CLI via esbuild :
-
-```bash
-./scripts/build-node.sh
-# Produit dist-node/bin/mcp-einvoice.mjs (~1.3MB)
-```
-
-Le script swap `runtime.ts` par `runtime.node.ts` et strip les extensions `.ts` des imports.
+L'interface `EInvoiceAdapter` est définie dans `src/adapter.ts` — 43 méthodes couvrant factures, annuaire, statuts, reporting, webhooks et configuration opérateur. Voir `src/adapters/README.md` pour le guide détaillé.
 
 ## Structure
 
@@ -185,41 +184,50 @@ Le script swap `runtime.ts` par `runtime.node.ts` et strip les extensions `.ts` 
 ├── deno.json              # Package @casys/mcp-einvoice
 ├── mod.ts                 # Public API
 ├── server.ts              # MCP server (stdio + HTTP)
-├── scripts/
-│   └── build-node.sh      # esbuild single-file build
+├── .env.example           # Template variables (iopole + storecove)
 └── src/
-    ├── adapter.ts         # EInvoiceAdapter interface (26 méthodes)
-    ├── generated-store.ts # Temp file store (generate → emit flow)
+    ├── adapter.ts         # EInvoiceAdapter interface (43 methods + capabilities)
+    ├── generated-store.ts # Temp file store (generate → submit flow)
+    ├── client.ts          # EInvoiceToolsClient (tools registry + capability filtering)
     ├── adapters/
-    │   └── iopole.ts      # IopoleAdapter
-    ├── api/
-    │   └── iopole-client.ts  # HTTP client + OAuth2 token provider
+    │   ├── mod.ts         # Adapter exports
+    │   ├── README.md      # Guide: adding new adapters
+    │   ├── iopole/        # Iopole PDP (French B2B)
+    │   │   ├── adapter.ts
+    │   │   ├── client.ts  # HTTP + OAuth2
+    │   │   ├── README.md  # Iopole-specific docs
+    │   │   └── api-specs/ # 6 OpenAPI JSON specs
+    │   └── storecove/     # Storecove Peppol AP (international)
+    │       ├── adapter.ts
+    │       ├── client.ts  # HTTP + API key
+    │       ├── README.md  # Storecove-specific docs + mapping
+    │       └── api-specs/ # OpenAPI Swagger 2.0 spec
     ├── runtime.ts         # Deno runtime (env vars)
     ├── runtime.node.ts    # Node.js runtime
     ├── tools/
-    │   ├── types.ts       # EInvoiceTool, EInvoiceToolContext
-    │   ├── mod.ts         # Registry (27 tools)
-    │   ├── invoice.ts     # 13 tools
+    │   ├── types.ts       # EInvoiceTool + requires
+    │   ├── mod.ts         # Registry (39 tools)
+    │   ├── invoice.ts     # 11 tools
     │   ├── directory.ts   # 3 tools
-    │   ├── status.ts      # 4 tools
+    │   ├── status.ts      # 2 tools
     │   ├── reporting.ts   # 2 tools
-    │   └── webhook.ts     # 5 tools
+    │   ├── webhook.ts     # 5 tools
+    │   └── config.ts      # 16 tools
     ├── testing/
     │   └── helpers.ts     # Mock fetch, mock adapter
     └── ui/
         ├── build-all.mjs
         ├── shared/          # Theme, brand, refresh
-        ├── invoice-viewer/  # Viewer facture interactif
-        ├── doclist-viewer/  # Table générique drill-down
-        ├── status-timeline/ # Timeline verticale statuts
-        └── directory-card/  # Fiche entreprise
+        ├── invoice-viewer/
+        ├── doclist-viewer/
+        ├── status-timeline/
+        ├── directory-card/
+        └── action-result/
 ```
 
-## Iopole API
+## Adapters
 
-- Production : `https://api.iopole.com/v1`
-- Sandbox : `https://api.ppd.iopole.fr/v1`
-- Search : `https://api.ppd.iopole.fr/v1.1/invoice/search` (version v1.1)
-- Auth : OAuth2 `client_credentials` (token TTL 10 min, auto-refresh 60s avant expiry)
-- Token endpoint : `https://auth.iopole.com/realms/iopole/protocol/openid-connect/token`
-- Header `customer-id` obligatoire sur toutes les requêtes (depuis 2026-02-01)
+| Adapter | Scope | Auth | Sandbox | Status |
+|---------|-------|------|---------|--------|
+| **Iopole** | PDP française (B2B) | OAuth2 client_credentials | api.ppd.iopole.fr | 39/39 tools |
+| **Storecove** | Peppol AP (40+ pays) | API key (Bearer) | 30-day free sandbox | 21/39 tools |

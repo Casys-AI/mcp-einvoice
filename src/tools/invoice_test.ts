@@ -25,9 +25,9 @@ function findTool(name: string) {
 
 // ── Emit ─────────────────────────────────────────────────
 
-Deno.test("einvoice_invoice_emit - calls adapter.emitInvoice with file", async () => {
+Deno.test("einvoice_invoice_submit - calls adapter.emitInvoice with file", async () => {
   const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_invoice_emit");
+  const tool = findTool("einvoice_invoice_submit");
 
   // btoa("hello") = "aGVsbG8="
   await tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.pdf" }, { adapter });
@@ -39,9 +39,9 @@ Deno.test("einvoice_invoice_emit - calls adapter.emitInvoice with file", async (
   assertEquals(arg.file instanceof Uint8Array, true);
 });
 
-Deno.test("einvoice_invoice_emit - throws without required fields", async () => {
+Deno.test("einvoice_invoice_submit - throws without required fields", async () => {
   const { adapter } = createMockAdapter();
-  const tool = findTool("einvoice_invoice_emit");
+  const tool = findTool("einvoice_invoice_submit");
 
   await assertRejects(
     () => tool.handler({}, { adapter }),
@@ -50,9 +50,9 @@ Deno.test("einvoice_invoice_emit - throws without required fields", async () => 
   );
 });
 
-Deno.test("einvoice_invoice_emit - throws for invalid filename extension", async () => {
+Deno.test("einvoice_invoice_submit - throws for invalid filename extension", async () => {
   const { adapter } = createMockAdapter();
-  const tool = findTool("einvoice_invoice_emit");
+  const tool = findTool("einvoice_invoice_submit");
 
   await assertRejects(
     () => tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.docx" }, { adapter }),
@@ -201,31 +201,7 @@ Deno.test("einvoice_invoice_download_file - throws without file_id", async () =>
   );
 });
 
-// ── Mark Seen ────────────────────────────────────────────
-
-Deno.test("einvoice_invoice_mark_seen - calls adapter.markInvoiceSeen", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_invoice_mark_seen");
-
-  await tool.handler({ id: "inv-123" }, { adapter });
-
-  assertEquals(calls[0].method, "markInvoiceSeen");
-  assertEquals(calls[0].args[0], "inv-123");
-});
-
-// ── Not Seen ─────────────────────────────────────────────
-
-Deno.test("einvoice_invoice_not_seen - calls adapter.getUnseenInvoices with offset/limit", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_invoice_not_seen");
-
-  await tool.handler({ offset: 10, limit: 5 }, { adapter });
-
-  assertEquals(calls[0].method, "getUnseenInvoices");
-  const arg = calls[0].args[0] as Record<string, unknown>;
-  assertEquals(arg.offset, 10);
-  assertEquals(arg.limit, 5);
-});
+// mark_seen / seen / notSeen tools removed in v0.2.0 — see docs/CHANGELOG.md
 
 // ── Generate Formats (preview flow) ──────────────────────
 
@@ -292,10 +268,10 @@ Deno.test("einvoice_invoice_generate_facturx - returns generated_id, no auto-emi
 
 // ── Emit via generated_id ────────────────────────────────
 
-Deno.test("einvoice_invoice_emit - emits from generated_id", async () => {
+Deno.test("einvoice_invoice_submit - emits from generated_id", async () => {
   _clearStore();
   const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_invoice_emit");
+  const tool = findTool("einvoice_invoice_submit");
 
   // Store a file first
   const file = new Uint8Array([10, 20, 30]);
@@ -310,10 +286,10 @@ Deno.test("einvoice_invoice_emit - emits from generated_id", async () => {
   assertEquals(arg.file instanceof Uint8Array, true);
 });
 
-Deno.test("einvoice_invoice_emit - throws for expired generated_id", async () => {
+Deno.test("einvoice_invoice_submit - throws for expired generated_id", async () => {
   _clearStore();
   const { adapter } = createMockAdapter();
-  const tool = findTool("einvoice_invoice_emit");
+  const tool = findTool("einvoice_invoice_submit");
 
   const id = storeGenerated(new Uint8Array([1]), "old.xml");
   _expireEntry(id);
@@ -386,25 +362,7 @@ Deno.test("einvoice_invoice_get - falls back to metadata.direction when way is a
   assertEquals(result.direction, "sent");
 });
 
-// ── C1 fix: not_seen idField matches formatted rows ─────
-
-Deno.test("einvoice_invoice_not_seen - _rowAction.idField is '_id' (matches formatted rows)", async () => {
-  const mockResponse = {
-    data: [
-      { metadata: { invoiceId: "inv-99", state: "DELIVERED", direction: "INBOUND", createDate: "2026-03-15T10:00:00Z" } },
-    ],
-  };
-  const { adapter } = createMockAdapter(mockResponse);
-  const tool = findTool("einvoice_invoice_not_seen");
-
-  const result = (await tool.handler({}, { adapter })) as Record<string, unknown>;
-  const rowAction = result._rowAction as Record<string, string>;
-  assertEquals(rowAction.idField, "_id");
-
-  // Verify formatted rows have _id field
-  const data = result.data as Record<string, unknown>[];
-  assertEquals(data[0]._id, "inv-99");
-});
+// einvoice_invoice_not_seen test removed — tool removed in v0.2.0
 
 // ── M2 fix: TextEncoder produces correct UTF-8 bytes ────
 
@@ -457,7 +415,4 @@ Deno.test("einvoice_invoice_get has invoice-viewer UI", () => {
   assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/invoice-viewer");
 });
 
-Deno.test("einvoice_invoice_not_seen has doclist-viewer UI", () => {
-  const tool = findTool("einvoice_invoice_not_seen");
-  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
-});
+// einvoice_invoice_not_seen UI test removed — tool removed in v0.2.0

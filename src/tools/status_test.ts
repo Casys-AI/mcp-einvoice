@@ -56,37 +56,7 @@ Deno.test("einvoice_status_history - throws without invoice_id", async () => {
   );
 });
 
-Deno.test("einvoice_status_not_seen - calls adapter.getUnseenStatuses with offset/limit", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_status_not_seen");
-
-  await tool.handler({ offset: 10 }, { adapter });
-
-  assertEquals(calls[0].method, "getUnseenStatuses");
-  const arg = calls[0].args[0] as Record<string, unknown>;
-  assertEquals(arg.offset, 10);
-});
-
-Deno.test("einvoice_status_mark_seen - calls adapter.markStatusSeen with statusId", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_status_mark_seen");
-
-  await tool.handler({ status_id: "st-1" }, { adapter });
-
-  assertEquals(calls[0].method, "markStatusSeen");
-  assertEquals(calls[0].args[0], "st-1");
-});
-
-Deno.test("einvoice_status_mark_seen - throws without status_id", async () => {
-  const { adapter } = createMockAdapter();
-  const tool = findTool("einvoice_status_mark_seen");
-
-  await assertRejects(
-    () => tool.handler({}, { adapter }),
-    Error,
-    "'status_id' is required",
-  );
-});
+// seen/notSeen tools removed in v0.2.0 — see docs/CHANGELOG.md
 
 // ── H4 fix: status_history normalizes response shape ─────
 
@@ -139,7 +109,4 @@ Deno.test("einvoice_status_history - returns empty entries for unexpected shape"
 
 // ── _meta.ui ─────────────────────────────────────────────
 
-Deno.test("einvoice_status_not_seen has doclist-viewer UI", () => {
-  const tool = findTool("einvoice_status_not_seen");
-  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
-});
+// einvoice_status_not_seen UI test removed — tool removed in v0.2.0

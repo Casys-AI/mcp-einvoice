@@ -14,6 +14,7 @@ export const reportingTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_reporting_invoice_transaction",
+    requires: ["reportInvoiceTransaction"],
     description:
       "Report an invoice transaction to the French tax authority (e-reporting). " +
       "Required for B2C and international invoice transactions. " +
@@ -54,6 +55,7 @@ export const reportingTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_reporting_transaction",
+    requires: ["reportTransaction"],
     description:
       "Report a non-invoice transaction to the French tax authority (e-reporting). " +
       "Covers payment data, B2C cash transactions, etc. " +
