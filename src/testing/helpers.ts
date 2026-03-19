@@ -124,7 +124,11 @@ export function createMockAdapter(
     // Invoice
     emitInvoice: (req) => record("emitInvoice", req),
     searchInvoices: (filters) => record("searchInvoices", filters),
-    getInvoice: (id) => record("getInvoice", id),
+    getInvoice: (id) => record("getInvoice", id).then(() => ({
+      id: id as string,
+      status: "DELIVERED",
+      direction: "received" as const,
+    })),
     downloadInvoice: (id) =>
       record("downloadInvoice", id).then(() => ({
         data: new Uint8Array([1, 2, 3]),

@@ -87,16 +87,19 @@ Deno.test("SuperPDPAdapter.searchInvoices() - GET /invoices", async () => {
   }
 });
 
-Deno.test("SuperPDPAdapter.getInvoice() - GET /invoices/{id}", async () => {
+Deno.test("SuperPDPAdapter.getInvoice() - returns normalized InvoiceDetail", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: { id: "inv-1", status: "delivered" } },
+    { status: 200, body: { id: "inv-1", status: "delivered", direction: "incoming", sender: { name: "Acme", siret: "12345678900001" } } },
   ]);
 
   try {
     const adapter = makeAdapter();
     const result = await adapter.getInvoice("inv-1");
 
-    assertEquals(result, { id: "inv-1", status: "delivered" });
+    assertEquals(result.id, "inv-1");
+    assertEquals(result.status, "delivered");
+    assertEquals(result.direction, "received");
+    assertEquals(result.senderName, "Acme");
     assertEquals(new URL(captured[0].url).pathname, "/v1.beta/invoices/inv-1");
   } finally {
     restore();

@@ -12,6 +12,8 @@
 
 import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import type {
+  InvoiceDetail,
+  InvoiceDirection,
   StatusHistoryResult,
   StatusEntry,
   DownloadResult,
@@ -78,10 +80,53 @@ export class IopoleAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async getInvoice(id: string): Promise<unknown> {
-    // Always expand businessData — without it Iopole returns a skeleton
-    // with businessData: null (no seller, buyer, lines, monetary data).
-    return await this.client.get(`/invoice/${id}`, { expand: "businessData" });
+  override async getInvoice(id: string): Promise<InvoiceDetail> {
+    // Fetch invoice + status history in parallel (Iopole getInvoice has no state field)
+    const [raw, history] = await Promise.all([
+      this.client.get(`/invoice/${id}`, { expand: "businessData" }),
+      this.getStatusHistory(id).catch(() => ({ entries: [] })),
+    ]);
+    // deno-lint-ignore no-explicit-any
+    const inv = (Array.isArray(raw) ? raw[0] : raw) as any;
+    const latestStatus = history.entries.length > 0
+      ? [...history.entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].code
+      : undefined;
+
+    const bd = inv?.businessData;
+    return {
+      id: inv?.invoiceId ?? id,
+      invoiceNumber: bd?.invoiceId,
+      status: latestStatus ?? inv?.state ?? inv?.status ?? "UNKNOWN",
+      direction: normalizeDirection(inv?.way ?? inv?.metadata?.direction),
+      format: inv?.originalFormat,
+      network: inv?.originalNetwork,
+      invoiceType: bd?.detailedType?.value,
+      senderName: bd?.seller?.name,
+      senderId: bd?.seller?.siret ?? bd?.seller?.siren,
+      senderVat: bd?.seller?.vatNumber,
+      receiverName: bd?.buyer?.name,
+      receiverId: bd?.buyer?.siret ?? bd?.buyer?.siren,
+      receiverVat: bd?.buyer?.vatNumber,
+      issueDate: bd?.invoiceDate,
+      dueDate: bd?.invoiceDueDate,
+      receiptDate: bd?.invoiceReceiptDate,
+      currency: bd?.monetary?.invoiceCurrency ?? "EUR",
+      totalHt: bd?.monetary?.taxBasisTotalAmount?.amount,
+      totalTax: bd?.monetary?.taxTotalAmount?.amount,
+      totalTtc: bd?.monetary?.invoiceAmount?.amount,
+      lines: bd?.lines?.map((l: Record<string, unknown>) => {
+        // deno-lint-ignore no-explicit-any
+        const line = l as any;
+        return {
+          description: line.item?.name,
+          quantity: line.billedQuantity?.quantity,
+          unitPrice: line.price?.netAmount?.amount,
+          taxRate: line.taxDetail?.percent,
+          amount: line.totalAmount?.amount,
+        };
+      }),
+      notes: bd?.notes?.map((n: Record<string, unknown>) => (n as { content?: string }).content).filter(Boolean),
+    };
   }
 
   override async downloadInvoice(id: string): Promise<DownloadResult> {
@@ -297,6 +342,14 @@ export class IopoleAdapter extends AfnorBaseAdapter {
 }
 
 // ─── Helpers ──────────────────────────────────────────
+
+/** Map Iopole direction codes to normalized InvoiceDirection. */
+function normalizeDirection(raw: string | undefined): InvoiceDirection | undefined {
+  if (!raw) return undefined;
+  if (raw === "RECEIVED" || raw === "INBOUND") return "received";
+  if (raw === "SENT" || raw === "EMITTED" || raw === "OUTBOUND") return "sent";
+  return raw.toLowerCase() as InvoiceDirection;
+}
 
 /** Normalize Iopole status history response (array, {data}, {entries}, {history}) into StatusHistoryResult. */
 function normalizeStatusHistory(raw: unknown): StatusHistoryResult {

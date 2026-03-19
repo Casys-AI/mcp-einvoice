@@ -13,6 +13,7 @@
 import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import { AfnorClient } from "../afnor/client.ts";
 import type {
+  InvoiceDetail,
   StatusHistoryResult,
   DownloadResult,
   EmitInvoiceRequest,
@@ -73,8 +74,23 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async getInvoice(id: string): Promise<unknown> {
-    return await this.client.get(`/invoices/${id}`);
+  override async getInvoice(id: string): Promise<InvoiceDetail> {
+    // deno-lint-ignore no-explicit-any
+    const inv = await this.client.get(`/invoices/${id}`) as any;
+    return {
+      id: inv.id ?? id,
+      invoiceNumber: inv.invoice_id ?? inv.external_id,
+      status: inv.status,
+      direction: inv.direction === "incoming" ? "received" : inv.direction === "outgoing" ? "sent" : undefined,
+      senderName: inv.sender?.name,
+      senderId: inv.sender?.siret,
+      receiverName: inv.receiver?.name,
+      receiverId: inv.receiver?.siret,
+      issueDate: inv.issue_date,
+      dueDate: inv.due_date,
+      currency: inv.currency ?? "EUR",
+      totalTtc: inv.total_amount,
+    };
   }
 
   override async downloadInvoice(id: string): Promise<DownloadResult> {

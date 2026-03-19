@@ -12,6 +12,7 @@
 
 import type {
   EInvoiceAdapter,
+  InvoiceDetail,
   StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
@@ -106,8 +107,21 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async getInvoice(id: string): Promise<unknown> {
-    return await this.client.get(`/received_documents/${id}/json`);
+  async getInvoice(id: string): Promise<InvoiceDetail> {
+    // deno-lint-ignore no-explicit-any
+    const doc = await this.client.get(`/received_documents/${id}/json`) as any;
+    return {
+      id,
+      invoiceNumber: doc.invoiceNumber ?? doc.document?.invoiceNumber,
+      status: doc.status ?? "received",
+      direction: "received" as const,
+      senderName: doc.accountingSupplierParty?.party?.partyName,
+      receiverName: doc.accountingCustomerParty?.party?.partyName,
+      issueDate: doc.issueDate,
+      dueDate: doc.dueDate,
+      currency: doc.documentCurrencyCode ?? "EUR",
+      totalTtc: doc.legalMonetaryTotal?.payableAmount,
+    };
   }
 
   async downloadInvoice(id: string): Promise<DownloadResult> {

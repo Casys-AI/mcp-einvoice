@@ -44,6 +44,49 @@ export interface DirectoryIntSearchFilters extends PaginatedRequest {
   value: string;
 }
 
+// ─── Normalized Invoice Types ─────────────────────────────
+
+/** Direction of an invoice, normalized across all PAs. */
+export type InvoiceDirection = "received" | "sent";
+
+/** A line item in an invoice. */
+export interface InvoiceLineItem {
+  description?: string;
+  quantity?: number;
+  unitPrice?: number;
+  taxRate?: number;
+  amount?: number;
+}
+
+/**
+ * Normalized invoice detail — PA-agnostic.
+ * All fields optional (skeleton invoices may only have id + status + direction).
+ */
+export interface InvoiceDetail {
+  id: string;
+  invoiceNumber?: string;
+  status?: string;
+  direction?: InvoiceDirection;
+  format?: string;
+  network?: string;
+  invoiceType?: string;
+  senderName?: string;
+  senderId?: string;
+  senderVat?: string;
+  receiverName?: string;
+  receiverId?: string;
+  receiverVat?: string;
+  issueDate?: string;
+  dueDate?: string;
+  receiptDate?: string;
+  currency?: string;
+  totalHt?: number;
+  totalTax?: number;
+  totalTtc?: number;
+  lines?: InvoiceLineItem[];
+  notes?: string[];
+}
+
 // ─── Generate Types ──────────────────────────────────────
 
 export interface GenerateInvoiceRequest {
@@ -116,7 +159,7 @@ export interface EInvoiceAdapter {
 
   emitInvoice(req: EmitInvoiceRequest): Promise<unknown>;
   searchInvoices(filters: InvoiceSearchFilters): Promise<unknown>;
-  getInvoice(id: string): Promise<unknown>;
+  getInvoice(id: string): Promise<InvoiceDetail>;
   downloadInvoice(id: string): Promise<DownloadResult>;
   downloadReadable(id: string): Promise<DownloadResult>;
   getInvoiceFiles(id: string): Promise<unknown>;

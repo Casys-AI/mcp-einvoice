@@ -114,16 +114,24 @@ Deno.test("IopoleAdapter.searchInvoices() - defaults offset=0, limit=50", async 
   }
 });
 
-Deno.test("IopoleAdapter.getInvoice() - GET /invoice/{id}", async () => {
+Deno.test("IopoleAdapter.getInvoice() - returns normalized InvoiceDetail", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: { id: "inv-123", status: "deposited" } },
+    // 1st: getInvoice
+    { status: 200, body: { invoiceId: "inv-123", state: "DELIVERED", way: "RECEIVED", businessData: { invoiceId: "F-001", seller: { name: "Acme" }, buyer: { name: "Corp" }, monetary: { invoiceCurrency: "EUR", invoiceAmount: { amount: 120 } } } } },
+    // 2nd: getStatusHistory (parallel)
+    { status: 200, body: { data: [{ date: "2026-03-19", status: { code: "DELIVERED" } }] } },
   ]);
 
   try {
     const adapter = makeAdapter();
     const result = await adapter.getInvoice("inv-123");
 
-    assertEquals(result, { id: "inv-123", status: "deposited" });
+    assertEquals(result.id, "inv-123");
+    assertEquals(result.invoiceNumber, "F-001");
+    assertEquals(result.status, "DELIVERED");
+    assertEquals(result.direction, "received");
+    assertEquals(result.senderName, "Acme");
+    assertEquals(result.totalTtc, 120);
     assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-123");
   } finally {
     restore();

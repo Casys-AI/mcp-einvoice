@@ -18,6 +18,7 @@
 
 import type {
   EInvoiceAdapter,
+  InvoiceDetail,
   StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
@@ -87,15 +88,24 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     );
   }
 
-  async getInvoice(id: string): Promise<unknown> {
+  async getInvoice(id: string): Promise<InvoiceDetail> {
     if (!this.afnor) throw this.noAfnor("getInvoice");
-    // Download the flow file as JSON representation
     const { data, contentType } = await this.afnor.downloadFlow(id);
     if (contentType.includes("json")) {
-      return JSON.parse(new TextDecoder().decode(data));
+      // deno-lint-ignore no-explicit-any
+      const doc = JSON.parse(new TextDecoder().decode(data)) as any;
+      return {
+        id,
+        invoiceNumber: doc.invoiceId ?? doc.invoiceNumber,
+        status: doc.ackStatus ?? doc.status,
+        direction: doc.flowDirection === "In" ? "received" : doc.flowDirection === "Out" ? "sent" : undefined,
+        senderName: doc.seller?.name,
+        receiverName: doc.buyer?.name,
+        issueDate: doc.invoiceDate,
+        currency: doc.currency ?? "EUR",
+      };
     }
-    // Return raw metadata if not JSON
-    return { flowId: id, contentType, size: data.length };
+    return { id, status: "UNKNOWN" };
   }
 
   async downloadInvoice(id: string): Promise<DownloadResult> {

@@ -19,13 +19,6 @@ function uint8ToBase64(data: Uint8Array): string {
   return btoa(binary);
 }
 
-/** Map Iopole direction codes to viewer-friendly lowercase values. */
-function normalizeDirection(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
-  if (raw === "RECEIVED" || raw === "INBOUND") return "received";
-  if (raw === "SENT" || raw === "EMITTED" || raw === "OUTBOUND") return "sent";
-  return raw.toLowerCase();
-}
 
 /**
  * Normalize invoice data before sending to Iopole generate API.
@@ -380,72 +373,43 @@ export const invoiceTools: EInvoiceTool[] = [
       }
       const id = input.id as string;
 
-      // Fetch invoice and status history in parallel.
-      // getInvoice doesn't return state — we need getStatusHistory for the latest status.
-      const [raw, historyRaw] = await Promise.all([
-        ctx.adapter.getInvoice(id),
-        ctx.adapter.getStatusHistory(id).catch(() => null),
-      ]);
+      // Adapter returns normalized InvoiceDetail (with status enrichment done internally)
+      const inv = await ctx.adapter.getInvoice(id);
 
-      // Map Iopole structure to invoice-viewer format
-      // deno-lint-ignore no-explicit-any
-      const inv = (Array.isArray(raw) ? raw[0] : raw) as any;
-      const latestStatus = historyRaw ? extractLatestStatusCode(historyRaw) : undefined;
-      if (!inv?.businessData) {
-        const status = latestStatus ?? inv?.state ?? inv?.status ?? "UNKNOWN";
-        // Don't set refreshRequest for INBOUND or terminal statuses — they won't gain businessData
-        const isTerminal = ["REFUSED", "COMPLETED", "CANCELLED", "PAYMENT_RECEIVED", "UNKNOWN"].includes(status);
-        const isInbound = inv?.way === "RECEIVED";
-        return {
-          id: inv?.invoiceId,
-          status,
-          direction: normalizeDirection(inv?.way ?? inv?.metadata?.direction),
-          format: inv?.originalFormat,
-          network: inv?.originalNetwork,
-          issue_date: inv?.date,
-          ...(!isTerminal && !isInbound ? { refreshRequest: { toolName: "einvoice_invoice_get", arguments: { id } } } : {}),
-        };
-      }
-      const bd = inv.businessData;
-      const lines = (bd.lines ?? []).map((l: Record<string, unknown>) => {
-        // deno-lint-ignore no-explicit-any
-        const line = l as any;
-        return {
-          description: line.item?.name,
-          quantity: line.billedQuantity?.quantity,
-          unit_price: line.price?.netAmount?.amount,
-          tax_rate: line.taxDetail?.percent,
-          amount: line.totalAmount?.amount,
-        };
-      });
+      // Map to viewer format (snake_case for invoice-viewer compatibility)
+      const isTerminal = ["REFUSED", "COMPLETED", "CANCELLED", "PAYMENT_RECEIVED", "UNKNOWN"].includes(inv.status ?? "");
       return {
-        id: inv.invoiceId,
-        invoice_number: bd.invoiceId,
-        status: latestStatus ?? inv.state ?? inv.status,
-        direction: normalizeDirection(inv.way ?? inv.metadata?.direction),
-        format: inv.originalFormat,
-        network: inv.originalNetwork,
-        invoice_type: bd.detailedType?.value,
-        sender_name: bd.seller?.name,
-        sender_id: bd.seller?.siret ?? bd.seller?.siren,
-        sender_vat: bd.seller?.vatNumber,
-        receiver_name: bd.buyer?.name,
-        receiver_id: bd.buyer?.siret ?? bd.buyer?.siren,
-        receiver_vat: bd.buyer?.vatNumber,
-        issue_date: bd.invoiceDate,
-        due_date: bd.invoiceDueDate,
-        receipt_date: bd.invoiceReceiptDate,
-        currency: bd.monetary?.invoiceCurrency ?? "EUR",
-        total_ht: bd.monetary?.taxBasisTotalAmount?.amount,
-        total_tax: bd.monetary?.taxTotalAmount?.amount,
-        total_ttc: bd.monetary?.invoiceAmount?.amount,
-        items: lines,
-        notes: (bd.notes ?? []).map((n: Record<string, unknown>) => {
-          // deno-lint-ignore no-explicit-any
-          const note = n as any;
-          return note.content;
-        }).filter(Boolean),
-        refreshRequest: { toolName: "einvoice_invoice_get", arguments: { id } },
+        id: inv.id,
+        invoice_number: inv.invoiceNumber,
+        status: inv.status,
+        direction: inv.direction,
+        format: inv.format,
+        network: inv.network,
+        invoice_type: inv.invoiceType,
+        sender_name: inv.senderName,
+        sender_id: inv.senderId,
+        sender_vat: inv.senderVat,
+        receiver_name: inv.receiverName,
+        receiver_id: inv.receiverId,
+        receiver_vat: inv.receiverVat,
+        issue_date: inv.issueDate,
+        due_date: inv.dueDate,
+        receipt_date: inv.receiptDate,
+        currency: inv.currency,
+        total_ht: inv.totalHt,
+        total_tax: inv.totalTax,
+        total_ttc: inv.totalTtc,
+        items: inv.lines?.map((l) => ({
+          description: l.description,
+          quantity: l.quantity,
+          unit_price: l.unitPrice,
+          tax_rate: l.taxRate,
+          amount: l.amount,
+        })),
+        notes: inv.notes,
+        ...(!isTerminal && inv.direction !== "received"
+          ? { refreshRequest: { toolName: "einvoice_invoice_get", arguments: { id } } }
+          : {}),
       };
     },
   },

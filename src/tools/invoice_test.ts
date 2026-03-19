@@ -334,32 +334,15 @@ Deno.test("generated-store - expired entries return null", () => {
   assertEquals(result, null);
 });
 
-// ── M4 fix: direction fallback inv.way → metadata.direction ──
+// ── Direction normalization is now in the adapter ──
 
-Deno.test("einvoice_invoice_get - resolves direction from inv.way", async () => {
-  const mockResponse = {
-    invoiceId: "inv-1",
-    way: "RECEIVED",
-    businessData: { seller: { name: "A" }, buyer: { name: "B" } },
-  };
-  const { adapter } = createMockAdapter(mockResponse);
+Deno.test("einvoice_invoice_get - passes through normalized direction from adapter", async () => {
+  const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_get");
 
+  // Mock adapter returns InvoiceDetail with direction already normalized
   const result = (await tool.handler({ id: "inv-1" }, { adapter })) as Record<string, unknown>;
-  assertEquals(result.direction, "received");
-});
-
-Deno.test("einvoice_invoice_get - falls back to metadata.direction when way is absent", async () => {
-  const mockResponse = {
-    invoiceId: "inv-2",
-    metadata: { direction: "OUTBOUND" },
-    businessData: { seller: { name: "A" }, buyer: { name: "B" } },
-  };
-  const { adapter } = createMockAdapter(mockResponse);
-  const tool = findTool("einvoice_invoice_get");
-
-  const result = (await tool.handler({ id: "inv-2" }, { adapter })) as Record<string, unknown>;
-  assertEquals(result.direction, "sent");
+  assertEquals(result.direction, "received"); // from mock default
 });
 
 // einvoice_invoice_not_seen test removed — tool removed in v0.2.0
