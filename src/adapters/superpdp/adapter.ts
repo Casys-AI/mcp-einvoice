@@ -15,6 +15,7 @@ import { AfnorClient } from "../afnor/client.ts";
 import type {
   InvoiceDetail,
   SearchInvoicesResult,
+  SearchDirectoryFrResult,
   StatusHistoryResult,
   DownloadResult,
   EmitInvoiceRequest,
@@ -163,9 +164,19 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   // ─── Directory (native) ───────────────────────────────
 
-  override async searchDirectoryFr(_filters: DirectoryFrSearchFilters): Promise<unknown> {
-    // Super PDP only lists own company's directory entries
-    return await this.client.get("/directory_entries");
+  override async searchDirectoryFr(_filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.get("/directory_entries") as any;
+    const data = Array.isArray(raw) ? raw : (raw?.data ?? []);
+    // deno-lint-ignore no-explicit-any
+    const rows = data.map((entry: any) => ({
+      entityId: entry.id ?? "",
+      name: entry.name,
+      siret: entry.siret,
+      siren: entry.siren,
+      country: entry.country ?? "FR",
+    }));
+    return { rows, count: rows.length };
   }
 
   // ─── Operator Config (native) ─────────────────────────

@@ -57,6 +57,40 @@ export interface SearchInvoicesResult {
 
 // ─── Directory Types ──────────────────────────────────────
 
+/** A single row in French directory search results. */
+export interface DirectoryFrRow {
+  entityId: string;
+  name?: string;
+  type?: string;
+  siren?: string;
+  siret?: string;
+  country?: string;
+  identifiers?: unknown[];
+}
+
+/** Normalized return type for searchDirectoryFr. */
+export interface SearchDirectoryFrResult {
+  rows: DirectoryFrRow[];
+  count: number;
+}
+
+/** A business entity managed by the operator. */
+export interface BusinessEntityRow {
+  entityId: string;
+  name?: string;
+  type?: string;
+  siren?: string;
+  siret?: string;
+  scope?: string;
+  country?: string;
+}
+
+/** Normalized return type for listBusinessEntities. */
+export interface ListBusinessEntitiesResult {
+  rows: BusinessEntityRow[];
+  count: number;
+}
+
 export interface DirectoryFrSearchFilters extends PaginatedRequest {
   q: string;
 }
@@ -194,7 +228,7 @@ export interface EInvoiceAdapter {
 
   // ─── Directory ────────────────────────────────────────
 
-  searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<unknown>;
+  searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult>;
   searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown>;
   checkPeppolParticipant(scheme: string, value: string): Promise<unknown>;
 
@@ -221,7 +255,7 @@ export interface EInvoiceAdapter {
   // ─── Operator Config ───────────────────────────────────
 
   getCustomerId(): Promise<unknown>;
-  listBusinessEntities(): Promise<unknown>;
+  listBusinessEntities(): Promise<ListBusinessEntitiesResult>;
   getBusinessEntity(id: string): Promise<unknown>;
   createLegalUnit(data: Record<string, unknown>): Promise<unknown>;
   createOffice(data: Record<string, unknown>): Promise<unknown>;

@@ -14,6 +14,8 @@ import type {
   EInvoiceAdapter,
   InvoiceDetail,
   SearchInvoicesResult,
+  SearchDirectoryFrResult,
+  ListBusinessEntitiesResult,
   StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
@@ -197,7 +199,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
 
   // ─── Directory ────────────────────────────────────────
 
-  async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<unknown> {
+  async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
     // Map French directory search to Storecove discovery
     // Attempt to detect SIRET/SIREN and map to appropriate Peppol scheme
     return await this.client.post("/discovery/exists", {
@@ -313,7 +315,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async listBusinessEntities(): Promise<unknown> {
+  async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
     throw new NotSupportedError(
       "listBusinessEntities",
       "Storecove has no list-all endpoint for legal entities. " +

@@ -14,7 +14,10 @@ function findTool(name: string) {
   return tool;
 }
 
-Deno.test("einvoice_directory_fr_search - auto-wraps 14-digit SIRET", async () => {
+// Lucene wrapping tests moved to adapter_test.ts (Iopole-specific)
+// Tool now passes raw query to adapter — adapter decides how to wrap it.
+
+Deno.test("einvoice_directory_fr_search - passes raw query to adapter", async () => {
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_directory_fr_search");
 
@@ -22,49 +25,9 @@ Deno.test("einvoice_directory_fr_search - auto-wraps 14-digit SIRET", async () =
 
   assertEquals(calls[0].method, "searchDirectoryFr");
   const arg = calls[0].args[0] as Record<string, unknown>;
-  assertEquals(arg.q, 'siret:"43446637100011"');
+  assertEquals(arg.q, "43446637100011"); // raw, no Lucene wrapping
   assertEquals(arg.offset, 0);
   assertEquals(arg.limit, 20);
-});
-
-Deno.test("einvoice_directory_fr_search - auto-wraps 9-digit SIREN", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_directory_fr_search");
-
-  await tool.handler({ q: "434466371" }, { adapter });
-
-  const arg = calls[0].args[0] as Record<string, unknown>;
-  assertEquals(arg.q, 'siren:"434466371"');
-});
-
-Deno.test("einvoice_directory_fr_search - auto-wraps FR VAT number", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_directory_fr_search");
-
-  await tool.handler({ q: "FR12345678901" }, { adapter });
-
-  const arg = calls[0].args[0] as Record<string, unknown>;
-  assertEquals(arg.q, 'vatNumber:"FR12345678901"');
-});
-
-Deno.test("einvoice_directory_fr_search - auto-wraps company name", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_directory_fr_search");
-
-  await tool.handler({ q: "Casys AI" }, { adapter });
-
-  const arg = calls[0].args[0] as Record<string, unknown>;
-  assertEquals(arg.q, 'name:"*Casys AI*"');
-});
-
-Deno.test("einvoice_directory_fr_search - passes through existing Lucene syntax", async () => {
-  const { adapter, calls } = createMockAdapter();
-  const tool = findTool("einvoice_directory_fr_search");
-
-  await tool.handler({ q: 'siret:"43446637100011" AND name:"Casys"' }, { adapter });
-
-  const arg = calls[0].args[0] as Record<string, unknown>;
-  assertEquals(arg.q, 'siret:"43446637100011" AND name:"Casys"');
 });
 
 Deno.test("einvoice_directory_fr_search - throws without q", async () => {
@@ -76,6 +39,51 @@ Deno.test("einvoice_directory_fr_search - throws without q", async () => {
     Error,
     "'q' query is required",
   );
+});
+
+Deno.test("einvoice_directory_fr_search - formats rows with French columns", async () => {
+  const { adapter } = createMockAdapter();
+  // Override to return normalized data
+  adapter.searchDirectoryFr = async () => ({
+    rows: [{
+      entityId: "be-123",
+      name: "Casys AI",
+      type: "LEGAL_UNIT",
+      siren: "434466371",
+      siret: "43446637100011",
+      country: "FR",
+      identifiers: [{ scheme: "0009", value: "434466371" }],
+    }],
+    count: 1,
+  });
+  const tool = findTool("einvoice_directory_fr_search");
+
+  const result = await tool.handler({ q: "Casys AI" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(result.count, 1);
+  const data = result.data as Record<string, unknown>[];
+  assertEquals(data.length, 1);
+  assertEquals(data[0]["Nom"], "Casys AI");
+  assertEquals(data[0]["Type"], "Entité juridique");
+  assertEquals(data[0]["SIREN"], "434466371");
+  assertEquals(data[0]["SIRET"], "43446637100011");
+  assertEquals(data[0]["Pays"], "FR");
+  assertEquals(data[0]["_id"], "be-123");
+});
+
+Deno.test("einvoice_directory_fr_search - handles OFFICE type", async () => {
+  const { adapter } = createMockAdapter();
+  adapter.searchDirectoryFr = async () => ({
+    rows: [{ entityId: "be-456", name: "Bureau Paris", type: "OFFICE", siret: "43446637100029", country: "FR" }],
+    count: 1,
+  });
+  const tool = findTool("einvoice_directory_fr_search");
+
+  const result = await tool.handler({ q: "Bureau" }, { adapter }) as Record<string, unknown>;
+  const data = result.data as Record<string, unknown>[];
+  assertEquals(data[0]["Type"], "Établissement");
+  assertEquals(data[0]["SIRET"], "43446637100029");
+  assertEquals(data[0]["SIREN"], "—");
 });
 
 Deno.test("einvoice_directory_int_search - calls adapter.searchDirectoryInt with value", async () => {
@@ -122,58 +130,6 @@ Deno.test("einvoice_directory_peppol_check - throws without scheme or value", as
   );
 });
 
-Deno.test("einvoice_directory_fr_search - formats data rows with French columns", async () => {
-  const mockResponse = {
-    meta: { count: 1 },
-    data: [
-      {
-        businessEntityId: "be-123",
-        name: "Casys AI",
-        type: "LEGAL_UNIT",
-        identifiers: [{ scheme: "0009", value: "434466371" }],
-        countryIdentifier: { siren: "434466371", siret: "43446637100011" },
-        identifierScheme: "0009",
-        identifierValue: "434466371",
-        scope: "FR",
-      },
-    ],
-  };
-  const { adapter } = createMockAdapter(mockResponse);
-  const tool = findTool("einvoice_directory_fr_search");
-
-  const result = await tool.handler({ q: "Casys AI" }, { adapter }) as Record<string, unknown>;
-
-  assertEquals(result.count, 1);
-  const data = result.data as Record<string, unknown>[];
-  assertEquals(data.length, 1);
-  assertEquals(data[0]["Nom"], "Casys AI");
-  assertEquals(data[0]["Type"], "Entité juridique");
-  assertEquals(data[0]["SIREN"], "434466371");
-  assertEquals(data[0]["SIRET"], "43446637100011");
-  assertEquals(data[0]["Pays"], "FR");
-  assertEquals(data[0]["_id"], "be-123");
-  // Internal fields are hidden under _identifiers
-  assertEquals(Array.isArray(data[0]["_identifiers"]), true);
-  // Raw fields are stripped
-  assertEquals(data[0]["businessEntityId"], undefined);
-  assertEquals(data[0]["identifierScheme"], undefined);
-  assertEquals(data[0]["scope"], undefined);
-});
-
-Deno.test("einvoice_directory_fr_search - handles OFFICE type", async () => {
-  const mockResponse = {
-    data: [{ businessEntityId: "be-456", name: "Bureau Paris", type: "OFFICE", countryIdentifier: { siret: "43446637100029" } }],
-  };
-  const { adapter } = createMockAdapter(mockResponse);
-  const tool = findTool("einvoice_directory_fr_search");
-
-  const result = await tool.handler({ q: "Bureau" }, { adapter }) as Record<string, unknown>;
-  const data = result.data as Record<string, unknown>[];
-  assertEquals(data[0]["Type"], "Établissement");
-  assertEquals(data[0]["SIRET"], "43446637100029");
-  assertEquals(data[0]["SIREN"], "—");
-});
-
 Deno.test("einvoice_directory_fr_search has doclist-viewer UI", () => {
   const tool = findTool("einvoice_directory_fr_search");
   assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
@@ -183,8 +139,6 @@ Deno.test("einvoice_directory_int_search has doclist-viewer UI", () => {
   const tool = findTool("einvoice_directory_int_search");
   assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
 });
-
-// ── M5 fix: peppol_check has no viewer (boolean result, not card-shaped)
 
 Deno.test("einvoice_directory_peppol_check has no UI viewer", () => {
   const tool = findTool("einvoice_directory_peppol_check");

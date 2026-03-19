@@ -16,6 +16,9 @@ import type {
   InvoiceDirection,
   InvoiceSearchRow,
   SearchInvoicesResult,
+  SearchDirectoryFrResult,
+  DirectoryFrRow,
+  ListBusinessEntitiesResult,
   StatusHistoryResult,
   StatusEntry,
   DownloadResult,
@@ -221,12 +224,30 @@ export class IopoleAdapter extends AfnorBaseAdapter {
 
   // ─── Directory ────────────────────────────────────────
 
-  override async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<unknown> {
-    return await this.client.get("/directory/french", {
-      q: filters.q,
+  override async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
+    const q = autoWrapDirectoryQuery(filters.q);
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.get("/directory/french", {
+      q,
       offset: filters.offset,
       limit: filters.limit,
+    }) as any;
+    const data = (raw.data ?? []) as Array<Record<string, unknown>>;
+    const count = raw.meta?.count ?? raw.count ?? data.length;
+    // deno-lint-ignore no-explicit-any
+    const rows: DirectoryFrRow[] = data.map((row: any) => {
+      const ci = row.countryIdentifier ?? {};
+      return {
+        entityId: row.businessEntityId ?? "",
+        name: row.name,
+        type: row.type,
+        siren: ci.siren ?? row.siren,
+        siret: ci.siret ?? row.siret,
+        country: ci.country ?? row.country ?? "FR",
+        identifiers: row.identifiers,
+      };
     });
+    return { rows, count };
   }
 
   override async searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown> {
@@ -307,8 +328,24 @@ export class IopoleAdapter extends AfnorBaseAdapter {
     return await this.client.get("/config/customer/id");
   }
 
-  override async listBusinessEntities(): Promise<unknown> {
-    return await this.client.get("/config/business/entity");
+  override async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
+    // deno-lint-ignore no-explicit-any
+    const raw = await this.client.get("/config/business/entity") as any;
+    const data = (raw.data ?? []) as Array<Record<string, unknown>>;
+    // deno-lint-ignore no-explicit-any
+    const rows = data.map((row: any) => {
+      const ci = row.countryIdentifier ?? {};
+      return {
+        entityId: row.businessEntityId ?? "",
+        name: row.name,
+        type: row.type,
+        siren: ci.siren ?? row.siren,
+        siret: ci.siret ?? row.siret,
+        scope: row.scope,
+        country: ci.country ?? row.country ?? "FR",
+      };
+    });
+    return { rows, count: rows.length };
   }
 
   override async getBusinessEntity(id: string): Promise<unknown> {
@@ -381,6 +418,21 @@ export class IopoleAdapter extends AfnorBaseAdapter {
 }
 
 // ─── Helpers ──────────────────────────────────────────
+
+/**
+ * Auto-detect and wrap a raw directory search query into Iopole Lucene syntax.
+ * 14 digits → siret, 9 digits → siren, FR+11 → vatNumber, 3+ chars → name wildcard.
+ */
+function autoWrapDirectoryQuery(q: string): string {
+  const trimmed = q.trim();
+  if (/^\d{14}$/.test(trimmed)) return `siret:"${trimmed}"`;
+  if (/^\d{9}$/.test(trimmed)) return `siren:"${trimmed}"`;
+  if (/^FR\d{11}$/i.test(trimmed)) return `vatNumber:"${trimmed.toUpperCase()}"`;
+  if (trimmed.length >= 3 && !/^\d+$/.test(trimmed) && !trimmed.includes(":")) {
+    return `name:"*${trimmed}*"`;
+  }
+  return trimmed;
+}
 
 /** Map Iopole direction codes to normalized InvoiceDirection. */
 function normalizeDirection(raw: string | undefined): InvoiceDirection | undefined {

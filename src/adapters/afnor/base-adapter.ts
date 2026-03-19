@@ -20,6 +20,8 @@ import type {
   EInvoiceAdapter,
   InvoiceDetail,
   SearchInvoicesResult,
+  SearchDirectoryFrResult,
+  ListBusinessEntitiesResult,
   StatusHistoryResult,
   DownloadResult,
   PaginatedRequest,
@@ -218,7 +220,7 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
 
   // ─── Directory — not in AFNOR, subclass must override ─
 
-  async searchDirectoryFr(_filters: DirectoryFrSearchFilters): Promise<unknown> {
+  async searchDirectoryFr(_filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
     throw new NotSupportedError("searchDirectoryFr", "Override in subclass with native API.");
   }
 
@@ -268,7 +270,7 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     throw new NotSupportedError("getCustomerId", "Override in subclass with native API.");
   }
 
-  async listBusinessEntities(): Promise<unknown> {
+  async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
     throw new NotSupportedError("listBusinessEntities", "Override in subclass with native API.");
   }
 

@@ -290,18 +290,21 @@ Deno.test("IopoleAdapter.generateFacturX() - POST /tools/facturx/generate?flavor
 
 // ── Directory ────────────────────────────────────────────
 
-Deno.test("IopoleAdapter.searchDirectoryFr() - GET /directory/french", async () => {
+Deno.test("IopoleAdapter.searchDirectoryFr() - wraps SIRET in Lucene syntax", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: { results: [] } },
+    { status: 200, body: { data: [], meta: { count: 0 } } },
   ]);
 
   try {
     const adapter = makeAdapter();
-    await adapter.searchDirectoryFr({ q: "12345678901234" });
+    const result = await adapter.searchDirectoryFr({ q: "12345678901234" });
 
     const url = new URL(captured[0].url);
     assertEquals(url.pathname, "/v1/directory/french");
-    assertEquals(url.searchParams.get("q"), "12345678901234");
+    // 14 digits → auto-wrapped to Lucene siret:"..."
+    assertEquals(url.searchParams.get("q"), 'siret:"12345678901234"');
+    assertEquals(result.rows.length, 0);
+    assertEquals(result.count, 0);
   } finally {
     restore();
   }

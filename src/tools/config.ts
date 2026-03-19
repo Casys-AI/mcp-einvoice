@@ -52,28 +52,20 @@ export const configTools: EInvoiceTool[] = [
       properties: {},
     },
     handler: async (_input, ctx) => {
-      const result = await ctx.adapter.listBusinessEntities() as Record<string, unknown>;
-
-      // Format for doclist-viewer
-      const data = result.data as Record<string, unknown>[] | undefined;
-      if (Array.isArray(data)) {
-        // deno-lint-ignore no-explicit-any
-        result.data = data.map((row: any) => {
-          const ci = row.countryIdentifier ?? {};
-          return {
-            _id: row.businessEntityId,
-            "Nom": row.name ?? "—",
-            "Type": ENTITY_TYPE_LABELS[row.type] ?? row.type ?? "—",
-            "SIREN": ci.siren ?? row.siren ?? "—",
-            "SIRET": ci.siret ?? row.siret ?? "—",
-            "Scope": row.scope ?? "—",
-            "Pays": ci.country ?? row.country ?? "FR",
-          };
-        });
-      }
+      // Adapter returns normalized ListBusinessEntitiesResult
+      const { rows, count } = await ctx.adapter.listBusinessEntities();
 
       return {
-        ...result,
+        data: rows.map((r) => ({
+          _id: r.entityId,
+          "Nom": r.name ?? "—",
+          "Type": ENTITY_TYPE_LABELS[r.type ?? ""] ?? r.type ?? "—",
+          "SIREN": r.siren ?? "—",
+          "SIRET": r.siret ?? "—",
+          "Scope": r.scope ?? "—",
+          "Pays": r.country ?? "FR",
+        })),
+        count,
         _title: "Entités opérateur",
         _rowAction: {
           toolName: "einvoice_config_entity_get",

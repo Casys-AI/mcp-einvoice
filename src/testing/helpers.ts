@@ -159,7 +159,7 @@ export function createMockAdapter(
     })) as Promise<DownloadResult>,
 
     // Directory
-    searchDirectoryFr: (f) => record("searchDirectoryFr", f),
+    searchDirectoryFr: (f) => record("searchDirectoryFr", f).then(() => ({ rows: [], count: 0 })),
     searchDirectoryInt: (f) => record("searchDirectoryInt", f),
     checkPeppolParticipant: (scheme, value) => record("checkPeppolParticipant", scheme, value),
 
@@ -187,7 +187,7 @@ export function createMockAdapter(
 
     // Config
     getCustomerId: () => record("getCustomerId"),
-    listBusinessEntities: () => record("listBusinessEntities"),
+    listBusinessEntities: () => record("listBusinessEntities").then(() => ({ rows: [], count: 0 })),
     getBusinessEntity: (id) => record("getBusinessEntity", id),
     createLegalUnit: (data) => record("createLegalUnit", data),
     createOffice: (data) => record("createOffice", data),
