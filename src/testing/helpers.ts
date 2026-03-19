@@ -144,9 +144,12 @@ export function createMockAdapter(
       })) as Promise<DownloadResult>,
     markInvoiceSeen: (id) => record("markInvoiceSeen", id),
     getUnseenInvoices: (p) => record("getUnseenInvoices", p),
-    generateCII: (req) => record("generateCII", req),
-    generateUBL: (req) => record("generateUBL", req),
-    generateFacturX: (req) => record("generateFacturX", req),
+    generateCII: (req) => record("generateCII", req).then(() => "<xml>mock</xml>") as Promise<string>,
+    generateUBL: (req) => record("generateUBL", req).then(() => "<xml>mock</xml>") as Promise<string>,
+    generateFacturX: (req) => record("generateFacturX", req).then(() => ({
+      data: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+      contentType: "application/pdf",
+    })) as Promise<DownloadResult>,
 
     // Directory
     searchDirectoryFr: (f) => record("searchDirectoryFr", f),

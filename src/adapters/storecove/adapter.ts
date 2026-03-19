@@ -156,7 +156,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async generateCII(_req: GenerateInvoiceRequest): Promise<unknown> {
+  async generateCII(_req: GenerateInvoiceRequest): Promise<string> {
     throw new NotSupportedError(
       "generateCII",
       "Storecove auto-generates the compliant format on submission. " +
@@ -164,7 +164,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async generateUBL(_req: GenerateInvoiceRequest): Promise<unknown> {
+  async generateUBL(_req: GenerateInvoiceRequest): Promise<string> {
     throw new NotSupportedError(
       "generateUBL",
       "Storecove auto-generates the compliant format on submission. " +
@@ -172,7 +172,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async generateFacturX(_req: GenerateFacturXRequest): Promise<unknown> {
+  async generateFacturX(_req: GenerateFacturXRequest): Promise<DownloadResult> {
     throw new NotSupportedError(
       "generateFacturX",
       "Storecove auto-generates the compliant format on submission. " +

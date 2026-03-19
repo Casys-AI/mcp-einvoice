@@ -115,19 +115,19 @@ export class IopoleAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async generateCII(req: GenerateInvoiceRequest): Promise<unknown> {
+  override async generateCII(req: GenerateInvoiceRequest): Promise<string> {
     return await this.client.postWithQuery("/tools/cii/generate", req.invoice, {
       flavor: req.flavor,
     });
   }
 
-  override async generateUBL(req: GenerateInvoiceRequest): Promise<unknown> {
+  override async generateUBL(req: GenerateInvoiceRequest): Promise<string> {
     return await this.client.postWithQuery("/tools/ubl/generate", req.invoice, {
       flavor: req.flavor,
     });
   }
 
-  override async generateFacturX(req: GenerateFacturXRequest): Promise<unknown> {
+  override async generateFacturX(req: GenerateFacturXRequest): Promise<DownloadResult> {
     // Factur-X returns a PDF (binary) — use postBinary to avoid text corruption
     return await this.client.postBinary("/tools/facturx/generate", req.invoice, {
       flavor: req.flavor,

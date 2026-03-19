@@ -185,15 +185,15 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     throw new NotSupportedError("getUnseenInvoices", "Not in AFNOR spec.");
   }
 
-  async generateCII(_req: GenerateInvoiceRequest): Promise<unknown> {
+  async generateCII(_req: GenerateInvoiceRequest): Promise<string> {
     throw new NotSupportedError("generateCII", "Override in subclass if PA has format conversion.");
   }
 
-  async generateUBL(_req: GenerateInvoiceRequest): Promise<unknown> {
+  async generateUBL(_req: GenerateInvoiceRequest): Promise<string> {
     throw new NotSupportedError("generateUBL", "Override in subclass if PA has format conversion.");
   }
 
-  async generateFacturX(_req: GenerateFacturXRequest): Promise<unknown> {
+  async generateFacturX(_req: GenerateFacturXRequest): Promise<DownloadResult> {
     throw new NotSupportedError("generateFacturX", "Override in subclass if PA has format conversion.");
   }
 

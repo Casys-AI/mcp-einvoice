@@ -604,12 +604,11 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_generate_cii] 'invoice' and 'flavor' are required");
       }
       const inv = normalizeInvoiceForGenerate(input.invoice);
-      const result = await ctx.adapter.generateCII({
+      const xml = await ctx.adapter.generateCII({
         invoice: inv,
         flavor: input.flavor as string,
       });
-      const raw = typeof result === "string" ? result : JSON.stringify(result);
-      const bytes = new TextEncoder().encode(raw);
+      const bytes = new TextEncoder().encode(xml);
       const filename = `${inv.invoiceId ?? "invoice"}.xml`;
       const generated_id = storeGenerated(bytes, filename);
       return {
@@ -652,12 +651,11 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_generate_ubl] 'invoice' and 'flavor' are required");
       }
       const inv = normalizeInvoiceForGenerate(input.invoice);
-      const result = await ctx.adapter.generateUBL({
+      const xml = await ctx.adapter.generateUBL({
         invoice: inv,
         flavor: input.flavor as string,
       });
-      const raw = typeof result === "string" ? result : JSON.stringify(result);
-      const bytes = new TextEncoder().encode(raw);
+      const bytes = new TextEncoder().encode(xml);
       const filename = `${inv.invoiceId ?? "invoice"}.xml`;
       const generated_id = storeGenerated(bytes, filename);
       return {
@@ -705,14 +703,11 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_generate_facturx] 'invoice' and 'flavor' are required");
       }
       const inv = normalizeInvoiceForGenerate(input.invoice);
-      const result = await ctx.adapter.generateFacturX({
+      const { data: bytes } = await ctx.adapter.generateFacturX({
         invoice: inv,
         flavor: input.flavor as string,
         language: input.language as string | undefined,
       });
-      // Factur-X returns { data: Uint8Array, contentType } from postBinary
-      const binary = result as { data: Uint8Array; contentType: string };
-      const bytes = binary.data instanceof Uint8Array ? binary.data : new TextEncoder().encode(typeof result === "string" ? result : JSON.stringify(result));
       const filename = `${inv.invoiceId ?? "invoice"}.pdf`;
       const generated_id = storeGenerated(bytes, filename);
       return {

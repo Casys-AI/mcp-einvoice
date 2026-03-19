@@ -124,9 +124,9 @@ export interface EInvoiceAdapter {
   downloadFile(fileId: string): Promise<DownloadResult>;
   markInvoiceSeen(id: string): Promise<unknown>;
   getUnseenInvoices(pagination: PaginatedRequest): Promise<unknown>;
-  generateCII(req: GenerateInvoiceRequest): Promise<unknown>;
-  generateUBL(req: GenerateInvoiceRequest): Promise<unknown>;
-  generateFacturX(req: GenerateFacturXRequest): Promise<unknown>;
+  generateCII(req: GenerateInvoiceRequest): Promise<string>;
+  generateUBL(req: GenerateInvoiceRequest): Promise<string>;
+  generateFacturX(req: GenerateFacturXRequest): Promise<DownloadResult>;
 
   // ─── Directory ────────────────────────────────────────
 
