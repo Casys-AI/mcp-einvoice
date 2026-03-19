@@ -233,28 +233,28 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_search",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
     description:
-      "Search invoices using a query string. Returns paginated results. " +
-      "The query uses Lucene-like syntax. Valid fields: senderName, receiverName, invoiceId. " +
-      "Examples: 'senderName:Acme', 'invoiceId:CASYS-001'. " +
-      "Note: 'status', 'state', 'direction' are NOT valid search fields. " +
-      "Omit q or pass empty string to list all invoices.",
+      "Search invoices. Use direction to filter received/sent invoices. " +
+      "Query uses Lucene syntax — valid fields: senderName, receiverName, invoiceId. " +
+      "Note: 'status', 'state', 'direction' are NOT valid Lucene fields — use the direction parameter instead.",
     category: "invoice",
     inputSchema: {
       type: "object",
       properties: {
         q: {
           type: "string",
-          description:
-            "Search query (Lucene-like syntax). " +
-            "Valid fields: senderName, receiverName, invoiceId. " +
-            "Examples: 'senderName:Acme', 'receiverName:Nappus'.",
+          description: "Lucene search query. Examples: 'senderName:Acme', 'receiverName:Nappus'. Omit to list all.",
+        },
+        direction: {
+          type: "string",
+          description: "Filter by direction",
+          enum: ["received", "sent"],
         },
         expand: {
           type: "string",
-          description: "Comma-separated list of fields to expand in results (default: 'businessData' — needed for formatted output)",
+          description: "Fields to expand (default: 'businessData')",
         },
         offset: { type: "number", description: "Result offset (default 0)" },
-        limit: { type: "number", description: "Max results to return (default 50, max 200)" },
+        limit: { type: "number", description: "Max results (default 50, max 200)" },
       },
     },
     handler: async (input, ctx) => {
@@ -272,6 +272,17 @@ export const invoiceTools: EInvoiceTool[] = [
       // Lift meta.count to top-level for doclist-viewer
       const meta = result.meta as Record<string, unknown> | undefined;
       if (meta?.count != null && result.count == null) result.count = meta.count;
+
+      // Server-side direction filter (Iopole doesn't support direction in Lucene)
+      const dirFilter = input.direction as string | undefined;
+      if (dirFilter && Array.isArray(result.data)) {
+        const iopoleDir = dirFilter === "received" ? "INBOUND" : dirFilter === "sent" ? "OUTBOUND" : null;
+        if (iopoleDir) {
+          // deno-lint-ignore no-explicit-any
+          result.data = (result.data as any[]).filter((row: any) => row.metadata?.direction === iopoleDir);
+          result.count = (result.data as unknown[]).length;
+        }
+      }
 
       // Flatten + format for a chat-friendly table
       const data = result.data as Record<string, unknown>[] | undefined;
