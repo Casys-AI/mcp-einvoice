@@ -20,7 +20,7 @@ MCP server for French e-invoicing (Iopole adapter). Deno + TypeScript + React vi
 - **Database lock**: if `but` CLI says "database is locked", quit the GitButler desktop app first (it holds the SQLite lock)
 
 ## Iopole API
-- **Local API specs**: `docs/api-specs/` — 6 OpenAPI JSON specs (operator-invoicing, operator-config, operator-reporting, operator-edi, platform, stats)
+- **Local API specs**: `src/adapters/api-specs/` — 6 OpenAPI JSON specs (operator-invoicing, operator-config, operator-reporting, operator-edi, platform, stats)
 - **Reference doc**: `src/adapters/README.md` — complete endpoint inventory, lifecycle, enums, sandbox behavior
 - Sandbox API: api.ppd.iopole.fr/v1, Auth: auth.ppd.iopole.fr (NOT auth.iopole.com)
 - Factur-X generate returns binary PDF — use `postBinary()`, NOT `request()` (corrupts binary via text encoding)

@@ -23,7 +23,7 @@ French e-invoicing platform (Plateforme Agreee / PDP).
 
 **Required headers:** `Authorization: Bearer {token}`, `customer-id: {uuid}` (mandatory since 2026-02-01).
 
-**Local API specs:** Full OpenAPI 3.0.1 JSON specs are in `docs/api-specs/` (6 files, fetched from Swagger).
+**Local API specs:** Full OpenAPI 3.0.1 JSON specs are in `src/adapters/api-specs/` (6 files, fetched from Swagger).
 
 ## Iopole API Resources (39 tools)
 
