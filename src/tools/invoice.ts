@@ -233,25 +233,26 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_search",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
     description:
-      "Search invoices. Use direction to filter received/sent invoices. " +
+      "Search invoices. Use direction and status to filter. " +
       "Query uses Lucene syntax — valid fields: senderName, receiverName, invoiceId. " +
-      "Note: 'status', 'state', 'direction' are NOT valid Lucene fields — use the direction parameter instead.",
+      "Note: 'status', 'direction' are NOT valid Lucene fields — use the parameters instead.",
     category: "invoice",
     inputSchema: {
       type: "object",
       properties: {
         q: {
           type: "string",
-          description: "Lucene search query. Examples: 'senderName:Acme', 'receiverName:Nappus'. Omit to list all.",
+          description: "Lucene search query. Examples: 'senderName:Acme'. Omit to list all.",
         },
         direction: {
           type: "string",
           description: "Filter by direction",
           enum: ["received", "sent"],
         },
-        expand: {
+        status: {
           type: "string",
-          description: "Fields to expand (default: 'businessData')",
+          description: "Filter by lifecycle status (after enrichment)",
+          enum: ["APPROVED", "REFUSED", "DISPUTED", "PAYMENT_SENT", "PAYMENT_RECEIVED", "DELIVERED", "SUBMITTED", "ISSUED"],
         },
         offset: { type: "number", description: "Result offset (default 0)" },
         limit: { type: "number", description: "Max results (default 50, max 200)" },
@@ -321,11 +322,30 @@ export const invoiceTools: EInvoiceTool[] = [
         });
         await Promise.all(enrichPromises);
 
-        result.data = rows;
+        // Server-side status filter (after lifecycle enrichment)
+        const statusFilter = input.status as string | undefined;
+        let filteredRows = rows;
+        if (statusFilter) {
+          filteredRows = rows.filter((row) => row["Statut"] === statusFilter);
+        }
+
+        // Hide Direction column when filtered (redundant)
+        if (dirFilter) {
+          for (const row of filteredRows) delete (row as Record<string, unknown>)["Direction"];
+        }
+
+        result.data = filteredRows;
+        result.count = filteredRows.length;
       }
+
+      // Dynamic title
+      const dirLabel = dirFilter === "received" ? "reçues" : dirFilter === "sent" ? "envoyées" : "";
+      const statusLabel = (input.status as string) ?? "";
+      const titleParts = ["Factures", dirLabel, statusLabel ? `(${statusLabel})` : ""].filter(Boolean);
+
       return {
         ...result,
-        _title: "Factures",
+        _title: titleParts.join(" "),
         _rowAction: {
           toolName: "einvoice_invoice_get",
           idField: "_id",
