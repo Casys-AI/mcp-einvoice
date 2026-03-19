@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
-import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import {
   extractToolResultText,
   type ToolResultPayload,
@@ -71,11 +71,11 @@ export function ActionResult() {
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ padding: 24 }}>
           {[1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: i === 1 ? 32 : 16, width: `${30 + i * 15}%`, marginBottom: 8 }} />)}
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -83,11 +83,11 @@ export function ActionResult() {
   if (!data) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
           <div style={{ fontSize: 13 }}>Aucun résultat</div>
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -98,7 +98,7 @@ export function ActionResult() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <IopoleBrandHeader />
+      <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
 
         {/* Status icon + title */}
@@ -176,7 +176,7 @@ export function ActionResult() {
           </div>
         )}
       </div>
-      <IopoleBrandFooter />
+      <BrandFooter />
     </div>
   );
 }

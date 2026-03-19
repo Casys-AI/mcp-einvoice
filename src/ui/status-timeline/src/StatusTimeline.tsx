@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef, CSSProperties } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
-import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import { FeedbackBanner, EmptyTimelineIcon } from "~/shared/Feedback";
 import { getStatus } from "~/shared/status";
 import {
@@ -206,7 +206,7 @@ export function StatusTimeline() {
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ padding: 24 }}>
           {[1, 2, 3, 4].map((i) => (
             <div key={i} style={{ display: "flex", gap: 16, marginBottom: 20, alignItems: "center" }}>
@@ -216,7 +216,7 @@ export function StatusTimeline() {
             </div>
           ))}
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -226,12 +226,12 @@ export function StatusTimeline() {
   if (!entries || entries.length === 0) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
           <EmptyTimelineIcon />
           <div style={{ fontSize: 13 }}>Aucun historique de statut</div>
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -240,7 +240,7 @@ export function StatusTimeline() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <IopoleBrandHeader />
+      <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -339,7 +339,7 @@ export function StatusTimeline() {
           })}
         </div>
       </div>
-      <IopoleBrandFooter />
+      <BrandFooter />
     </div>
   );
 }

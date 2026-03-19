@@ -8,7 +8,7 @@
 import { Fragment, useState, useEffect, useMemo, useCallback, useRef, CSSProperties } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles, formatNumber, formatCurrency } from "~/shared/theme";
-import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import { FeedbackBanner } from "~/shared/Feedback";
 import { STATUS_REGISTRY, getStatus, getStatusLabel, canAcceptReject, canSendPayment, canReceivePayment } from "~/shared/status";
 import { ActionButton } from "~/shared/ActionButton";
@@ -226,7 +226,7 @@ export function DoclistViewer() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }} aria-busy={refreshing}>
-      <IopoleBrandHeader />
+      <BrandHeader />
       <div style={{ flex: 1 }}>
         {loading && <LoadingSkeleton />}
         {!loading && !data && <DoclistEmptyState />}
@@ -234,7 +234,7 @@ export function DoclistViewer() {
           <DoclistContent data={data} error={error} refreshing={refreshing} onRefresh={() => void requestRefresh({ ignoreInterval: true })} onError={setError} />
         )}
       </div>
-      <IopoleBrandFooter />
+      <BrandFooter />
     </div>
   );
 }

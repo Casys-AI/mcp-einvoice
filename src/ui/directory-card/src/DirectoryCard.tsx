@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
-import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -270,7 +270,7 @@ export function DirectoryCard() {
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ padding: 24 }}>
           <div className="skeleton" style={{ height: 28, width: "60%", marginBottom: 12 }} />
           <div className="skeleton" style={{ height: 16, width: "30%", marginBottom: 20 }} />
@@ -280,7 +280,7 @@ export function DirectoryCard() {
             ))}
           </div>
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -290,7 +290,7 @@ export function DirectoryCard() {
   if (!data) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 16, flex: 1 }}>
           <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ opacity: 0.35 }}>
             <rect x="8" y="8" width="40" height="40" rx="8" stroke="currentColor" strokeWidth="2" />
@@ -299,7 +299,7 @@ export function DirectoryCard() {
           </svg>
           <div style={{ fontSize: 13 }}>Aucune entreprise à afficher</div>
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -312,7 +312,7 @@ export function DirectoryCard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <IopoleBrandHeader />
+      <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
 
         {/* ── Title + Type Badge ────────────────────────────────── */}
@@ -373,7 +373,7 @@ export function DirectoryCard() {
         {/* ── Extra fields ─────────────────────────────────────── */}
         <DetailsSection data={data} />
       </div>
-      <IopoleBrandFooter />
+      <BrandFooter />
     </div>
   );
 }

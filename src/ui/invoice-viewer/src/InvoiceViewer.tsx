@@ -15,7 +15,7 @@
 import { useState, useEffect, useRef } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles, formatCurrency } from "~/shared/theme";
-import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import { FeedbackBanner, EmptyInvoiceIcon } from "~/shared/Feedback";
 import { getStatus, canAcceptReject as canAccept, canSendPayment as canPay, canReceivePayment as canReceivePay } from "~/shared/status";
 import { ActionButton } from "~/shared/ActionButton";
@@ -252,11 +252,11 @@ export function InvoiceViewer() {
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ padding: 24 }}>
           {[1, 2, 3, 4, 5].map((i) => <div key={i} className="skeleton" style={{ height: i === 1 ? 32 : 20, width: `${40 + i * 10}%`, marginBottom: 8 }} />)}
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -264,12 +264,12 @@ export function InvoiceViewer() {
   if (!data) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <IopoleBrandHeader />
+        <BrandHeader />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
           <EmptyInvoiceIcon />
           <div style={{ fontSize: 13 }}>Aucune facture à afficher</div>
         </div>
-        <IopoleBrandFooter />
+        <BrandFooter />
       </div>
     );
   }
@@ -289,7 +289,7 @@ export function InvoiceViewer() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <IopoleBrandHeader />
+      <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
         {/* Title + Status */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
@@ -487,7 +487,7 @@ export function InvoiceViewer() {
           </div>
         )}
       </div>
-      <IopoleBrandFooter />
+      <BrandFooter />
     </div>
   );
 }

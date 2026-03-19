@@ -1,10 +1,10 @@
 /**
- * Unified Iopole status registry + lifecycle transition guards.
+ * Unified E-Invoice status registry + lifecycle transition guards.
  *
  * Single source of truth for status colors, labels, and valid transitions.
  * Used by all viewers (invoice, doclist, timeline).
  *
- * Sources: Iopole OpenAPI spec (docs/api-specs/)
+ * Sources: PA OpenAPI specs (docs/api-specs/)
  * - metadata.state: PENDING, VALID, DELIVERED, WRONG_ROUTING, etc.
  * - status.code: SUBMITTED, ISSUED, APPROVED, REFUSED, etc.
  */
@@ -19,7 +19,7 @@ export interface StatusScheme {
 
 /** Unified status registry — lowercase keys, covers both search state + lifecycle codes. */
 export const STATUS_REGISTRY: Record<string, StatusScheme> = {
-  // Internal (not Iopole)
+  // Internal (preview, not a PA status)
   "aperçu":            { color: colors.warning,     bg: colors.warningDim,   label: "Aperçu" },
   "apercu":            { color: colors.warning,     bg: colors.warningDim,   label: "Aperçu" },
   // Search state (metadata.state)

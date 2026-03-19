@@ -18,7 +18,7 @@ function EInvoiceIcon() {
   );
 }
 
-export function IopoleBrandHeader() {
+export function BrandHeader() {
   const headerStyle: CSSProperties = {
     display: "flex",
     alignItems: "center",
@@ -68,7 +68,7 @@ export function IopoleBrandHeader() {
   );
 }
 
-export function IopoleBrandFooter() {
+export function BrandFooter() {
   const footerStyle: CSSProperties = {
     display: "flex",
     justifyContent: "flex-end",

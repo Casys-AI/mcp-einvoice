@@ -1,5 +1,5 @@
 /**
- * Iopole UI Theme — CSS-in-JS style objects using CSS custom properties
+ * E-Invoice UI Theme — CSS-in-JS style objects using CSS custom properties
  *
  * All colors reference CSS variables defined in global.css,
  * which automatically switch between light and dark mode.
