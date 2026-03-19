@@ -25,18 +25,20 @@ French e-invoicing platform (Plateforme Agreee / PDP).
 
 **Local API specs:** Full OpenAPI 3.0.1 JSON specs are in `docs/api-specs/` (6 files, fetched from Swagger).
 
-## Iopole API Resources (43 tools)
+## Iopole API Resources (39 tools)
 
 | Resource | Endpoints | MCP Tools |
 |----------|-----------|-----------|
 | Account | `GET /config/customer/id` | `einvoice_config_customer_id` (1) |
-| Invoice | `POST /invoice`, `GET /invoice/{id}`, `GET /v1.1/invoice/search`, `GET /invoice/notSeen`, `PUT /invoice/{id}/markAsSeen`, downloads (5 endpoints) | `einvoice_invoice_*` (13 tools) |
-| Status | `POST /invoice/{id}/status`, `GET /invoice/{id}/status-history`, `GET /invoice/status/notSeen`, `PUT /invoice/status/{id}/markAsSeen` | `einvoice_status_*` (4 tools) |
+| Invoice | `POST /invoice` (submit), `GET /invoice/{id}`, `GET /v1.1/invoice/search` (with direction/status filters), downloads (5 endpoints) | `einvoice_invoice_*` (9 tools) |
+| Status | `POST /invoice/{id}/status`, `GET /invoice/{id}/status-history` | `einvoice_status_*` (2 tools) |
 | Directory | `GET /directory/french`, `GET /directory/international`, `GET /directory/international/check/...` | `einvoice_directory_*` (3 tools) |
 | Reporting | `POST /reporting/fr/invoice/transaction`, `POST /reporting/fr/transaction/{entityId}` | `einvoice_reporting_*` (2 tools) |
 | Webhook | CRUD (5 endpoints) | `einvoice_webhook_*` (5 tools) |
 | Tools | `POST /tools/{cii\|ubl\|facturx}/generate` | `einvoice_invoice_generate_*` (3 tools) |
-| Config | Entity CRUD, enrollment, claim, identifier, network registration (21 endpoints) | `einvoice_config_*` (12 tools) |
+| Config | Entity CRUD, enrollment, claim, identifier, network registration (21 endpoints) | `einvoice_config_*` (14 tools) |
+
+**Removed in v0.2.0:** `einvoice_invoice_not_seen`, `einvoice_invoice_mark_seen`, `einvoice_status_not_seen`, `einvoice_status_mark_seen` — Iopole seen/unseen is opaque and always empty in PUSH mode.
 
 ## Invoice Lifecycle (Iopole)
 

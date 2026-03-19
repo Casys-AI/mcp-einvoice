@@ -2,7 +2,7 @@
 
 ## Project
 MCP server for French e-invoicing (Iopole adapter). Deno + TypeScript + React viewers.
-43 tools, 5 viewers (invoice, doclist, timeline, directory-card, action-result).
+39 tools, 5 viewers (invoice, doclist, timeline, directory-card, action-result).
 
 ## Commands
 - `deno task serve` — HTTP mode on port 3015
@@ -24,7 +24,8 @@ MCP server for French e-invoicing (Iopole adapter). Deno + TypeScript + React vi
 - **Reference doc**: `src/adapters/README.md` — complete endpoint inventory, lifecycle, enums, sandbox behavior
 - Sandbox API: api.ppd.iopole.fr/v1, Auth: auth.ppd.iopole.fr (NOT auth.iopole.com)
 - Factur-X generate returns binary PDF — use `postBinary()`, NOT `request()` (corrupts binary via text encoding)
-- Search valid Lucene fields: senderName, receiverName, invoiceId (NOT status, direction, seen)
+- Search valid Lucene fields: senderName, receiverName, invoiceId (NOT status, direction)
+- Search has `direction` and `status` params for server-side filtering (not Lucene)
 - Entities must be registered on DOMESTIC_FR network before invoices route (WRONG_ROUTING otherwise)
 - Enrollment requires both siret AND siren
 - Sandbox entities: BRASSILA NAPPUS (47846336700019), FABRICE ALFIER (79889661900011)
