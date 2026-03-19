@@ -319,7 +319,8 @@ export class IopoleClient {
     }
     const token = await this.config.getToken();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 30_000);
+    // Longer timeout for binary generation (PDF can take 30-60s)
+    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 60_000);
     try {
       const response = await fetch(url.toString(), {
         method: "POST",

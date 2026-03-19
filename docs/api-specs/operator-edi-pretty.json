@@ -1,0 +1,241 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Iopole EDI",
+        "description": "## Iopole API\n\nTo use the Iopole APIs, you must have a **`clientId`** and a **`clientSecret`**.\n\nYou can obtain these credentials by one of the following methods:\n- \ud83d\udce7 Contact the Iopole team at **support@iopole.com**\n- \ud83e\uddea Connect to **[Iopole Labs](https://labs.iopole.io)** to create your own sandbox environment\n\n### \ud83d\udcda API Documentation\n- \ud83e\uddea **Preproduction**: [https://docs.ppd.iopole.fr/](https://docs.ppd.iopole.fr/)\n- \ud83d\ude80 **Production**: [https://docs.iopole.com/](https://docs.iopole.com/)\n\n### \ud83d\udee0\ufe0f Support & Monitoring (production only)\n- \ud83d\udcc8 **System status**: [https://uptime.iopole.com](https://uptime.iopole.com)\n  - View real-time platform availability\n  - Subscribe to incident notifications\n  - Receive alerts for planned maintenance periods\n- \ud83d\udcdd **Release notes**: [https://release.iopole.com](https://release.iopole.com)\n",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Iopole",
+            "email": "support@iopole.com"
+        }
+    },
+    "security": [
+        {
+            "oauth2ClientCredentials": []
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "oauth2ClientCredentials": {
+                "type": "oauth2",
+                "flows": {
+                    "clientCredentials": {
+                        "tokenUrl": "https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token",
+                        "scopes": {}
+                    }
+                }
+            }
+        }
+    },
+    "paths": {
+        "/v1/edi/message/{messageId}/download": {
+            "get": {
+                "summary": "Download EDI message original file",
+                "description": "Download EDI message original file for the given message identifier.",
+                "tags": [
+                    "Edi Files"
+                ],
+                "security": [
+                    {
+                        "oauth2ClientCredentials": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "messageId",
+                        "required": true,
+                        "description": "The technical ID you received and representing the message.",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "headers": {
+                            "Content-Disposition": {
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "description": "Original message file"
+                            }
+                        },
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+                    },
+                    "403": {
+                        "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+                    }
+                }
+            }
+        },
+        "/v1/edi/message/{messageId}/download/all": {
+            "get": {
+                "summary": "Download archive file containing all message related files",
+                "description": "Download an archive file (zip) containing all message related files.",
+                "tags": [
+                    "Edi Files"
+                ],
+                "security": [
+                    {
+                        "oauth2ClientCredentials": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "messageId",
+                        "required": true,
+                        "description": "The technical ID you received and representing the message.",
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "headers": {
+                            "Content-Disposition": {
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "description": "Archive (zip) file"
+                            }
+                        },
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+                    },
+                    "403": {
+                        "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+                    }
+                }
+            }
+        },
+        "/v1/edi/message/{messageType}": {
+            "post": {
+                "summary": "Send Edi message",
+                "description": "Send Edi message.",
+                "tags": [
+                    "Edi Messages"
+                ],
+                "security": [
+                    {
+                        "oauth2ClientCredentials": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "messageType",
+                        "required": true,
+                        "description": "EDI message type (e.g., DESADV, INVENTORY, ...)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "description": "EDI message document",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        },
+                        "application/xml": {
+                            "schema": {
+                                "type": "string",
+                                "format": "xml"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Returns created Iopole EDI message identifier.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "enum": [
+                                                "WEBHOOK",
+                                                "SECRET",
+                                                "STREAM",
+                                                "INVOICE",
+                                                "STATUS",
+                                                "BUSINESS_ENTITY",
+                                                "BUSINESS_ENTITY_IDENTIFIER",
+                                                "DIRECTORY",
+                                                "EDI_MESSAGE"
+                                            ],
+                                            "description": "The type of the response object."
+                                        },
+                                        "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "description": "The unique identifier for the created element."
+                                        }
+                                    },
+                                    "required": [
+                                        "type",
+                                        "id"
+                                    ],
+                                    "description": "Response model for the element creation response."
+                                },
+                                "example": {
+                                    "type": "EDI_MESSAGE",
+                                    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+                    },
+                    "403": {
+                        "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+                    }
+                }
+            }
+        }
+    }
+}

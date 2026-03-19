@@ -150,4 +150,17 @@ export interface EInvoiceAdapter {
   claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown>;
   enrollFrench(data: Record<string, unknown>): Promise<unknown>;
   enrollInternational(data: Record<string, unknown>): Promise<unknown>;
+  registerNetwork(identifierId: string, network: string): Promise<unknown>;
+  registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown>;
+  unregisterNetwork(directoryId: string): Promise<unknown>;
+
+  // ─── Identifier Management ──────────────────────────────
+
+  createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown>;
+  createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown>;
+  deleteIdentifier(identifierId: string): Promise<unknown>;
+
+  // ─── Claim Management ──────────────────────────────────
+
+  deleteClaim(entityId: string): Promise<unknown>;
 }

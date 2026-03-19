@@ -23,17 +23,20 @@ French e-invoicing platform (Plateforme Agreee / PDP).
 
 **Required headers:** `Authorization: Bearer {token}`, `customer-id: {uuid}` (mandatory since 2026-02-01).
 
-## Iopole API Resources
+**Local API specs:** Full OpenAPI 3.0.1 JSON specs are in `docs/api-specs/` (6 files, fetched from Swagger).
+
+## Iopole API Resources (43 tools)
 
 | Resource | Endpoints | MCP Tools |
 |----------|-----------|-----------|
-| Account | `GET /account/customerId` | — |
-| Invoice | `POST /invoice`, `GET /invoice/{id}`, `GET /invoice/search`, `GET /invoice/notSeen`, `PUT /invoice/{id}/markAsSeen`, `GET /invoice/{id}/download`, `GET /invoice/{id}/download/readable`, `GET /invoice/{id}/files`, `GET /invoice/{id}/files/attachments`, `GET /invoice/file/{id}/download` | `einvoice_invoice_*` (13 tools) |
+| Account | `GET /config/customer/id` | `einvoice_config_customer_id` (1) |
+| Invoice | `POST /invoice`, `GET /invoice/{id}`, `GET /v1.1/invoice/search`, `GET /invoice/notSeen`, `PUT /invoice/{id}/markAsSeen`, downloads (5 endpoints) | `einvoice_invoice_*` (13 tools) |
 | Status | `POST /invoice/{id}/status`, `GET /invoice/{id}/status-history`, `GET /invoice/status/notSeen`, `PUT /invoice/status/{id}/markAsSeen` | `einvoice_status_*` (4 tools) |
-| Directory | `GET /directory/french`, `GET /directory/international`, `GET /directory/international/check/scheme/{s}/value/{v}` | `einvoice_directory_*` (3 tools) |
+| Directory | `GET /directory/french`, `GET /directory/international`, `GET /directory/international/check/...` | `einvoice_directory_*` (3 tools) |
 | Reporting | `POST /reporting/fr/invoice/transaction`, `POST /reporting/fr/transaction/{entityId}` | `einvoice_reporting_*` (2 tools) |
-| Webhook | `GET /config/webhook`, `GET /config/webhook/{id}`, `POST /config/webhook`, `PUT /config/webhook/{id}`, `DELETE /config/webhook/{id}` | `einvoice_webhook_*` (5 tools) |
-| Tools | `POST /tools/cii/generate`, `POST /tools/ubl/generate`, `POST /tools/facturx/generate` | `einvoice_invoice_generate_*` (3 tools) |
+| Webhook | CRUD (5 endpoints) | `einvoice_webhook_*` (5 tools) |
+| Tools | `POST /tools/{cii\|ubl\|facturx}/generate` | `einvoice_invoice_generate_*` (3 tools) |
+| Config | Entity CRUD, enrollment, claim, identifier, network registration (21 endpoints) | `einvoice_config_*` (12 tools) |
 
 ## Invoice Lifecycle (Iopole)
 
@@ -101,6 +104,60 @@ Iopole uses Lucene-like query syntax for invoice search (`/v1.1/invoice/search`)
 **NOT valid:** `status`, `direction`, `state` (these cause 400 errors)
 
 To filter by status, use `GET /invoice/notSeen` or client-side filtering after search.
+
+## PUSH vs PULL Mode
+
+Iopole supports two delivery modes, controlled by webhook configuration:
+
+**PUSH mode (webhook active):** Iopole sends invoices/statuses to a `callbackUrl`. Once delivered successfully, items are automatically marked as "seen" → `notSeen` endpoints return empty.
+
+**PULL mode (no webhook):** No automatic delivery. Invoices/statuses accumulate in the `notSeen` queue. The operator polls periodically and marks items as seen via `markAsSeen`.
+
+The sandbox has a default ACTIVE webhook pointing to `labs.iopole.io`:
+```
+webhookId: (auto-created)
+label: "xxx@gmail.com sandbox client endpoint"
+callbackUrl: https://labs.iopole.io/v1/receipt/invoice
+status: ACTIVE
+```
+This means `notSeen` always returns `[]` in the sandbox — items are immediately delivered to the lab webhook.
+
+### seen/notSeen behavior
+
+- `seen` field is **NOT exposed** in search results or `getInvoice` responses
+- `markAsSeen` returns 200 OK but has no visible effect on invoice data
+- `notSeen` returns items only in PULL mode (no active webhook)
+- `seen` is **NOT a valid Lucene search field** (returns 400)
+- The only way to know unseen items is via the `notSeen` endpoint
+
+## Sandbox-specific Behavior
+
+- **Self-receive works:** same operator can emit from entity A and receive on entity B. Both OUTBOUND and INBOUND copies appear in search.
+- **INBOUND copies have separate invoice IDs** from their OUTBOUND counterparts
+- **INBOUND copies have no status history** — `getStatusHistory` returns empty. Status is only in the search index (`metadata.state`).
+- **`getInvoice` returns no `state` field** — status must be fetched from `getStatusHistory` (OUTBOUND) or from search results (INBOUND).
+- **Outbound lifecycle is automatic:** SUBMITTED → RECEIVED → ISSUED → MADE_AVAILABLE → DELIVERED (seconds, not days)
+
+## VAT Regimes
+
+Valid values for `configureBusinessEntity`:
+- `REAL_MONTHLY_TAX_REGIME` — Régime réel mensuel
+- `REAL_QUARTERLY_TAX_REGIME` — Régime réel trimestriel
+- `SIMPLIFIED_TAX_REGIME` — Régime simplifié
+- `VAT_EXEMPTION_REGIME` — Franchise de TVA
+
+## Enums Reference
+
+| Enum | Values |
+|------|--------|
+| Network | `DOMESTIC_FR`, `PEPPOL_INTERNATIONAL` |
+| Entity type | `LEGAL_UNIT`, `OFFICE` |
+| Entity scope | `PRIVATE_TAX_PAYER`, `PUBLIC`, `PRIMARY`, `SECONDARY` |
+| Identifier type | `LEGAL_IDENTIFIER`, `OFFICE_IDENTIFIER`, `ROUTING_CODE`, `SUFFIX` |
+| Invoice format | `FACTURX`, `CII`, `UBL` |
+| FacturX flavor | `BASICWL`, `EN16931`, `EXTENDED` |
+| Process type | `B1`, `S1`, `M1`, `B2`, `S2`, `M2`, `S3`, `B4`, `S4`, `M4`, `S5`, `S6`, `B7`, `S7` |
+| Status codes | `IN_HAND`, `APPROVED`, `PARTIALLY_APPROVED`, `DISPUTED`, `SUSPENDED`, `COMPLETED`, `REFUSED`, `PAYMENT_SENT`, `PAYMENT_RECEIVED` |
 
 ## Rate Limiting
 

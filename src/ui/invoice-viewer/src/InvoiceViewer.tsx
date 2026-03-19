@@ -12,10 +12,14 @@
  * deposited → received → accepted/rejected/disputed → paid
  */
 
-import { useState, useEffect, useRef, CSSProperties } from "react";
+import { useState, useEffect, useRef } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles, formatCurrency } from "~/shared/theme";
 import { IopoleBrandHeader, IopoleBrandFooter } from "~/shared/IopoleBrand";
+import { FeedbackBanner, EmptyInvoiceIcon } from "~/shared/Feedback";
+import { getStatus, canAcceptReject as canAccept, canSendPayment as canPay, canReceivePayment as canReceivePay } from "~/shared/status";
+import { ActionButton } from "~/shared/ActionButton";
+import { InfoCard } from "~/shared/InfoCard";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -26,8 +30,20 @@ import {
 } from "~/shared/refresh";
 
 const app = new App({ name: "Invoice Viewer", version: "1.0.0" });
+
+/** Action keys for loading state tracking */
+const AK = {
+  EMIT: "emit",
+  ACCEPT: "status_accept",
+  REJECT: "status_reject",
+  DISPUTE: "status_dispute",
+  PAYMENT_SENT: "status_payment_sent",
+  PAYMENT_RECEIVED: "status_payment_received",
+
+  DOWNLOAD_PDF: "download_pdf",
+} as const;
 const REFRESH_INTERVAL_MS = 15_000;
-const TOOL_CALL_TIMEOUT_MS = 10_000;
+const TOOL_CALL_TIMEOUT_MS = 30_000;
 
 // ============================================================================
 // Types — Iopole invoice data shape
@@ -65,7 +81,7 @@ interface InvoiceData {
   total_ttc?: number;    // Total TTC
   items?: InvoiceItem[];
   notes?: string[];      // Payment notes, conditions
-  generated_id?: string; // From generate preview — used to emit via einvoice_invoice_emit
+  generated_id?: string; // From generate preview — used to emit via einvoice_invoice_submit
   refreshRequest?: UiRefreshRequestData;
 }
 
@@ -73,35 +89,9 @@ interface InvoiceData {
 // Status colors — French e-invoicing lifecycle
 // ============================================================================
 
-const INVOICE_STATUS: Record<string, { color: string; bg: string; label: string }> = {
-  // Aperçu (generate preview)
-  "aperçu":          { color: colors.warning,   bg: colors.warningDim, label: "Aperçu — non envoyée" },
-  "apercu":          { color: colors.warning,   bg: colors.warningDim, label: "Aperçu — non envoyée" },
-  // Iopole API statuses (uppercase)
-  delivered:         { color: colors.info,      bg: colors.infoDim,    label: "Livrée" },
-  in_hand:           { color: colors.info,      bg: colors.infoDim,    label: "Prise en charge" },
-  approved:          { color: colors.success,   bg: colors.successDim, label: "Acceptée" },
-  partially_approved: { color: colors.warning,  bg: colors.warningDim, label: "Partiellement acceptée" },
-  completed:         { color: colors.success,   bg: colors.successDim, label: "Complétée" },
-  payment_sent:      { color: colors.success,   bg: colors.successDim, label: "Paiement envoyé" },
-  payment_received:  { color: colors.success,   bg: colors.successDim, label: "Paiement reçu" },
-  suspended:         { color: colors.warning,   bg: colors.warningDim, label: "Suspendue" },
-  disputed:          { color: colors.warning,   bg: colors.warningDim, label: "Litigieuse" },
-  refused:           { color: colors.error,     bg: colors.errorDim,   label: "Refusée" },
-  cancelled:         { color: colors.text.faint, bg: colors.bg.elevated, label: "Annulée" },
-  // Legacy / French lifecycle aliases
-  deposited:         { color: colors.info,      bg: colors.infoDim,    label: "Déposée" },
-  received:          { color: colors.info,      bg: colors.infoDim,    label: "Reçue" },
-  accepted:          { color: colors.success,   bg: colors.successDim, label: "Acceptée" },
-  paid:              { color: colors.success,   bg: colors.successDim, label: "Payée" },
-  rejected:          { color: colors.error,     bg: colors.errorDim,   label: "Rejetée" },
-  pending:           { color: colors.warning,   bg: colors.warningDim, label: "En attente" },
-};
-
 function StatusBadge({ status }: { status: string }) {
-  const scheme = INVOICE_STATUS[status.toLowerCase()];
-  if (!scheme) return <span style={styles.badge(colors.text.muted, colors.bg.elevated)}>{status}</span>;
-  return <span style={styles.badge(scheme.color, scheme.bg)}>{scheme.label}</span>;
+  const s = getStatus(status);
+  return <span style={styles.badge(s.color, s.bg)}>{s.label}</span>;
 }
 
 function FormatBadge({ format }: { format: string }) {
@@ -111,43 +101,6 @@ function FormatBadge({ format }: { format: string }) {
 // ============================================================================
 // Action Buttons — interactive tool calls
 // ============================================================================
-
-function ActionButton({ label, icon, variant, disabled, loading, onClick }: {
-  label: string;
-  icon?: string;
-  variant?: "success" | "error" | "info" | "default";
-  disabled?: boolean;
-  loading?: boolean;
-  onClick: () => void;
-}) {
-  const variantColors = {
-    success: { color: colors.success, bg: colors.successDim },
-    error: { color: colors.error, bg: colors.errorDim },
-    info: { color: colors.info, bg: colors.infoDim },
-    default: { color: colors.text.secondary, bg: colors.bg.elevated },
-  };
-  const vc = variantColors[variant ?? "default"];
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled || loading}
-      style={{
-        ...styles.button,
-        background: vc.bg,
-        color: vc.color,
-        borderColor: vc.color,
-        opacity: disabled || loading ? 0.5 : 1,
-        cursor: disabled || loading ? "default" : "pointer",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-      }}
-    >
-      {loading ? "…" : label}
-    </button>
-  );
-}
 
 // ============================================================================
 // Main Component
@@ -288,7 +241,8 @@ export function InvoiceViewer() {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <IopoleBrandHeader />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 16, flex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
+          <EmptyInvoiceIcon />
           <div style={{ fontSize: 13 }}>Aucune facture à afficher</div>
         </div>
         <IopoleBrandFooter />
@@ -298,12 +252,16 @@ export function InvoiceViewer() {
 
   const currency = data.currency ?? "EUR";
   const isReceived = data.direction === "received";
-  const isSent = data.direction === "sent";
-  const statusLower = data.status?.toLowerCase() ?? "";
-  const terminalStatuses = ["accepted", "approved", "rejected", "refused", "paid", "completed", "cancelled", "payment_received"];
-  const isTerminal = terminalStatuses.includes(statusLower);
+  const statusStr = data.status ?? "";
+  const statusLower = statusStr.toLowerCase();
+  const dir = data.direction ?? "";
   const isPreview = !emitSuccess && (statusLower === "aperçu" || statusLower === "apercu") && !!data.generated_id;
   const hasId = !!data.id && data.id !== "(aperçu)" && data.id !== "(apercu)";
+
+  // Lifecycle transition guards (from shared status module)
+  const showAcceptReject = canAccept(statusStr, dir);
+  const showSendPayment = canPay(statusStr, dir);
+  const showReceivePayment = canReceivePay(statusStr, dir);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -319,9 +277,9 @@ export function InvoiceViewer() {
               {data.status && <StatusBadge status={data.status} />}
               {data.format && <FormatBadge format={data.format} />}
               {data.network && <span style={{ ...styles.badge(colors.text.secondary, colors.bg.elevated), fontSize: 10 }}>{data.network.replace(/_/g, " ")}</span>}
-              {data.direction && (
+              {data.direction && !isPreview && (
                 <span style={{ fontSize: 11, color: colors.text.muted }}>
-                  {isReceived ? "Facture reçue" : "Facture émise"}
+                  {isReceived ? "Entrante" : "Sortante"}
                 </span>
               )}
               {data.invoice_type && (
@@ -339,27 +297,35 @@ export function InvoiceViewer() {
         </div>
 
         {/* Error / Action message */}
-        {(error || actionMessage) && (
-          <div style={{ fontSize: 12, color: error ? colors.error : colors.success, marginBottom: 12 }}>
-            {error ?? actionMessage}
-          </div>
-        )}
+        {error && <FeedbackBanner type="error" message={error} onDismiss={() => setError(null)} />}
+        {!error && actionMessage && <FeedbackBanner type="success" message={actionMessage} />}
 
-        {/* Info Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
-          <InfoCard label="Émetteur" value={data.sender_name} sub={data.sender_id ? `SIRET ${data.sender_id}` : undefined} />
-          <InfoCard label="Destinataire" value={data.receiver_name} sub={data.receiver_id ? `SIRET ${data.receiver_id}` : undefined} />
-          {(data.sender_vat || data.receiver_vat) && (
-            <InfoCard label="TVA" value={data.sender_vat ?? data.receiver_vat} sub={data.sender_vat && data.receiver_vat ? `Dest: ${data.receiver_vat}` : undefined} />
-          )}
-          <InfoCard label="Date d'émission" value={data.issue_date} />
-          <InfoCard label="Date d'échéance" value={data.due_date} />
-          {data.receipt_date && <InfoCard label="Date de réception" value={data.receipt_date.split("T")[0]} />}
+        {/* Parties — two columns */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16, borderBottom: `1px solid ${colors.border}`, paddingBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Émetteur</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: colors.text.primary }}>{data.sender_name ?? "—"}</div>
+            {data.sender_id && <div style={{ fontSize: 11, color: colors.text.secondary }}>SIRET {data.sender_id}</div>}
+            {data.sender_vat && <div style={{ fontSize: 11, color: colors.text.faint }}>TVA {data.sender_vat}</div>}
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Destinataire</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: colors.text.primary }}>{data.receiver_name ?? "—"}</div>
+            {data.receiver_id && <div style={{ fontSize: 11, color: colors.text.secondary }}>SIRET {data.receiver_id}</div>}
+            {data.receiver_vat && <div style={{ fontSize: 11, color: colors.text.faint }}>TVA {data.receiver_vat}</div>}
+          </div>
+        </div>
+
+        {/* Dates — inline */}
+        <div style={{ display: "flex", gap: 24, marginBottom: 16, fontSize: 12 }}>
+          {data.issue_date && <span><span style={{ color: colors.text.muted }}>Émission </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.issue_date}</span></span>}
+          {data.due_date && <span><span style={{ color: colors.text.muted }}>Échéance </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.due_date}</span></span>}
+          {data.receipt_date && <span><span style={{ color: colors.text.muted }}>Réception </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.receipt_date.split("T")[0]}</span></span>}
         </div>
 
         {/* Line Items */}
         {data.items && data.items.length > 0 && (
-          <div style={{ border: `1px solid ${colors.border}`, borderRadius: 8, overflowX: "auto", marginBottom: 16 }}>
+          <div style={{ border: `1px solid ${colors.border}`, borderRadius: 12, overflowX: "auto", marginBottom: 16 }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
@@ -389,9 +355,9 @@ export function InvoiceViewer() {
           </div>
         )}
 
-        {/* Totals */}
+        {/* Totals — aligned right */}
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-          <div style={{ ...styles.card, minWidth: 220 }}>
+          <div style={{ minWidth: 220, borderTop: `1px solid ${colors.border}`, paddingTop: 8 }}>
             {data.total_ht != null && <TotalRow label="Total HT" value={formatCurrency(data.total_ht, currency)} />}
             {data.total_tax != null && <TotalRow label="TVA" value={formatCurrency(data.total_tax, currency)} />}
             {data.total_ttc != null && <TotalRow label="Total TTC" value={formatCurrency(data.total_ttc, currency)} bold />}
@@ -400,67 +366,91 @@ export function InvoiceViewer() {
 
         {/* Notes */}
         {data.notes && data.notes.length > 0 && (
-          <div style={{ ...styles.card, marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Notes</div>
+          <div style={{ marginBottom: 16, borderTop: `1px solid ${colors.border}`, paddingTop: 8 }}>
+            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Notes</div>
             {data.notes.map((note, i) => (
               <div key={i} style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 4, whiteSpace: "pre-wrap" }}>{note}</div>
             ))}
           </div>
         )}
 
-        {/* Unified Action Buttons — contextual based on state + direction */}
+        {/* Action Buttons — sequential per lifecycle */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 0", borderTop: `1px solid ${colors.border}` }}>
-          {/* Preview: emit button */}
+          {/* Preview: emit */}
           {isPreview && (
-            <ActionButton label="Déposer la facture" variant="success" loading={actionLoading === "emit"}
+            <ActionButton label="Soumettre la facture" variant="success" confirm loading={actionLoading === AK.EMIT}
               onClick={async () => {
-                const resultText = await callAction("emit", "einvoice_invoice_emit", { generated_id: data.generated_id }, "");
+                const resultText = await callAction(AK.EMIT, "einvoice_invoice_submit", { generated_id: data.generated_id }, "");
                 if (resultText) {
                   try {
                     const emitResponse = JSON.parse(resultText);
                     setEmitSuccess(true);
-                    setActionMessage("Facture déposée");
-                    hydrateData({
-                      ...data,
-                      id: emitResponse.id ?? data.id,
-                      status: "deposited",
-                      generated_id: undefined,
-                    });
+                    setActionMessage("Facture soumise");
+                    hydrateData({ ...data, id: emitResponse.id ?? data.id, status: "submitted", generated_id: undefined });
                   } catch {
                     setEmitSuccess(true);
-                    hydrateData({ ...data, status: "deposited", generated_id: undefined });
+                    hydrateData({ ...data, status: "submitted", generated_id: undefined });
                   }
                 }
               }} />
           )}
-          {/* Received invoice actions */}
-          {isReceived && !isTerminal && !isPreview && (
+          {/* Received: accept/reject/dispute — only when DELIVERED or IN_HAND or DISPUTED */}
+          {showAcceptReject && (
             <>
-              <ActionButton label="Accepter" variant="success" loading={actionLoading === "status_accept"}
-                onClick={() => callAction("status_accept", "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, "Facture acceptée")} />
-              <ActionButton label="Rejeter" variant="error" loading={actionLoading === "status_reject"}
-                onClick={() => callAction("status_reject", "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, "Facture refusée")} />
-              <ActionButton label="Contester" variant="info" loading={actionLoading === "status_dispute"}
-                onClick={() => callAction("status_dispute", "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, "Litige signalé")} />
-              <ActionButton label="Paiement envoyé" variant="success" loading={actionLoading === "status_payment_sent"}
-                onClick={() => callAction("status_payment_sent", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
+              <ActionButton label="Accepter" variant="success" loading={actionLoading === AK.ACCEPT}
+                onClick={() => callAction(AK.ACCEPT, "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, "Facture acceptée")} />
+              <ActionButton label="Rejeter" variant="error" confirm loading={actionLoading === AK.REJECT}
+                onClick={() => callAction(AK.REJECT, "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, "Facture refusée")} />
+              <ActionButton label="Contester" variant="info" confirm loading={actionLoading === AK.DISPUTE}
+                onClick={() => callAction(AK.DISPUTE, "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, "Litige signalé")} />
             </>
           )}
-          {/* Sent invoice actions */}
-          {isSent && !isTerminal && !isPreview && (
-            <ActionButton label="Paiement reçu" variant="success" loading={actionLoading === "status_payment_received"}
-              onClick={() => callAction("status_payment_received", "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
+          {/* Received: payment — only when APPROVED */}
+          {showSendPayment && (
+            <ActionButton label="Paiement envoyé" variant="success" loading={actionLoading === AK.PAYMENT_SENT}
+              onClick={() => callAction(AK.PAYMENT_SENT, "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
           )}
-          {/* Common actions — always available for real invoices */}
+          {/* Sent: payment received — only when APPROVED or DELIVERED */}
+          {showReceivePayment && (
+            <ActionButton label="Paiement reçu" variant="success" loading={actionLoading === AK.PAYMENT_RECEIVED}
+              onClick={() => callAction(AK.PAYMENT_RECEIVED, "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
+          )}
+          {/* Common: always available for real invoices */}
           {hasId && (
-            <>
-              <ActionButton label="Marquer lu" variant="default" loading={actionLoading === "mark_seen"}
-                onClick={() => callAction("mark_seen", "einvoice_invoice_mark_seen", { id: data.id }, "Marquée comme lue")} />
-              <ActionButton label="Télécharger PDF" variant="default" loading={actionLoading === "download_pdf"}
-                onClick={() => callAction("download_pdf", "einvoice_invoice_download_readable", { id: data.id }, "PDF téléchargé")} />
-            </>
+            <ActionButton label="Télécharger PDF" variant="default" loading={actionLoading === AK.DOWNLOAD_PDF}
+              onClick={() => callAction(AK.DOWNLOAD_PDF, "einvoice_invoice_download_readable", { id: data.id }, "PDF téléchargé")} />
           )}
         </div>
+
+        {/* Navigation — send message to conversation so Claude opens the right viewer */}
+        {hasId && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingBottom: 12 }}>
+            <ActionButton label="Historique statuts" variant="default" loading={actionLoading === "nav_history"}
+              onClick={async () => {
+                setActionLoading("nav_history");
+                try {
+                  await app.sendMessage({
+                    role: "user",
+                    content: [{ type: "text", text: `Montre-moi l'historique des statuts de la facture ${data.id}` }],
+                  });
+                } catch { /* host may not support sendMessage */ }
+                setActionLoading(null);
+              }} />
+            {data.sender_id && (
+              <ActionButton label="Voir émetteur" variant="default" loading={actionLoading === "nav_dir_sender"}
+                onClick={async () => {
+                  setActionLoading("nav_dir_sender");
+                  try {
+                    await app.sendMessage({
+                      role: "user",
+                      content: [{ type: "text", text: `Recherche l'entité avec le SIRET ${data.sender_id} dans l'annuaire français` }],
+                    });
+                  } catch { /* host may not support sendMessage */ }
+                  setActionLoading(null);
+                }} />
+            )}
+          </div>
+        )}
       </div>
       <IopoleBrandFooter />
     </div>

@@ -1,0 +1,2421 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Reporting operator Iopole API",
+        "description": "## Iopole API\n\nTo use the Iopole APIs, you must have a **`clientId`** and a **`clientSecret`**.\n\nYou can obtain these credentials by one of the following methods:\n- \ud83d\udce7 Contact the Iopole team at **support@iopole.com**\n- \ud83e\uddea Connect to **[Iopole Labs](https://labs.iopole.io)** to create your own sandbox environment\n\n### \ud83d\udcda API Documentation\n- \ud83e\uddea **Preproduction**: [https://docs.ppd.iopole.fr/](https://docs.ppd.iopole.fr/)\n- \ud83d\ude80 **Production**: [https://docs.iopole.com/](https://docs.iopole.com/)\n\n### \ud83d\udee0\ufe0f Support & Monitoring (production only)\n- \ud83d\udcc8 **System status**: [https://uptime.iopole.com](https://uptime.iopole.com)\n  - View real-time platform availability\n  - Subscribe to incident notifications\n  - Receive alerts for planned maintenance periods\n- \ud83d\udcdd **Release notes**: [https://release.iopole.com](https://release.iopole.com)\n",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Iopole",
+            "email": "support@iopole.com"
+        }
+    },
+    "security": [
+        {
+            "oauth2ClientCredentials": []
+        }
+    ],
+    "components": {
+        "schemas": {},
+        "parameters": {},
+        "securitySchemes": {
+            "oauth2ClientCredentials": {
+                "type": "oauth2",
+                "flows": {
+                    "clientCredentials": {
+                        "tokenUrl": "https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token",
+                        "scopes": {}
+                    }
+                }
+            }
+        }
+    },
+    "paths": {
+        "/v1/reporting/fr/transaction/{businessEntityId}": {
+            "post": {
+                "summary": "Send e-reporting for transaction",
+                "description": "**\u26a0\ufe0f This endpoint is not implemented! \u26a0\ufe0f**",
+                "tags": [
+                    "Transaction"
+                ],
+                "security": [
+                    {
+                        "oauth2ClientCredentials": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "businessEntityId",
+                        "description": "Business entity ID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "BY",
+                                            "SE"
+                                        ],
+                                        "description": "Act as seller or buyer"
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "description": "Date on which the transactions were recorded."
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "enum": [
+                                            "AED",
+                                            "AFN",
+                                            "ALL",
+                                            "AMD",
+                                            "ANG",
+                                            "AOA",
+                                            "ARS",
+                                            "AUD",
+                                            "AWG",
+                                            "AZN",
+                                            "BAM",
+                                            "BBD",
+                                            "BDT",
+                                            "BGN",
+                                            "BHD",
+                                            "BIF",
+                                            "BMD",
+                                            "BND",
+                                            "BOB",
+                                            "BOV",
+                                            "BRL",
+                                            "BSD",
+                                            "BTN",
+                                            "BWP",
+                                            "BYN",
+                                            "BZD",
+                                            "CAD",
+                                            "CDF",
+                                            "CHE",
+                                            "CHF",
+                                            "CHW",
+                                            "CLF",
+                                            "CLP",
+                                            "CNY",
+                                            "COP",
+                                            "COU",
+                                            "CRC",
+                                            "CUC",
+                                            "CUP",
+                                            "CVE",
+                                            "CZK",
+                                            "DJF",
+                                            "DKK",
+                                            "DOP",
+                                            "DZD",
+                                            "EGP",
+                                            "ERN",
+                                            "ETB",
+                                            "EUR",
+                                            "FJD",
+                                            "FKP",
+                                            "GBP",
+                                            "GEL",
+                                            "GHS",
+                                            "GIP",
+                                            "GMD",
+                                            "GNF",
+                                            "GTQ",
+                                            "GYD",
+                                            "HKD",
+                                            "HNL",
+                                            "HRK",
+                                            "HTG",
+                                            "HUF",
+                                            "IDR",
+                                            "ILS",
+                                            "INR",
+                                            "IQD",
+                                            "IRR",
+                                            "ISK",
+                                            "JMD",
+                                            "JOD",
+                                            "JPY",
+                                            "KES",
+                                            "KGS",
+                                            "KHR",
+                                            "KMF",
+                                            "KPW",
+                                            "KRW",
+                                            "KWD",
+                                            "KYD",
+                                            "KZT",
+                                            "LAK",
+                                            "LBP",
+                                            "LKR",
+                                            "LRD",
+                                            "LSL",
+                                            "LYD",
+                                            "MAD",
+                                            "MDL",
+                                            "MGA",
+                                            "MKD",
+                                            "MMK",
+                                            "MNT",
+                                            "MOP",
+                                            "MRU",
+                                            "MUR",
+                                            "MVR",
+                                            "MWK",
+                                            "MXN",
+                                            "MXV",
+                                            "MYR",
+                                            "MZN",
+                                            "NAD",
+                                            "NGN",
+                                            "NIO",
+                                            "NOK",
+                                            "NPR",
+                                            "NZD",
+                                            "OMR",
+                                            "PAB",
+                                            "PEN",
+                                            "PGK",
+                                            "PHP",
+                                            "PKR",
+                                            "PLN",
+                                            "PYG",
+                                            "QAR",
+                                            "RON",
+                                            "RSD",
+                                            "RUB",
+                                            "RWF",
+                                            "SAR",
+                                            "SBD",
+                                            "SCR",
+                                            "SDG",
+                                            "SEK",
+                                            "SGD",
+                                            "SHP",
+                                            "SLL",
+                                            "SOS",
+                                            "SRD",
+                                            "SSP",
+                                            "STN",
+                                            "SVC",
+                                            "SYP",
+                                            "SZL",
+                                            "THB",
+                                            "TJS",
+                                            "TMT",
+                                            "TND",
+                                            "TOP",
+                                            "TRY",
+                                            "TTD",
+                                            "TWD",
+                                            "TZS",
+                                            "UAH",
+                                            "UGX",
+                                            "USD",
+                                            "USN",
+                                            "UYI",
+                                            "UYU",
+                                            "UYW",
+                                            "UZS",
+                                            "VES",
+                                            "VND",
+                                            "VUV",
+                                            "WST",
+                                            "XAF",
+                                            "XAG",
+                                            "XAU",
+                                            "XBA",
+                                            "XBB",
+                                            "XBC",
+                                            "XBD",
+                                            "XCD",
+                                            "XDR",
+                                            "XOF",
+                                            "XPD",
+                                            "XPF",
+                                            "XPT",
+                                            "XSU",
+                                            "XTS",
+                                            "XUA",
+                                            "XXX",
+                                            "YER",
+                                            "ZAR",
+                                            "ZMW",
+                                            "ZWL"
+                                        ]
+                                    },
+                                    "taxDueDateTypeCode": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string",
+                                        "enum": [
+                                            "TLB1",
+                                            "TPS1",
+                                            "TNT1",
+                                            "TMA1"
+                                        ],
+                                        "description": "{\"label\":\"category\",\"type\":\"enum\",\"text\":\"Category\",\"array\":[{\"label\":\"Supply of goods subject to value-added tax.\",\"code\":\"TLB1\"},{\"label\":\"Services subject to value-added tax.\",\"code\":\"TPS1\"},{\"label\":\"Supply of goods and provision of services not subject to value-added tax in France, including intra-Community distance sales mentioned in 1\u00b0 of I of Article 258 A and in Article 259 B of the French General Tax Code.\",\"code\":\"TNT1\"},{\"label\":\"Transactions subject to the regimes provided for in e) of 1 of Article 266 and in Articles 268 and 297 A of the French General Tax Code (VAT margin scheme).\",\"code\":\"TMA1\"}]}"
+                                    },
+                                    "basicAmount": {
+                                        "type": "number",
+                                        "description": "Total invoice amount, excluding VAT."
+                                    },
+                                    "totalTaxAmount": {
+                                        "type": "number",
+                                        "description": "Total VAT amount of the invoice."
+                                    },
+                                    "transactionsCount": {
+                                        "type": "number",
+                                        "description": "Number of recorded transactions."
+                                    },
+                                    "breakdownVat": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "taxPercent": {
+                                                    "type": "number",
+                                                    "description": "VAT rate, expressed as a percentage, applicable to the corresponding type of VAT."
+                                                },
+                                                "taxableAmount": {
+                                                    "type": "number",
+                                                    "description": "Sum of all taxable amounts subject to a specific VAT type code and rate (if the VAT type rate is applicable)."
+                                                },
+                                                "taxTotal": {
+                                                    "type": "number",
+                                                    "description": "Total VAT amount for a given VAT type."
+                                                }
+                                            },
+                                            "required": [
+                                                "taxPercent",
+                                                "taxableAmount",
+                                                "taxTotal"
+                                            ],
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "role",
+                                    "date",
+                                    "currency",
+                                    "category",
+                                    "basicAmount",
+                                    "totalTaxAmount",
+                                    "transactionsCount",
+                                    "breakdownVat"
+                                ],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "E-reporting taken into account"
+                    },
+                    "400": {
+                        "description": "Request validation issues",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {}
+                                },
+                                "example": {
+                                    "validationIssues": {
+                                        "summary": "invalid_enum_value",
+                                        "value": [
+                                            {
+                                                "received": "BZ",
+                                                "code": "invalid_enum_value",
+                                                "options": [
+                                                    "EUR",
+                                                    "DNG"
+                                                ],
+                                                "path": [
+                                                    "currency"
+                                                ],
+                                                "message": "Invalid enum value. Expected {list enum}, received 'TEST'"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+                    },
+                    "403": {
+                        "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+                    }
+                }
+            }
+        },
+        "/v1/reporting/fr/invoice/transaction": {
+            "post": {
+                "summary": "Send e-reporting for invoice transaction",
+                "description": "**\u26a0\ufe0f This endpoint is not implemented \u26a0\ufe0f**",
+                "tags": [
+                    "Transaction"
+                ],
+                "security": [
+                    {
+                        "oauth2ClientCredentials": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "siren": {
+                                        "type": "string",
+                                        "description": "siren of the declarant"
+                                    },
+                                    "id": {
+                                        "type": "string",
+                                        "maxLength": 20,
+                                        "description": "{\"valueDescription\":\"20 char\",\"more\":\"BT-1 - Sequential number required by Article 226(2) of Directive 2006/112/EC [2], to uniquely identify the invoice. It can be based on one or more series, which may include alphanumeric characters.\",\"text\":\"Invoice number\"}"
+                                    },
+                                    "issueDate": {
+                                        "type": "string",
+                                        "description": "{\"valueDescription\":\"YYYY-MM-DD\",\"more\":\"BT-2 - Date on which the invoice was issued.\",\"text\":\"Date of invoice\"}"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "maxLength": 3,
+                                        "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "enum": [
+                                            "AED",
+                                            "AFN",
+                                            "ALL",
+                                            "AMD",
+                                            "ANG",
+                                            "AOA",
+                                            "ARS",
+                                            "AUD",
+                                            "AWG",
+                                            "AZN",
+                                            "BAM",
+                                            "BBD",
+                                            "BDT",
+                                            "BGN",
+                                            "BHD",
+                                            "BIF",
+                                            "BMD",
+                                            "BND",
+                                            "BOB",
+                                            "BOV",
+                                            "BRL",
+                                            "BSD",
+                                            "BTN",
+                                            "BWP",
+                                            "BYN",
+                                            "BZD",
+                                            "CAD",
+                                            "CDF",
+                                            "CHE",
+                                            "CHF",
+                                            "CHW",
+                                            "CLF",
+                                            "CLP",
+                                            "CNY",
+                                            "COP",
+                                            "COU",
+                                            "CRC",
+                                            "CUC",
+                                            "CUP",
+                                            "CVE",
+                                            "CZK",
+                                            "DJF",
+                                            "DKK",
+                                            "DOP",
+                                            "DZD",
+                                            "EGP",
+                                            "ERN",
+                                            "ETB",
+                                            "EUR",
+                                            "FJD",
+                                            "FKP",
+                                            "GBP",
+                                            "GEL",
+                                            "GHS",
+                                            "GIP",
+                                            "GMD",
+                                            "GNF",
+                                            "GTQ",
+                                            "GYD",
+                                            "HKD",
+                                            "HNL",
+                                            "HRK",
+                                            "HTG",
+                                            "HUF",
+                                            "IDR",
+                                            "ILS",
+                                            "INR",
+                                            "IQD",
+                                            "IRR",
+                                            "ISK",
+                                            "JMD",
+                                            "JOD",
+                                            "JPY",
+                                            "KES",
+                                            "KGS",
+                                            "KHR",
+                                            "KMF",
+                                            "KPW",
+                                            "KRW",
+                                            "KWD",
+                                            "KYD",
+                                            "KZT",
+                                            "LAK",
+                                            "LBP",
+                                            "LKR",
+                                            "LRD",
+                                            "LSL",
+                                            "LYD",
+                                            "MAD",
+                                            "MDL",
+                                            "MGA",
+                                            "MKD",
+                                            "MMK",
+                                            "MNT",
+                                            "MOP",
+                                            "MRU",
+                                            "MUR",
+                                            "MVR",
+                                            "MWK",
+                                            "MXN",
+                                            "MXV",
+                                            "MYR",
+                                            "MZN",
+                                            "NAD",
+                                            "NGN",
+                                            "NIO",
+                                            "NOK",
+                                            "NPR",
+                                            "NZD",
+                                            "OMR",
+                                            "PAB",
+                                            "PEN",
+                                            "PGK",
+                                            "PHP",
+                                            "PKR",
+                                            "PLN",
+                                            "PYG",
+                                            "QAR",
+                                            "RON",
+                                            "RSD",
+                                            "RUB",
+                                            "RWF",
+                                            "SAR",
+                                            "SBD",
+                                            "SCR",
+                                            "SDG",
+                                            "SEK",
+                                            "SGD",
+                                            "SHP",
+                                            "SLL",
+                                            "SOS",
+                                            "SRD",
+                                            "SSP",
+                                            "STN",
+                                            "SVC",
+                                            "SYP",
+                                            "SZL",
+                                            "THB",
+                                            "TJS",
+                                            "TMT",
+                                            "TND",
+                                            "TOP",
+                                            "TRY",
+                                            "TTD",
+                                            "TWD",
+                                            "TZS",
+                                            "UAH",
+                                            "UGX",
+                                            "USD",
+                                            "USN",
+                                            "UYI",
+                                            "UYU",
+                                            "UYW",
+                                            "UZS",
+                                            "VES",
+                                            "VND",
+                                            "VUV",
+                                            "WST",
+                                            "XAF",
+                                            "XAG",
+                                            "XAU",
+                                            "XBA",
+                                            "XBB",
+                                            "XBC",
+                                            "XBD",
+                                            "XCD",
+                                            "XDR",
+                                            "XOF",
+                                            "XPD",
+                                            "XPF",
+                                            "XPT",
+                                            "XSU",
+                                            "XTS",
+                                            "XUA",
+                                            "XXX",
+                                            "YER",
+                                            "ZAR",
+                                            "ZMW",
+                                            "ZWL"
+                                        ]
+                                    },
+                                    "dueDate": {
+                                        "type": "string",
+                                        "description": "{\"valueDescription\":\"YYYY-MM-DD\",\"text\":\"Invoice due date\"}"
+                                    },
+                                    "taxDueDateTypeCode": {
+                                        "type": "string",
+                                        "maxLength": 3,
+                                        "description": "{\"valueDescription\":\"3 digits max\",\"link\":{\"placeholder\":\"UNTDID 2005 list\",\"link\":\"https://service.unece.org/trade/untdid/d96a/uncl/uncl2005.htm\"},\"text\":\"Code giving specific meaning to a date, time or period.\"}"
+                                    },
+                                    "notes": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "maxLength": 3,
+                                                    "description": "{\"text\":\"Invoice note subject code\",\"valueDescription\":\"3 char\",\"more\":\"BT-21 - Text of the note subject following. Only in UBL: between ## at the beginning of the line note\",\"link\":{\"placeholder\":\"UNTDID 4451 list\",\"link\":\"https://service.unece.org/trade/untdid/d96b/uncl/uncl4451.htm\"}}"
+                                                },
+                                                "content": {
+                                                    "type": "string",
+                                                    "maxLength": 1024,
+                                                    "description": "{\"text\":\"Invoice note\",\"valueDescription\":\"1024 char\",\"more\":\"BT-22 - Comment providing unstructured information regarding the entire invoice. (Example: Reason for an adjustment.)\"}"
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        },
+                                        "description": "{\"text\":\"Invoice note\",\"more\":\"BG-1 - Group of business terms providing relevant text notes in the invoice, associated with an indicator specifying the subject of the note.\"}"
+                                    },
+                                    "processType": {
+                                        "type": "object",
+                                        "properties": {
+                                            "code": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "B1",
+                                                    "S1",
+                                                    "M1",
+                                                    "B2",
+                                                    "S2",
+                                                    "M2",
+                                                    "S3",
+                                                    "B4",
+                                                    "S4",
+                                                    "M4",
+                                                    "S5",
+                                                    "S6",
+                                                    "B7",
+                                                    "S7"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "code"
+                                        ],
+                                        "additionalProperties": false
+                                    },
+                                    "referencedDocuments": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "maxLength": 20,
+                                                    "description": "{\"text\":\"Reference to a previous invoice\",\"valueDescription\":\"20 char\",\"more\":\"BT-25 - Identification of an invoice previously sent by the Seller\"}"
+                                                },
+                                                "issueDate": {
+                                                    "type": "string",
+                                                    "description": "{\"text\":\"Issue date of the previous invoice\",\"valueDescription\":\"YYYY-MM-DD\",\"more\":\"BT-26 - Date on which the previous invoice was issued.\"}"
+                                                }
+                                            },
+                                            "required": [
+                                                "id"
+                                            ],
+                                            "additionalProperties": false
+                                        },
+                                        "description": "{\"text\":\"Reference to a previous invoice\",\"more\":\"BG-3 - Group of business terms providing information about a previous invoice that needs to be corrected or to be subject to a credit note. (To be used in the following cases: - Correction of a previous invoice - Final invoice referencing previous partial invoices - Final invoice referencing previous pre-payment invoices)\"}"
+                                    },
+                                    "seller": {
+                                        "type": "object",
+                                        "properties": {
+                                            "scheme": {
+                                                "type": "string",
+                                                "description": "{\"text\":\"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties in electronic invoicing\",\"link\":{\"placeholder\":\"EAS code list\",\"link\":\"https://ec.europa.eu/digital-building-blocks/sites/display/DIGITAL/Registry+of+supporting+artefacts+to+implement+EN16931\"},\"more\":\"Once on the European Commission's webpage, download the latest version of the XLSX file containing the EAS codes. Example : For French company it can be : 0002 (SIREN)\"}"
+                                            },
+                                            "value": {
+                                                "type": "string",
+                                                "description": "The value of the electronic address."
+                                            },
+                                            "vatNumber": {
+                                                "type": "string",
+                                                "description": "vatNumber of the seller"
+                                            },
+                                            "postalAddress": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "country": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "1A",
+                                                            "AD",
+                                                            "AE",
+                                                            "AF",
+                                                            "AG",
+                                                            "AI",
+                                                            "AL",
+                                                            "AM",
+                                                            "AO",
+                                                            "AQ",
+                                                            "AR",
+                                                            "AS",
+                                                            "AT",
+                                                            "AU",
+                                                            "AW",
+                                                            "AX",
+                                                            "AZ",
+                                                            "BA",
+                                                            "BB",
+                                                            "BD",
+                                                            "BE",
+                                                            "BF",
+                                                            "BG",
+                                                            "BH",
+                                                            "BI",
+                                                            "BJ",
+                                                            "BL",
+                                                            "BM",
+                                                            "BN",
+                                                            "BO",
+                                                            "BQ",
+                                                            "BR",
+                                                            "BS",
+                                                            "BT",
+                                                            "BV",
+                                                            "BW",
+                                                            "BY",
+                                                            "BZ",
+                                                            "CA",
+                                                            "CC",
+                                                            "CD",
+                                                            "CF",
+                                                            "CG",
+                                                            "CH",
+                                                            "CI",
+                                                            "CK",
+                                                            "CL",
+                                                            "CM",
+                                                            "CN",
+                                                            "CO",
+                                                            "CR",
+                                                            "CU",
+                                                            "CV",
+                                                            "CW",
+                                                            "CX",
+                                                            "CY",
+                                                            "CZ",
+                                                            "DE",
+                                                            "DJ",
+                                                            "DK",
+                                                            "DM",
+                                                            "DO",
+                                                            "DZ",
+                                                            "EC",
+                                                            "EE",
+                                                            "EG",
+                                                            "EH",
+                                                            "ER",
+                                                            "ES",
+                                                            "ET",
+                                                            "FI",
+                                                            "FJ",
+                                                            "FK",
+                                                            "FM",
+                                                            "FO",
+                                                            "FR",
+                                                            "GA",
+                                                            "GB",
+                                                            "GD",
+                                                            "GE",
+                                                            "GF",
+                                                            "GG",
+                                                            "GH",
+                                                            "GI",
+                                                            "GL",
+                                                            "GM",
+                                                            "GN",
+                                                            "GP",
+                                                            "GQ",
+                                                            "GR",
+                                                            "GS",
+                                                            "GT",
+                                                            "GU",
+                                                            "GW",
+                                                            "GY",
+                                                            "HK",
+                                                            "HM",
+                                                            "HN",
+                                                            "HR",
+                                                            "HT",
+                                                            "HU",
+                                                            "ID",
+                                                            "IE",
+                                                            "IL",
+                                                            "IM",
+                                                            "IN",
+                                                            "IO",
+                                                            "IQ",
+                                                            "IR",
+                                                            "IS",
+                                                            "IT",
+                                                            "JE",
+                                                            "JM",
+                                                            "JO",
+                                                            "JP",
+                                                            "KE",
+                                                            "KG",
+                                                            "KH",
+                                                            "KI",
+                                                            "KM",
+                                                            "KN",
+                                                            "KP",
+                                                            "KR",
+                                                            "KW",
+                                                            "KY",
+                                                            "KZ",
+                                                            "LA",
+                                                            "LB",
+                                                            "LC",
+                                                            "LI",
+                                                            "LK",
+                                                            "LR",
+                                                            "LS",
+                                                            "LT",
+                                                            "LU",
+                                                            "LV",
+                                                            "LY",
+                                                            "MA",
+                                                            "MC",
+                                                            "MD",
+                                                            "ME",
+                                                            "MF",
+                                                            "MG",
+                                                            "MH",
+                                                            "MK",
+                                                            "ML",
+                                                            "MM",
+                                                            "MN",
+                                                            "MO",
+                                                            "MP",
+                                                            "MQ",
+                                                            "MR",
+                                                            "MS",
+                                                            "MT",
+                                                            "MU",
+                                                            "MV",
+                                                            "MW",
+                                                            "MX",
+                                                            "MY",
+                                                            "MZ",
+                                                            "NA",
+                                                            "NC",
+                                                            "NE",
+                                                            "NF",
+                                                            "NG",
+                                                            "NI",
+                                                            "NL",
+                                                            "NO",
+                                                            "NP",
+                                                            "NR",
+                                                            "NU",
+                                                            "NZ",
+                                                            "OM",
+                                                            "PA",
+                                                            "PE",
+                                                            "PF",
+                                                            "PG",
+                                                            "PH",
+                                                            "PK",
+                                                            "PL",
+                                                            "PM",
+                                                            "PN",
+                                                            "PR",
+                                                            "PS",
+                                                            "PT",
+                                                            "PW",
+                                                            "PY",
+                                                            "QA",
+                                                            "RE",
+                                                            "RO",
+                                                            "RS",
+                                                            "RU",
+                                                            "RW",
+                                                            "SA",
+                                                            "SB",
+                                                            "SC",
+                                                            "SD",
+                                                            "SE",
+                                                            "SG",
+                                                            "SH",
+                                                            "SI",
+                                                            "SJ",
+                                                            "SK",
+                                                            "SL",
+                                                            "SM",
+                                                            "SN",
+                                                            "SO",
+                                                            "SR",
+                                                            "SS",
+                                                            "ST",
+                                                            "SV",
+                                                            "SX",
+                                                            "SY",
+                                                            "SZ",
+                                                            "TC",
+                                                            "TD",
+                                                            "TF",
+                                                            "TG",
+                                                            "TH",
+                                                            "TJ",
+                                                            "TK",
+                                                            "TL",
+                                                            "TM",
+                                                            "TN",
+                                                            "TO",
+                                                            "TR",
+                                                            "TT",
+                                                            "TV",
+                                                            "TW",
+                                                            "TZ",
+                                                            "UA",
+                                                            "UG",
+                                                            "UM",
+                                                            "US",
+                                                            "UY",
+                                                            "UZ",
+                                                            "VA",
+                                                            "VC",
+                                                            "VE",
+                                                            "VG",
+                                                            "VI",
+                                                            "VN",
+                                                            "VU",
+                                                            "WF",
+                                                            "WS",
+                                                            "XI",
+                                                            "YE",
+                                                            "YT",
+                                                            "ZA",
+                                                            "ZM",
+                                                            "ZW"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "country"
+                                                ],
+                                                "additionalProperties": false
+                                            }
+                                        },
+                                        "required": [
+                                            "scheme",
+                                            "value",
+                                            "vatNumber",
+                                            "postalAddress"
+                                        ],
+                                        "additionalProperties": false
+                                    },
+                                    "buyer": {
+                                        "type": "object",
+                                        "properties": {
+                                            "scheme": {
+                                                "type": "string",
+                                                "description": "{\"text\":\"The EAS code (Endpoint Address Scheme) identifies the type of identifier used for parties in electronic invoicing\",\"link\":{\"placeholder\":\"EAS code list\",\"link\":\"https://ec.europa.eu/digital-building-blocks/sites/display/DIGITAL/Registry+of+supporting+artefacts+to+implement+EN16931\"},\"more\":\"Once on the European Commission's webpage, download the latest version of the XLSX file containing the EAS codes. Example : For French company it can be : 0002 (SIREN)\"}"
+                                            },
+                                            "value": {
+                                                "type": "string",
+                                                "description": "The value of the electronic address."
+                                            },
+                                            "vatNumber": {
+                                                "type": "string",
+                                                "description": "vatNumber of the buyer."
+                                            },
+                                            "postalAddress": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "country": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "1A",
+                                                            "AD",
+                                                            "AE",
+                                                            "AF",
+                                                            "AG",
+                                                            "AI",
+                                                            "AL",
+                                                            "AM",
+                                                            "AO",
+                                                            "AQ",
+                                                            "AR",
+                                                            "AS",
+                                                            "AT",
+                                                            "AU",
+                                                            "AW",
+                                                            "AX",
+                                                            "AZ",
+                                                            "BA",
+                                                            "BB",
+                                                            "BD",
+                                                            "BE",
+                                                            "BF",
+                                                            "BG",
+                                                            "BH",
+                                                            "BI",
+                                                            "BJ",
+                                                            "BL",
+                                                            "BM",
+                                                            "BN",
+                                                            "BO",
+                                                            "BQ",
+                                                            "BR",
+                                                            "BS",
+                                                            "BT",
+                                                            "BV",
+                                                            "BW",
+                                                            "BY",
+                                                            "BZ",
+                                                            "CA",
+                                                            "CC",
+                                                            "CD",
+                                                            "CF",
+                                                            "CG",
+                                                            "CH",
+                                                            "CI",
+                                                            "CK",
+                                                            "CL",
+                                                            "CM",
+                                                            "CN",
+                                                            "CO",
+                                                            "CR",
+                                                            "CU",
+                                                            "CV",
+                                                            "CW",
+                                                            "CX",
+                                                            "CY",
+                                                            "CZ",
+                                                            "DE",
+                                                            "DJ",
+                                                            "DK",
+                                                            "DM",
+                                                            "DO",
+                                                            "DZ",
+                                                            "EC",
+                                                            "EE",
+                                                            "EG",
+                                                            "EH",
+                                                            "ER",
+                                                            "ES",
+                                                            "ET",
+                                                            "FI",
+                                                            "FJ",
+                                                            "FK",
+                                                            "FM",
+                                                            "FO",
+                                                            "FR",
+                                                            "GA",
+                                                            "GB",
+                                                            "GD",
+                                                            "GE",
+                                                            "GF",
+                                                            "GG",
+                                                            "GH",
+                                                            "GI",
+                                                            "GL",
+                                                            "GM",
+                                                            "GN",
+                                                            "GP",
+                                                            "GQ",
+                                                            "GR",
+                                                            "GS",
+                                                            "GT",
+                                                            "GU",
+                                                            "GW",
+                                                            "GY",
+                                                            "HK",
+                                                            "HM",
+                                                            "HN",
+                                                            "HR",
+                                                            "HT",
+                                                            "HU",
+                                                            "ID",
+                                                            "IE",
+                                                            "IL",
+                                                            "IM",
+                                                            "IN",
+                                                            "IO",
+                                                            "IQ",
+                                                            "IR",
+                                                            "IS",
+                                                            "IT",
+                                                            "JE",
+                                                            "JM",
+                                                            "JO",
+                                                            "JP",
+                                                            "KE",
+                                                            "KG",
+                                                            "KH",
+                                                            "KI",
+                                                            "KM",
+                                                            "KN",
+                                                            "KP",
+                                                            "KR",
+                                                            "KW",
+                                                            "KY",
+                                                            "KZ",
+                                                            "LA",
+                                                            "LB",
+                                                            "LC",
+                                                            "LI",
+                                                            "LK",
+                                                            "LR",
+                                                            "LS",
+                                                            "LT",
+                                                            "LU",
+                                                            "LV",
+                                                            "LY",
+                                                            "MA",
+                                                            "MC",
+                                                            "MD",
+                                                            "ME",
+                                                            "MF",
+                                                            "MG",
+                                                            "MH",
+                                                            "MK",
+                                                            "ML",
+                                                            "MM",
+                                                            "MN",
+                                                            "MO",
+                                                            "MP",
+                                                            "MQ",
+                                                            "MR",
+                                                            "MS",
+                                                            "MT",
+                                                            "MU",
+                                                            "MV",
+                                                            "MW",
+                                                            "MX",
+                                                            "MY",
+                                                            "MZ",
+                                                            "NA",
+                                                            "NC",
+                                                            "NE",
+                                                            "NF",
+                                                            "NG",
+                                                            "NI",
+                                                            "NL",
+                                                            "NO",
+                                                            "NP",
+                                                            "NR",
+                                                            "NU",
+                                                            "NZ",
+                                                            "OM",
+                                                            "PA",
+                                                            "PE",
+                                                            "PF",
+                                                            "PG",
+                                                            "PH",
+                                                            "PK",
+                                                            "PL",
+                                                            "PM",
+                                                            "PN",
+                                                            "PR",
+                                                            "PS",
+                                                            "PT",
+                                                            "PW",
+                                                            "PY",
+                                                            "QA",
+                                                            "RE",
+                                                            "RO",
+                                                            "RS",
+                                                            "RU",
+                                                            "RW",
+                                                            "SA",
+                                                            "SB",
+                                                            "SC",
+                                                            "SD",
+                                                            "SE",
+                                                            "SG",
+                                                            "SH",
+                                                            "SI",
+                                                            "SJ",
+                                                            "SK",
+                                                            "SL",
+                                                            "SM",
+                                                            "SN",
+                                                            "SO",
+                                                            "SR",
+                                                            "SS",
+                                                            "ST",
+                                                            "SV",
+                                                            "SX",
+                                                            "SY",
+                                                            "SZ",
+                                                            "TC",
+                                                            "TD",
+                                                            "TF",
+                                                            "TG",
+                                                            "TH",
+                                                            "TJ",
+                                                            "TK",
+                                                            "TL",
+                                                            "TM",
+                                                            "TN",
+                                                            "TO",
+                                                            "TR",
+                                                            "TT",
+                                                            "TV",
+                                                            "TW",
+                                                            "TZ",
+                                                            "UA",
+                                                            "UG",
+                                                            "UM",
+                                                            "US",
+                                                            "UY",
+                                                            "UZ",
+                                                            "VA",
+                                                            "VC",
+                                                            "VE",
+                                                            "VG",
+                                                            "VI",
+                                                            "VN",
+                                                            "VU",
+                                                            "WF",
+                                                            "WS",
+                                                            "XI",
+                                                            "YE",
+                                                            "YT",
+                                                            "ZA",
+                                                            "ZM",
+                                                            "ZW"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "country"
+                                                ],
+                                                "additionalProperties": false
+                                            }
+                                        },
+                                        "additionalProperties": false
+                                    },
+                                    "sellerTaxRepresentative": {
+                                        "type": "object",
+                                        "properties": {
+                                            "vatNumber": {
+                                                "type": "string",
+                                                "description": "Vat number of the seller representative"
+                                            }
+                                        },
+                                        "required": [
+                                            "vatNumber"
+                                        ],
+                                        "additionalProperties": false
+                                    },
+                                    "shipping": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "deliveryDate": {
+                                                    "type": "string"
+                                                },
+                                                "tradeParty": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "postalAddress": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "addressLineOne": {
+                                                                    "type": "string"
+                                                                },
+                                                                "addressLineTwo": {
+                                                                    "type": "string"
+                                                                },
+                                                                "addressLineThree": {
+                                                                    "type": "string"
+                                                                },
+                                                                "cityName": {
+                                                                    "type": "string"
+                                                                },
+                                                                "postalCode": {
+                                                                    "type": "string"
+                                                                },
+                                                                "subDivision": {
+                                                                    "type": "string"
+                                                                },
+                                                                "country": {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "1A",
+                                                                        "AD",
+                                                                        "AE",
+                                                                        "AF",
+                                                                        "AG",
+                                                                        "AI",
+                                                                        "AL",
+                                                                        "AM",
+                                                                        "AO",
+                                                                        "AQ",
+                                                                        "AR",
+                                                                        "AS",
+                                                                        "AT",
+                                                                        "AU",
+                                                                        "AW",
+                                                                        "AX",
+                                                                        "AZ",
+                                                                        "BA",
+                                                                        "BB",
+                                                                        "BD",
+                                                                        "BE",
+                                                                        "BF",
+                                                                        "BG",
+                                                                        "BH",
+                                                                        "BI",
+                                                                        "BJ",
+                                                                        "BL",
+                                                                        "BM",
+                                                                        "BN",
+                                                                        "BO",
+                                                                        "BQ",
+                                                                        "BR",
+                                                                        "BS",
+                                                                        "BT",
+                                                                        "BV",
+                                                                        "BW",
+                                                                        "BY",
+                                                                        "BZ",
+                                                                        "CA",
+                                                                        "CC",
+                                                                        "CD",
+                                                                        "CF",
+                                                                        "CG",
+                                                                        "CH",
+                                                                        "CI",
+                                                                        "CK",
+                                                                        "CL",
+                                                                        "CM",
+                                                                        "CN",
+                                                                        "CO",
+                                                                        "CR",
+                                                                        "CU",
+                                                                        "CV",
+                                                                        "CW",
+                                                                        "CX",
+                                                                        "CY",
+                                                                        "CZ",
+                                                                        "DE",
+                                                                        "DJ",
+                                                                        "DK",
+                                                                        "DM",
+                                                                        "DO",
+                                                                        "DZ",
+                                                                        "EC",
+                                                                        "EE",
+                                                                        "EG",
+                                                                        "EH",
+                                                                        "ER",
+                                                                        "ES",
+                                                                        "ET",
+                                                                        "FI",
+                                                                        "FJ",
+                                                                        "FK",
+                                                                        "FM",
+                                                                        "FO",
+                                                                        "FR",
+                                                                        "GA",
+                                                                        "GB",
+                                                                        "GD",
+                                                                        "GE",
+                                                                        "GF",
+                                                                        "GG",
+                                                                        "GH",
+                                                                        "GI",
+                                                                        "GL",
+                                                                        "GM",
+                                                                        "GN",
+                                                                        "GP",
+                                                                        "GQ",
+                                                                        "GR",
+                                                                        "GS",
+                                                                        "GT",
+                                                                        "GU",
+                                                                        "GW",
+                                                                        "GY",
+                                                                        "HK",
+                                                                        "HM",
+                                                                        "HN",
+                                                                        "HR",
+                                                                        "HT",
+                                                                        "HU",
+                                                                        "ID",
+                                                                        "IE",
+                                                                        "IL",
+                                                                        "IM",
+                                                                        "IN",
+                                                                        "IO",
+                                                                        "IQ",
+                                                                        "IR",
+                                                                        "IS",
+                                                                        "IT",
+                                                                        "JE",
+                                                                        "JM",
+                                                                        "JO",
+                                                                        "JP",
+                                                                        "KE",
+                                                                        "KG",
+                                                                        "KH",
+                                                                        "KI",
+                                                                        "KM",
+                                                                        "KN",
+                                                                        "KP",
+                                                                        "KR",
+                                                                        "KW",
+                                                                        "KY",
+                                                                        "KZ",
+                                                                        "LA",
+                                                                        "LB",
+                                                                        "LC",
+                                                                        "LI",
+                                                                        "LK",
+                                                                        "LR",
+                                                                        "LS",
+                                                                        "LT",
+                                                                        "LU",
+                                                                        "LV",
+                                                                        "LY",
+                                                                        "MA",
+                                                                        "MC",
+                                                                        "MD",
+                                                                        "ME",
+                                                                        "MF",
+                                                                        "MG",
+                                                                        "MH",
+                                                                        "MK",
+                                                                        "ML",
+                                                                        "MM",
+                                                                        "MN",
+                                                                        "MO",
+                                                                        "MP",
+                                                                        "MQ",
+                                                                        "MR",
+                                                                        "MS",
+                                                                        "MT",
+                                                                        "MU",
+                                                                        "MV",
+                                                                        "MW",
+                                                                        "MX",
+                                                                        "MY",
+                                                                        "MZ",
+                                                                        "NA",
+                                                                        "NC",
+                                                                        "NE",
+                                                                        "NF",
+                                                                        "NG",
+                                                                        "NI",
+                                                                        "NL",
+                                                                        "NO",
+                                                                        "NP",
+                                                                        "NR",
+                                                                        "NU",
+                                                                        "NZ",
+                                                                        "OM",
+                                                                        "PA",
+                                                                        "PE",
+                                                                        "PF",
+                                                                        "PG",
+                                                                        "PH",
+                                                                        "PK",
+                                                                        "PL",
+                                                                        "PM",
+                                                                        "PN",
+                                                                        "PR",
+                                                                        "PS",
+                                                                        "PT",
+                                                                        "PW",
+                                                                        "PY",
+                                                                        "QA",
+                                                                        "RE",
+                                                                        "RO",
+                                                                        "RS",
+                                                                        "RU",
+                                                                        "RW",
+                                                                        "SA",
+                                                                        "SB",
+                                                                        "SC",
+                                                                        "SD",
+                                                                        "SE",
+                                                                        "SG",
+                                                                        "SH",
+                                                                        "SI",
+                                                                        "SJ",
+                                                                        "SK",
+                                                                        "SL",
+                                                                        "SM",
+                                                                        "SN",
+                                                                        "SO",
+                                                                        "SR",
+                                                                        "SS",
+                                                                        "ST",
+                                                                        "SV",
+                                                                        "SX",
+                                                                        "SY",
+                                                                        "SZ",
+                                                                        "TC",
+                                                                        "TD",
+                                                                        "TF",
+                                                                        "TG",
+                                                                        "TH",
+                                                                        "TJ",
+                                                                        "TK",
+                                                                        "TL",
+                                                                        "TM",
+                                                                        "TN",
+                                                                        "TO",
+                                                                        "TR",
+                                                                        "TT",
+                                                                        "TV",
+                                                                        "TW",
+                                                                        "TZ",
+                                                                        "UA",
+                                                                        "UG",
+                                                                        "UM",
+                                                                        "US",
+                                                                        "UY",
+                                                                        "UZ",
+                                                                        "VA",
+                                                                        "VC",
+                                                                        "VE",
+                                                                        "VG",
+                                                                        "VI",
+                                                                        "VN",
+                                                                        "VU",
+                                                                        "WF",
+                                                                        "WS",
+                                                                        "XI",
+                                                                        "YE",
+                                                                        "YT",
+                                                                        "ZA",
+                                                                        "ZM",
+                                                                        "ZW"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "country"
+                                                            ],
+                                                            "additionalProperties": false
+                                                        },
+                                                        "value": {
+                                                            "type": "string",
+                                                            "description": "Value of the identifier."
+                                                        },
+                                                        "vatNumber": {
+                                                            "type": "string",
+                                                            "description": "vatNumber of the identifier."
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value",
+                                                        "vatNumber"
+                                                    ],
+                                                    "additionalProperties": false
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "billingPeriod": {
+                                        "type": "object",
+                                        "properties": {
+                                            "begin": {
+                                                "type": "string",
+                                                "description": "Scheme of the identifier."
+                                            },
+                                            "end": {
+                                                "type": "string",
+                                                "description": "Value of the identifier."
+                                            }
+                                        },
+                                        "required": [
+                                            "begin",
+                                            "end"
+                                        ],
+                                        "additionalProperties": false
+                                    },
+                                    "allowances": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "amount": {
+                                                    "type": "string"
+                                                },
+                                                "taxDetail": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "categoryCode": {
+                                                            "type": "string"
+                                                        },
+                                                        "percent": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "categoryCode",
+                                                        "percent"
+                                                    ],
+                                                    "additionalProperties": false
+                                                }
+                                            },
+                                            "required": [
+                                                "amount",
+                                                "taxDetail"
+                                            ],
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "charges": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "amount": {
+                                                    "type": "number"
+                                                },
+                                                "taxCategoryCode": {
+                                                    "type": "string",
+                                                    "maxLength": 2
+                                                },
+                                                "taxPercent": {
+                                                    "type": "number"
+                                                }
+                                            },
+                                            "required": [
+                                                "amount",
+                                                "taxCategoryCode",
+                                                "taxPercent"
+                                            ],
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "monetary": {
+                                        "type": "object",
+                                        "properties": {
+                                            "taxBasisTotalAmount": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "amount": {
+                                                        "type": "number"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "amount"
+                                                ],
+                                                "additionalProperties": false
+                                            },
+                                            "taxTotalAmount": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "amount": {
+                                                        "type": "number"
+                                                    },
+                                                    "currencyCode": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "AED",
+                                                            "AFN",
+                                                            "ALL",
+                                                            "AMD",
+                                                            "ANG",
+                                                            "AOA",
+                                                            "ARS",
+                                                            "AUD",
+                                                            "AWG",
+                                                            "AZN",
+                                                            "BAM",
+                                                            "BBD",
+                                                            "BDT",
+                                                            "BGN",
+                                                            "BHD",
+                                                            "BIF",
+                                                            "BMD",
+                                                            "BND",
+                                                            "BOB",
+                                                            "BOV",
+                                                            "BRL",
+                                                            "BSD",
+                                                            "BTN",
+                                                            "BWP",
+                                                            "BYN",
+                                                            "BZD",
+                                                            "CAD",
+                                                            "CDF",
+                                                            "CHE",
+                                                            "CHF",
+                                                            "CHW",
+                                                            "CLF",
+                                                            "CLP",
+                                                            "CNY",
+                                                            "COP",
+                                                            "COU",
+                                                            "CRC",
+                                                            "CUC",
+                                                            "CUP",
+                                                            "CVE",
+                                                            "CZK",
+                                                            "DJF",
+                                                            "DKK",
+                                                            "DOP",
+                                                            "DZD",
+                                                            "EGP",
+                                                            "ERN",
+                                                            "ETB",
+                                                            "EUR",
+                                                            "FJD",
+                                                            "FKP",
+                                                            "GBP",
+                                                            "GEL",
+                                                            "GHS",
+                                                            "GIP",
+                                                            "GMD",
+                                                            "GNF",
+                                                            "GTQ",
+                                                            "GYD",
+                                                            "HKD",
+                                                            "HNL",
+                                                            "HRK",
+                                                            "HTG",
+                                                            "HUF",
+                                                            "IDR",
+                                                            "ILS",
+                                                            "INR",
+                                                            "IQD",
+                                                            "IRR",
+                                                            "ISK",
+                                                            "JMD",
+                                                            "JOD",
+                                                            "JPY",
+                                                            "KES",
+                                                            "KGS",
+                                                            "KHR",
+                                                            "KMF",
+                                                            "KPW",
+                                                            "KRW",
+                                                            "KWD",
+                                                            "KYD",
+                                                            "KZT",
+                                                            "LAK",
+                                                            "LBP",
+                                                            "LKR",
+                                                            "LRD",
+                                                            "LSL",
+                                                            "LYD",
+                                                            "MAD",
+                                                            "MDL",
+                                                            "MGA",
+                                                            "MKD",
+                                                            "MMK",
+                                                            "MNT",
+                                                            "MOP",
+                                                            "MRU",
+                                                            "MUR",
+                                                            "MVR",
+                                                            "MWK",
+                                                            "MXN",
+                                                            "MXV",
+                                                            "MYR",
+                                                            "MZN",
+                                                            "NAD",
+                                                            "NGN",
+                                                            "NIO",
+                                                            "NOK",
+                                                            "NPR",
+                                                            "NZD",
+                                                            "OMR",
+                                                            "PAB",
+                                                            "PEN",
+                                                            "PGK",
+                                                            "PHP",
+                                                            "PKR",
+                                                            "PLN",
+                                                            "PYG",
+                                                            "QAR",
+                                                            "RON",
+                                                            "RSD",
+                                                            "RUB",
+                                                            "RWF",
+                                                            "SAR",
+                                                            "SBD",
+                                                            "SCR",
+                                                            "SDG",
+                                                            "SEK",
+                                                            "SGD",
+                                                            "SHP",
+                                                            "SLL",
+                                                            "SOS",
+                                                            "SRD",
+                                                            "SSP",
+                                                            "STN",
+                                                            "SVC",
+                                                            "SYP",
+                                                            "SZL",
+                                                            "THB",
+                                                            "TJS",
+                                                            "TMT",
+                                                            "TND",
+                                                            "TOP",
+                                                            "TRY",
+                                                            "TTD",
+                                                            "TWD",
+                                                            "TZS",
+                                                            "UAH",
+                                                            "UGX",
+                                                            "USD",
+                                                            "USN",
+                                                            "UYI",
+                                                            "UYU",
+                                                            "UYW",
+                                                            "UZS",
+                                                            "VES",
+                                                            "VND",
+                                                            "VUV",
+                                                            "WST",
+                                                            "XAF",
+                                                            "XAG",
+                                                            "XAU",
+                                                            "XBA",
+                                                            "XBB",
+                                                            "XBC",
+                                                            "XBD",
+                                                            "XCD",
+                                                            "XDR",
+                                                            "XOF",
+                                                            "XPD",
+                                                            "XPF",
+                                                            "XPT",
+                                                            "XSU",
+                                                            "XTS",
+                                                            "XUA",
+                                                            "XXX",
+                                                            "YER",
+                                                            "ZAR",
+                                                            "ZMW",
+                                                            "ZWL"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "amount",
+                                                    "currencyCode"
+                                                ],
+                                                "additionalProperties": false
+                                            }
+                                        },
+                                        "required": [
+                                            "taxBasisTotalAmount",
+                                            "taxTotalAmount"
+                                        ],
+                                        "additionalProperties": false
+                                    },
+                                    "taxDetails": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "taxableAmount": {
+                                                    "type": "number"
+                                                },
+                                                "taxAmount": {
+                                                    "type": "number"
+                                                },
+                                                "taxCategory": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "categoryCode": {
+                                                            "type": "string",
+                                                            "maxLength": 2
+                                                        },
+                                                        "percent": {
+                                                            "type": "number"
+                                                        },
+                                                        "exemptionReason": {
+                                                            "type": "string",
+                                                            "maxLength": 2024
+                                                        },
+                                                        "exemptionReasonCode": {
+                                                            "type": "string",
+                                                            "maxLength": 30
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "categoryCode",
+                                                        "percent",
+                                                        "exemptionReason",
+                                                        "exemptionReasonCode"
+                                                    ],
+                                                    "additionalProperties": false
+                                                }
+                                            },
+                                            "required": [
+                                                "taxableAmount",
+                                                "taxAmount",
+                                                "taxCategory"
+                                            ],
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "lines": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "notes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "code": {
+                                                                "type": "string",
+                                                                "maxLength": 3,
+                                                                "description": "{\"text\":\"Invoice note subject code\",\"valueDescription\":\"3 char\",\"more\":\"BT-21 - Text of the note subject following. Only in UBL: between ## at the beginning of the line note\",\"link\":{\"placeholder\":\"UNTDID 4451 list\",\"link\":\"https://service.unece.org/trade/untdid/d96b/uncl/uncl4451.htm\"}}"
+                                                            },
+                                                            "content": {
+                                                                "type": "string",
+                                                                "maxLength": 1024,
+                                                                "description": "{\"text\":\"Invoice note\",\"valueDescription\":\"1024 char\",\"more\":\"BT-22 - Comment providing unstructured information regarding the entire invoice. (Example: Reason for an adjustment.)\"}"
+                                                            }
+                                                        },
+                                                        "additionalProperties": false
+                                                    }
+                                                },
+                                                "billedQuantity": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "quantity": {
+                                                            "type": "number"
+                                                        },
+                                                        "unitCode": {
+                                                            "type": "string",
+                                                            "maxLength": 3
+                                                        }
+                                                    },
+                                                    "additionalProperties": false
+                                                },
+                                                "referencedDocument": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "maxLength": 20,
+                                                            "description": "{\"text\":\"Reference to a previous invoice\",\"valueDescription\":\"20 char\",\"more\":\"BT-25 - Identification of an invoice previously sent by the Seller\"}"
+                                                        },
+                                                        "issueDate": {
+                                                            "type": "string",
+                                                            "description": "{\"text\":\"Issue date of the previous invoice\",\"valueDescription\":\"YYYY-MM-DD\",\"more\":\"BT-26 - Date on which the previous invoice was issued.\"}"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id"
+                                                    ],
+                                                    "additionalProperties": false
+                                                },
+                                                "shipping": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "tradeParty": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "postalAddress": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "addressLineOne": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "addressLineTwo": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "addressLineThree": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "cityName": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "postalCode": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "subDivision": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "country": {
+                                                                            "type": "string",
+                                                                            "enum": [
+                                                                                "1A",
+                                                                                "AD",
+                                                                                "AE",
+                                                                                "AF",
+                                                                                "AG",
+                                                                                "AI",
+                                                                                "AL",
+                                                                                "AM",
+                                                                                "AO",
+                                                                                "AQ",
+                                                                                "AR",
+                                                                                "AS",
+                                                                                "AT",
+                                                                                "AU",
+                                                                                "AW",
+                                                                                "AX",
+                                                                                "AZ",
+                                                                                "BA",
+                                                                                "BB",
+                                                                                "BD",
+                                                                                "BE",
+                                                                                "BF",
+                                                                                "BG",
+                                                                                "BH",
+                                                                                "BI",
+                                                                                "BJ",
+                                                                                "BL",
+                                                                                "BM",
+                                                                                "BN",
+                                                                                "BO",
+                                                                                "BQ",
+                                                                                "BR",
+                                                                                "BS",
+                                                                                "BT",
+                                                                                "BV",
+                                                                                "BW",
+                                                                                "BY",
+                                                                                "BZ",
+                                                                                "CA",
+                                                                                "CC",
+                                                                                "CD",
+                                                                                "CF",
+                                                                                "CG",
+                                                                                "CH",
+                                                                                "CI",
+                                                                                "CK",
+                                                                                "CL",
+                                                                                "CM",
+                                                                                "CN",
+                                                                                "CO",
+                                                                                "CR",
+                                                                                "CU",
+                                                                                "CV",
+                                                                                "CW",
+                                                                                "CX",
+                                                                                "CY",
+                                                                                "CZ",
+                                                                                "DE",
+                                                                                "DJ",
+                                                                                "DK",
+                                                                                "DM",
+                                                                                "DO",
+                                                                                "DZ",
+                                                                                "EC",
+                                                                                "EE",
+                                                                                "EG",
+                                                                                "EH",
+                                                                                "ER",
+                                                                                "ES",
+                                                                                "ET",
+                                                                                "FI",
+                                                                                "FJ",
+                                                                                "FK",
+                                                                                "FM",
+                                                                                "FO",
+                                                                                "FR",
+                                                                                "GA",
+                                                                                "GB",
+                                                                                "GD",
+                                                                                "GE",
+                                                                                "GF",
+                                                                                "GG",
+                                                                                "GH",
+                                                                                "GI",
+                                                                                "GL",
+                                                                                "GM",
+                                                                                "GN",
+                                                                                "GP",
+                                                                                "GQ",
+                                                                                "GR",
+                                                                                "GS",
+                                                                                "GT",
+                                                                                "GU",
+                                                                                "GW",
+                                                                                "GY",
+                                                                                "HK",
+                                                                                "HM",
+                                                                                "HN",
+                                                                                "HR",
+                                                                                "HT",
+                                                                                "HU",
+                                                                                "ID",
+                                                                                "IE",
+                                                                                "IL",
+                                                                                "IM",
+                                                                                "IN",
+                                                                                "IO",
+                                                                                "IQ",
+                                                                                "IR",
+                                                                                "IS",
+                                                                                "IT",
+                                                                                "JE",
+                                                                                "JM",
+                                                                                "JO",
+                                                                                "JP",
+                                                                                "KE",
+                                                                                "KG",
+                                                                                "KH",
+                                                                                "KI",
+                                                                                "KM",
+                                                                                "KN",
+                                                                                "KP",
+                                                                                "KR",
+                                                                                "KW",
+                                                                                "KY",
+                                                                                "KZ",
+                                                                                "LA",
+                                                                                "LB",
+                                                                                "LC",
+                                                                                "LI",
+                                                                                "LK",
+                                                                                "LR",
+                                                                                "LS",
+                                                                                "LT",
+                                                                                "LU",
+                                                                                "LV",
+                                                                                "LY",
+                                                                                "MA",
+                                                                                "MC",
+                                                                                "MD",
+                                                                                "ME",
+                                                                                "MF",
+                                                                                "MG",
+                                                                                "MH",
+                                                                                "MK",
+                                                                                "ML",
+                                                                                "MM",
+                                                                                "MN",
+                                                                                "MO",
+                                                                                "MP",
+                                                                                "MQ",
+                                                                                "MR",
+                                                                                "MS",
+                                                                                "MT",
+                                                                                "MU",
+                                                                                "MV",
+                                                                                "MW",
+                                                                                "MX",
+                                                                                "MY",
+                                                                                "MZ",
+                                                                                "NA",
+                                                                                "NC",
+                                                                                "NE",
+                                                                                "NF",
+                                                                                "NG",
+                                                                                "NI",
+                                                                                "NL",
+                                                                                "NO",
+                                                                                "NP",
+                                                                                "NR",
+                                                                                "NU",
+                                                                                "NZ",
+                                                                                "OM",
+                                                                                "PA",
+                                                                                "PE",
+                                                                                "PF",
+                                                                                "PG",
+                                                                                "PH",
+                                                                                "PK",
+                                                                                "PL",
+                                                                                "PM",
+                                                                                "PN",
+                                                                                "PR",
+                                                                                "PS",
+                                                                                "PT",
+                                                                                "PW",
+                                                                                "PY",
+                                                                                "QA",
+                                                                                "RE",
+                                                                                "RO",
+                                                                                "RS",
+                                                                                "RU",
+                                                                                "RW",
+                                                                                "SA",
+                                                                                "SB",
+                                                                                "SC",
+                                                                                "SD",
+                                                                                "SE",
+                                                                                "SG",
+                                                                                "SH",
+                                                                                "SI",
+                                                                                "SJ",
+                                                                                "SK",
+                                                                                "SL",
+                                                                                "SM",
+                                                                                "SN",
+                                                                                "SO",
+                                                                                "SR",
+                                                                                "SS",
+                                                                                "ST",
+                                                                                "SV",
+                                                                                "SX",
+                                                                                "SY",
+                                                                                "SZ",
+                                                                                "TC",
+                                                                                "TD",
+                                                                                "TF",
+                                                                                "TG",
+                                                                                "TH",
+                                                                                "TJ",
+                                                                                "TK",
+                                                                                "TL",
+                                                                                "TM",
+                                                                                "TN",
+                                                                                "TO",
+                                                                                "TR",
+                                                                                "TT",
+                                                                                "TV",
+                                                                                "TW",
+                                                                                "TZ",
+                                                                                "UA",
+                                                                                "UG",
+                                                                                "UM",
+                                                                                "US",
+                                                                                "UY",
+                                                                                "UZ",
+                                                                                "VA",
+                                                                                "VC",
+                                                                                "VE",
+                                                                                "VG",
+                                                                                "VI",
+                                                                                "VN",
+                                                                                "VU",
+                                                                                "WF",
+                                                                                "WS",
+                                                                                "XI",
+                                                                                "YE",
+                                                                                "YT",
+                                                                                "ZA",
+                                                                                "ZM",
+                                                                                "ZW"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "country"
+                                                                    ],
+                                                                    "additionalProperties": false
+                                                                },
+                                                                "value": {
+                                                                    "type": "string",
+                                                                    "description": "Value of the identifier."
+                                                                },
+                                                                "vatNumber": {
+                                                                    "type": "string",
+                                                                    "description": "vatNumber of the identifier."
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "value",
+                                                                "vatNumber"
+                                                            ],
+                                                            "additionalProperties": false
+                                                        }
+                                                    },
+                                                    "additionalProperties": false
+                                                },
+                                                "billingPeriod": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "begin": {
+                                                            "type": "string",
+                                                            "description": "Scheme of the identifier."
+                                                        },
+                                                        "end": {
+                                                            "type": "string",
+                                                            "description": "Value of the identifier."
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "begin",
+                                                        "end"
+                                                    ],
+                                                    "additionalProperties": false
+                                                },
+                                                "allowance": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "amount": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "amount"
+                                                    ],
+                                                    "additionalProperties": false
+                                                },
+                                                "charges": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "amount": {
+                                                            "type": "number"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "amount"
+                                                    ],
+                                                    "additionalProperties": false
+                                                },
+                                                "price": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "amount": {
+                                                            "type": "number"
+                                                        },
+                                                        "allowanceChargeAmount": {
+                                                            "type": "number"
+                                                        },
+                                                        "allowanceBaseChargeAmount": {
+                                                            "type": "number"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "amount",
+                                                        "allowanceChargeAmount",
+                                                        "allowanceBaseChargeAmount"
+                                                    ],
+                                                    "additionalProperties": false
+                                                },
+                                                "item": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "maxLength": 255
+                                                        }
+                                                    },
+                                                    "additionalProperties": false
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "siren",
+                                    "id",
+                                    "issueDate",
+                                    "type",
+                                    "currency",
+                                    "processType",
+                                    "seller",
+                                    "monetary",
+                                    "taxDetails"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "Invoice file path (pdf or xml file)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "E-reporting taken into account"
+                    },
+                    "400": {
+                        "description": "Request validation issues",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {}
+                                },
+                                "example": {
+                                    "validationIssues": {
+                                        "summary": "invalid_enum_value",
+                                        "value": [
+                                            {
+                                                "received": "BZ",
+                                                "code": "invalid_enum_value",
+                                                "options": [
+                                                    "BY",
+                                                    "SE"
+                                                ],
+                                                "path": [
+                                                    "role"
+                                                ],
+                                                "message": "Invalid enum value. Expected 'BY' | 'SE', received 'BZ'"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+                    },
+                    "403": {
+                        "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+                    }
+                }
+            }
+        }
+    }
+}

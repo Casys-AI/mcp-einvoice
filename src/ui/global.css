@@ -1,70 +1,77 @@
 /**
- * Iopole MCP Apps UI — Global Styles
+ * Casys MCP Apps UI — Global Styles
  *
- * Iopole accent: #18605B (teal)
+ * Design system: Casys Hub (Material 3 + warm dark mode)
+ * Primary: Purple (#6750A4 light / #F5ADFE dark)
+ * Accent: Warm orange (#FFB86F) in dark mode
+ * Fonts: Inter (body), JetBrains Mono (code)
  */
 
 /* ── Shared tokens ──────────────────────────────────────────────── */
 :root {
-  --accent: #18605B;
-  --accent-dim: rgba(24, 96, 91, 0.15);
-  --accent-border: rgba(24, 96, 91, 0.3);
+  --accent: #6750A4;
+  --accent-dim: rgba(103, 80, 164, 0.12);
+  --accent-border: rgba(103, 80, 164, 0.25);
 
   --success: #16a34a;
   --success-dim: rgba(22, 163, 74, 0.10);
-  --error: #dc2626;
-  --error-dim: rgba(220, 38, 38, 0.10);
+  --error: #BA1A1A;
+  --error-dim: rgba(186, 26, 26, 0.10);
   --warning: #d97706;
   --warning-dim: rgba(217, 119, 6, 0.10);
   --info: #2563eb;
   --info-dim: rgba(37, 99, 235, 0.10);
 
   --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
 
   /* ── Light mode (default) ──────────────────────────────────── */
-  --bg-root: #ffffff;
-  --bg-surface: #f9fafb;
-  --bg-elevated: #f3f4f6;
-  --bg-hover: #e5e7eb;
-  --bg-active: #d1d5db;
+  --bg-root: #FFFBFE;
+  --bg-surface: #F4ECF0;
+  --bg-elevated: #EEE6EA;
+  --bg-hover: #E9E0E4;
+  --bg-active: #CFC3CD;
 
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
-  --text-faint: #9ca3af;
+  --text-primary: #1C1B1F;
+  --text-secondary: #625B71;
+  --text-muted: #7E747D;
+  --text-faint: #988D97;
 
-  --border: #e5e7eb;
-  --border-subtle: #f3f4f6;
+  --border: #CFC3CD;
+  --border-subtle: #ECDFE9;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* ── Dark mode ─────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-root: #08080a;
-    --bg-surface: #111113;
-    --bg-elevated: #18181b;
-    --bg-hover: #1f1f23;
-    --bg-active: #27272a;
+    --accent: #FFB86F;
+    --accent-dim: rgba(255, 184, 111, 0.12);
+    --accent-border: rgba(255, 184, 111, 0.2);
 
-    --text-primary: #e7e5e4;
-    --text-secondary: #a8a29e;
-    --text-muted: #78716c;
-    --text-faint: #57534e;
+    --bg-root: #0A0908;
+    --bg-surface: #161412;
+    --bg-elevated: #1E1C1A;
+    --bg-hover: #2A2A2E;
+    --bg-active: #383337;
 
-    --border: #27272a;
-    --border-subtle: #1f1f23;
+    --text-primary: #F5F0EA;
+    --text-secondary: #D5C3B5;
+    --text-muted: #B8AAA0;
+    --text-faint: #8D837A;
 
-    --success: #4ade80;
+    --border: #2A2A2E;
+    --border-subtle: #1A1A1E;
+
+    --success: #4ADE80;
     --success-dim: rgba(74, 222, 128, 0.12);
-    --error: #f87171;
+    --error: #F87171;
     --error-dim: rgba(248, 113, 113, 0.12);
     --warning: #fbbf24;
     --warning-dim: rgba(251, 191, 36, 0.12);
@@ -72,7 +79,7 @@
     --info-dim: rgba(96, 165, 250, 0.12);
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 }
 

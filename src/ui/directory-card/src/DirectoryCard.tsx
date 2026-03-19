@@ -68,12 +68,12 @@ const KNOWN_FIELDS = new Set([
 // Sub-components
 // ============================================================================
 
-function InfoCard({ label, value, sub }: { label: string; value?: string; sub?: string }) {
+function InfoField({ label, value, sub }: { label: string; value?: string; sub?: string }) {
   return (
-    <div style={styles.card}>
-      <div style={{ fontSize: 11, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 500, color: colors.text.primary }}>{value ?? "\u2014"}</div>
-      {sub && <div style={{ fontSize: 11, color: colors.text.faint, marginTop: 2 }}>{sub}</div>}
+    <div style={{ padding: "6px 0" }}>
+      <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: colors.text.primary }}>{value ?? "\u2014"}</div>
+      {sub && <div style={{ fontSize: 10, color: colors.text.faint, marginTop: 1 }}>{sub}</div>}
     </div>
   );
 }
@@ -151,7 +151,7 @@ function DetailsSection({ data }: { data: DirectoryResult }) {
       </button>
 
       {expanded && (
-        <div style={{ ...styles.card, marginTop: 8 }}>
+        <div style={{ marginTop: 8, borderTop: `1px solid ${colors.border}`, paddingTop: 8 }}>
           {extraEntries.map(([key, value]) => (
             <div key={key} style={{ display: "flex", gap: 12, padding: "4px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
               <span style={{ fontSize: 12, color: colors.text.muted, minWidth: 120, fontWeight: 500 }}>{key}</span>
@@ -348,11 +348,11 @@ export function DirectoryCard() {
 
         {/* ── Info Grid ────────────────────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
-          {data.siren != null && <InfoCard label="SIREN" value={data.siren} />}
-          {data.siret != null && <InfoCard label="SIRET" value={data.siret} />}
-          {data.vatNumber != null && <InfoCard label="TVA intracommunautaire" value={data.vatNumber} />}
-          {hasAddress && <InfoCard label="Adresse" value={formatAddress(data.address!)} />}
-          {data.address?.country && !hasAddress && <InfoCard label="Pays" value={data.address.country} />}
+          {data.siren != null && <InfoField label="SIREN" value={data.siren} />}
+          {data.siret != null && <InfoField label="SIRET" value={data.siret} />}
+          {data.vatNumber != null && <InfoField label="TVA intracommunautaire" value={data.vatNumber} />}
+          {hasAddress && <InfoField label="Adresse" value={formatAddress(data.address!)} />}
+          {data.address?.country && !hasAddress && <InfoField label="Pays" value={data.address.country} />}
         </div>
 
 

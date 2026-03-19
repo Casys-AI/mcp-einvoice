@@ -102,57 +102,5 @@ export const statusTools: EInvoiceTool[] = [
     },
   },
 
-  // ── Not Seen ────────────────────────────────────────────
-
-  {
-    name: "einvoice_status_not_seen",
-    _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
-    description:
-      "Get status updates that have not been marked as seen. " +
-      "Useful for polling new incoming status changes on invoices.",
-    category: "status",
-    inputSchema: {
-      type: "object",
-      properties: {
-        offset: { type: "number", description: "Result offset (default 0)" },
-        limit: { type: "number", description: "Max results (default 50)" },
-      },
-    },
-    handler: async (input, ctx) => {
-      const result = await ctx.adapter.getUnseenStatuses({
-        offset: input.offset as number | undefined,
-        limit: input.limit as number | undefined,
-      });
-      return {
-        ...(result as Record<string, unknown>),
-        _title: "Statuts non lus",
-        _rowAction: {
-          toolName: "einvoice_status_history",
-          idField: "invoiceId",
-          argName: "invoice_id",
-        },
-      };
-    },
-  },
-
-  // ── Mark as Seen ────────────────────────────────────────
-
-  {
-    name: "einvoice_status_mark_seen",
-    description: "Mark a status update as seen/processed.",
-    category: "status",
-    inputSchema: {
-      type: "object",
-      properties: {
-        status_id: { type: "string", description: "Status ID" },
-      },
-      required: ["status_id"],
-    },
-    handler: async (input, ctx) => {
-      if (!input.status_id) {
-        throw new Error("[einvoice_status_mark_seen] 'status_id' is required");
-      }
-      return await ctx.adapter.markStatusSeen(input.status_id as string);
-    },
-  },
+  // ── seen/notSeen tools removed — see invoice.ts comment and docs/CHANGELOG.md
 ];

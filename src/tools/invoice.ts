@@ -113,6 +113,33 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
   };
 }
 
+/**
+ * Extract the latest status code from a status history response.
+ * Optionally filter by destType to avoid cross-contamination:
+ * - OUTBOUND invoices should show OPERATOR statuses (sender-side lifecycle)
+ * - INBOUND invoices should show PLATFORM statuses (receiver-side lifecycle)
+ */
+function extractLatestStatusCode(historyRaw: unknown, destTypeFilter?: string): string | undefined {
+  // deno-lint-ignore no-explicit-any
+  let entries = (historyRaw as any)?.data ?? historyRaw;
+  if (!Array.isArray(entries) || entries.length === 0) return undefined;
+  // Filter by destType if specified
+  if (destTypeFilter) {
+    const filtered = entries.filter((e: Record<string, unknown>) => e.destType === destTypeFilter);
+    if (filtered.length > 0) entries = filtered;
+    // If no entries match the filter, fall back to all entries
+  }
+  // deno-lint-ignore no-explicit-any
+  entries.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return entries[0].status?.code;
+}
+
+/** Shared AX hint for generate tools — tells the LLM to check entities first. */
+const GENERATE_AX_HINT =
+  "Before generating, call einvoice_config_entities_list — the seller MUST be a registered entity " +
+  "(exact SIRET/SIREN/name) or the invoice gets WRONG_ROUTING. " +
+  "After generating, the user can submit directly via the viewer button. ";
+
 /** Shared description for the invoice input schema (used by generate_cii/ubl/facturx). */
 const INVOICE_SCHEMA_DESCRIPTION =
   "Invoice data in Iopole format. Required fields: " +
@@ -133,11 +160,11 @@ export const invoiceTools: EInvoiceTool[] = [
   // ── Emit ────────────────────────────────────────────────
 
   {
-    name: "einvoice_invoice_emit",
+    name: "einvoice_invoice_submit",
     description:
-      "Emit (send) an invoice via the e-invoicing platform. " +
+      "Submit an invoice to the e-invoicing platform. " +
       "Provide EITHER a generated_id (from a generate preview) OR file_base64 + filename. " +
-      "Asynchronous — returns a GUID to track the request.",
+      "Returns a GUID. The platform then validates, issues (ISSUED), and delivers it automatically.",
     category: "invoice",
     inputSchema: {
       type: "object",
@@ -167,7 +194,7 @@ export const invoiceTools: EInvoiceTool[] = [
         const stored = getGenerated(input.generated_id as string);
         if (!stored) {
           throw new Error(
-            "[einvoice_invoice_emit] Generated file expired or not found. " +
+            "[einvoice_invoice_submit] Generated file expired or not found. " +
             "Regenerate the invoice first.",
           );
         }
@@ -177,20 +204,20 @@ export const invoiceTools: EInvoiceTool[] = [
       // Path 2: direct base64 upload (existing behavior)
       if (!input.file_base64 || !input.filename) {
         throw new Error(
-          "[einvoice_invoice_emit] Provide either 'generated_id' or both 'file_base64' and 'filename'",
+          "[einvoice_invoice_submit] Provide either 'generated_id' or both 'file_base64' and 'filename'",
         );
       }
       const filename = input.filename as string;
       const lower = filename.toLowerCase();
       if (!lower.endsWith(".pdf") && !lower.endsWith(".xml")) {
-        throw new Error("[einvoice_invoice_emit] filename must end in .pdf or .xml");
+        throw new Error("[einvoice_invoice_submit] filename must end in .pdf or .xml");
       }
       // Decode base64 to Uint8Array
       let binaryString: string;
       try {
         binaryString = atob(input.file_base64 as string);
       } catch {
-        throw new Error("[einvoice_invoice_emit] 'file_base64' is not valid base64");
+        throw new Error("[einvoice_invoice_submit] 'file_base64' is not valid base64");
       }
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -207,9 +234,9 @@ export const invoiceTools: EInvoiceTool[] = [
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
     description:
       "Search invoices using a query string. Returns paginated results. " +
-      "The query uses Lucene-like syntax. Valid fields: senderName, receiverName, " +
-      "invoiceId, state (e.g. DELIVERED, ACCEPTED, REJECTED, INVALID). " +
-      "Examples: 'senderName:Acme', 'state:ACCEPTED', 'invoiceId:CASYS-001'. " +
+      "The query uses Lucene-like syntax. Valid fields: senderName, receiverName, invoiceId. " +
+      "Examples: 'senderName:Acme', 'invoiceId:CASYS-001'. " +
+      "Note: 'status', 'state', 'direction' are NOT valid search fields. " +
       "Omit q or pass empty string to list all invoices.",
     category: "invoice",
     inputSchema: {
@@ -219,7 +246,8 @@ export const invoiceTools: EInvoiceTool[] = [
           type: "string",
           description:
             "Search query (Lucene-like syntax). " +
-            "Examples: 'status:accepted', 'direction:received', 'senderName:Acme'.",
+            "Valid fields: senderName, receiverName, invoiceId. " +
+            "Examples: 'senderName:Acme', 'receiverName:Nappus'.",
         },
         expand: {
           type: "string",
@@ -249,7 +277,7 @@ export const invoiceTools: EInvoiceTool[] = [
       const data = result.data as Record<string, unknown>[] | undefined;
       if (Array.isArray(data)) {
         // deno-lint-ignore no-explicit-any
-        result.data = data.map((row: any) => {
+        const rows = data.map((row: any) => {
           const m = row.metadata ?? {};
           const bd = row.businessData ?? {};
           const dateRaw = bd.invoiceDate ?? m.createDate?.split("T")[0];
@@ -257,15 +285,32 @@ export const invoiceTools: EInvoiceTool[] = [
           const currency = bd.monetary?.invoiceCurrency ?? "EUR";
           return {
             _id: m.invoiceId,
+            _state: m.state,
+            _direction: m.direction, // raw INBOUND/OUTBOUND for drill-down fallback
             "N°": bd.invoiceId ?? "—",
-            "Statut": m.state,
-            "Direction": m.direction === "INBOUND" ? "Reçue" : m.direction === "OUTBOUND" ? "Émise" : m.direction,
+            "Statut": m.state, // will be enriched with lifecycle status below
+            "Direction": m.direction === "INBOUND" ? "Entrante" : m.direction === "OUTBOUND" ? "Sortante" : m.direction,
             "Émetteur": bd.seller?.name ?? "—",
             "Destinataire": bd.buyer?.name ?? "—",
             "Date": dateRaw ? new Date(dateRaw).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—",
-            "Montant": amount != null ? `${amount.toLocaleString("fr-FR")} ${currency}` : "—",
+            "Montant": amount != null ? `${Number(amount).toLocaleString("fr-FR")} ${currency}` : "—",
           };
         });
+
+        // Enrich with lifecycle status — batch fetch status history in parallel.
+        // Both OUTBOUND and INBOUND show the latest status (Iopole replicates
+        // receiver actions into sender history, so the sender sees APPROVED etc.)
+        const enrichPromises = rows.map(async (row) => {
+          if (!row._id) return;
+          try {
+            const history = await ctx.adapter.getStatusHistory(row._id);
+            const code = extractLatestStatusCode(history);
+            if (code) row["Statut"] = code;
+          } catch { /* keep processing state as fallback */ }
+        });
+        await Promise.all(enrichPromises);
+
+        result.data = rows;
       }
       return {
         ...result,
@@ -299,20 +344,32 @@ export const invoiceTools: EInvoiceTool[] = [
       if (!input.id) {
         throw new Error("[einvoice_invoice_get] 'id' is required");
       }
-      const raw = await ctx.adapter.getInvoice(input.id as string);
+      const id = input.id as string;
+
+      // Fetch invoice and status history in parallel.
+      // getInvoice doesn't return state — we need getStatusHistory for the latest status.
+      const [raw, historyRaw] = await Promise.all([
+        ctx.adapter.getInvoice(id),
+        ctx.adapter.getStatusHistory(id).catch(() => null),
+      ]);
+
       // Map Iopole structure to invoice-viewer format
       // deno-lint-ignore no-explicit-any
       const inv = (Array.isArray(raw) ? raw[0] : raw) as any;
+      const latestStatus = historyRaw ? extractLatestStatusCode(historyRaw) : undefined;
       if (!inv?.businessData) {
-        // No businessData yet (e.g. freshly emitted, schematron-rejected, or not parsed).
-        // Still return structured metadata so the viewer can show something useful.
+        const status = latestStatus ?? inv?.state ?? inv?.status ?? "UNKNOWN";
+        // Don't set refreshRequest for INBOUND or terminal statuses — they won't gain businessData
+        const isTerminal = ["REFUSED", "COMPLETED", "CANCELLED", "PAYMENT_RECEIVED", "UNKNOWN"].includes(status);
+        const isInbound = inv?.way === "RECEIVED";
         return {
           id: inv?.invoiceId,
-          status: inv?.state ?? inv?.status ?? "UNKNOWN",
+          status,
           direction: normalizeDirection(inv?.way ?? inv?.metadata?.direction),
           format: inv?.originalFormat,
           network: inv?.originalNetwork,
           issue_date: inv?.date,
+          ...(!isTerminal && !isInbound ? { refreshRequest: { toolName: "einvoice_invoice_get", arguments: { id } } } : {}),
         };
       }
       const bd = inv.businessData;
@@ -330,7 +387,7 @@ export const invoiceTools: EInvoiceTool[] = [
       return {
         id: inv.invoiceId,
         invoice_number: bd.invoiceId,
-        status: inv.state ?? inv.status,
+        status: latestStatus ?? inv.state ?? inv.status,
         direction: normalizeDirection(inv.way ?? inv.metadata?.direction),
         format: inv.originalFormat,
         network: inv.originalNetwork,
@@ -354,6 +411,7 @@ export const invoiceTools: EInvoiceTool[] = [
           const note = n as any;
           return note.content;
         }).filter(Boolean),
+        refreshRequest: { toolName: "einvoice_invoice_get", arguments: { id } },
       };
     },
   },
@@ -470,74 +528,10 @@ export const invoiceTools: EInvoiceTool[] = [
     },
   },
 
-  // ── Mark as seen ────────────────────────────────────────
-
-  {
-    name: "einvoice_invoice_mark_seen",
-    description: "Mark an invoice as seen/read. Useful for tracking which invoices have been processed.",
-    category: "invoice",
-    inputSchema: {
-      type: "object",
-      properties: {
-        id: { type: "string", description: "Invoice ID" },
-      },
-      required: ["id"],
-    },
-    handler: async (input, ctx) => {
-      if (!input.id) {
-        throw new Error("[einvoice_invoice_mark_seen] 'id' is required");
-      }
-      return await ctx.adapter.markInvoiceSeen(input.id as string);
-    },
-  },
-
-  // ── Not seen ────────────────────────────────────────────
-
-  {
-    name: "einvoice_invoice_not_seen",
-    _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
-    description:
-      "Get invoices that have not been marked as seen (PULL mode). " +
-      "Useful for polling new incoming invoices.",
-    category: "invoice",
-    inputSchema: {
-      type: "object",
-      properties: {
-        offset: { type: "number", description: "Result offset (default 0)" },
-        limit: { type: "number", description: "Max results (default 50)" },
-      },
-    },
-    handler: async (input, ctx) => {
-      const result = await ctx.adapter.getUnseenInvoices({
-        offset: input.offset as number | undefined,
-        limit: input.limit as number | undefined,
-      }) as Record<string, unknown>;
-      // Flatten + format for chat-friendly table
-      const data = result.data as Record<string, unknown>[] | undefined;
-      if (Array.isArray(data)) {
-        // deno-lint-ignore no-explicit-any
-        result.data = data.map((row: any) => {
-          const m = row.metadata ?? row;
-          const dateRaw = m.createDate?.split("T")[0];
-          return {
-            _id: m.invoiceId,
-            "Statut": m.state,
-            "Direction": m.direction === "INBOUND" ? "Reçue" : m.direction === "OUTBOUND" ? "Émise" : m.direction,
-            "Date": dateRaw ? new Date(dateRaw).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—",
-          };
-        });
-      }
-      return {
-        ...result,
-        _title: "Factures non lues",
-        _rowAction: {
-          toolName: "einvoice_invoice_get",
-          idField: "_id",
-          argName: "id",
-        },
-      };
-    },
-  },
+  // ── seen/notSeen tools removed ──────────────────────────
+  // Iopole's seen/notSeen mechanism is opaque: `seen` is not exposed in
+  // search or getInvoice, and `notSeen` always returns empty in PUSH mode
+  // (active webhook). Removed in v0.2.0 — see docs/CHANGELOG.md.
 
   // ── Generate CII ────────────────────────────────────────
 
@@ -545,8 +539,9 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_generate_cii",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     description:
+      GENERATE_AX_HINT +
       "Generate a CII invoice preview. Validates and converts to CII XML. " +
-      "Returns a preview for review. Use einvoice_invoice_emit with the generated_id to send. " +
+      "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931).",
     category: "invoice",
     inputSchema: {
@@ -558,7 +553,8 @@ export const invoiceTools: EInvoiceTool[] = [
         },
         flavor: {
           type: "string",
-          description: "CII profile flavor (e.g. EN16931, MINIMUM, BASIC_WL, BASIC, EXTENDED)",
+          description: "CII profile flavor",
+          enum: ["EN16931", "EXTENDED"],
         },
       },
       required: ["invoice", "flavor"],
@@ -579,7 +575,7 @@ export const invoiceTools: EInvoiceTool[] = [
       return {
         generated_id,
         filename,
-        preview: mapToViewerPreview(input.invoice),
+        preview: mapToViewerPreview(inv),
       };
     },
   },
@@ -590,8 +586,9 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_generate_ubl",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     description:
+      GENERATE_AX_HINT +
       "Generate a UBL invoice preview. Validates and converts to UBL XML. " +
-      "Returns a preview for review. Use einvoice_invoice_emit with the generated_id to send. " +
+      "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931).",
     category: "invoice",
     inputSchema: {
@@ -603,7 +600,8 @@ export const invoiceTools: EInvoiceTool[] = [
         },
         flavor: {
           type: "string",
-          description: "UBL profile flavor (e.g. EN16931, MINIMUM, BASIC_WL, BASIC, EXTENDED)",
+          description: "UBL profile flavor",
+          enum: ["EN16931", "PEPPOL_BIS_3"],
         },
       },
       required: ["invoice", "flavor"],
@@ -624,7 +622,7 @@ export const invoiceTools: EInvoiceTool[] = [
       return {
         generated_id,
         filename,
-        preview: mapToViewerPreview(input.invoice),
+        preview: mapToViewerPreview(inv),
       };
     },
   },
@@ -635,8 +633,9 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_generate_facturx",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     description:
+      GENERATE_AX_HINT +
       "Generate a Factur-X invoice preview. Creates a hybrid PDF/XML. " +
-      "Returns a preview for review. Use einvoice_invoice_emit with the generated_id to send. " +
+      "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931). Optionally accepts a language (FRENCH, ENGLISH, GERMAN).",
     category: "invoice",
     inputSchema: {
@@ -648,7 +647,8 @@ export const invoiceTools: EInvoiceTool[] = [
         },
         flavor: {
           type: "string",
-          description: "Factur-X profile flavor (e.g. EN16931, MINIMUM, BASIC_WL, BASIC, EXTENDED)",
+          description: "Factur-X profile flavor",
+          enum: ["BASICWL", "EN16931", "EXTENDED"],
         },
         language: {
           type: "string",
@@ -676,7 +676,7 @@ export const invoiceTools: EInvoiceTool[] = [
       return {
         generated_id,
         filename,
-        preview: mapToViewerPreview(input.invoice),
+        preview: mapToViewerPreview(inv),
       };
     },
   },
