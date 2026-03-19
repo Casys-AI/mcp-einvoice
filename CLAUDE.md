@@ -16,6 +16,8 @@ MCP server for French e-invoicing (Iopole adapter). Deno + TypeScript + React vi
 - Small fixes: `git push origin <sha>:refs/heads/main` (skip PR)
 - Features: `but commit` → `git push origin <sha>:refs/heads/<branch>` → `gh pr create` → `gh pr merge`
 - `but push` often fails with stale branches — push SHA directly via git
+- **GitButler merge conflict trap**: if >5 branches are applied, `but commit` fails with "Failed to merge bases". Fix: unapply old branches in the app, or `but teardown` → `git commit` → `git push` → `but setup`
+- **Database lock**: if `but` CLI says "database is locked", quit the GitButler desktop app first (it holds the SQLite lock)
 
 ## Iopole API
 - **Local API specs**: `docs/api-specs/` — 6 OpenAPI JSON specs (operator-invoicing, operator-config, operator-reporting, operator-edi, platform, stats)
