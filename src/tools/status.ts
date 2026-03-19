@@ -17,9 +17,9 @@ export const statusTools: EInvoiceTool[] = [
     requires: ["sendStatus"],
     description:
       "Send a lifecycle status update for an invoice. " +
-      "Uses Iopole status codes: IN_HAND, APPROVED, PARTIALLY_APPROVED, DISPUTED, " +
-      "SUSPENDED, COMPLETED, REFUSED, PAYMENT_SENT, PAYMENT_RECEIVED. " +
-      "Asynchronous — returns a GUID to track the request.",
+      "Uses CDAR lifecycle codes: IN_HAND (204), APPROVED (205), REFUSED (210), " +
+      "DISPUTED (207), SUSPENDED (208), PAYMENT_SENT (211), PAYMENT_RECEIVED (212). " +
+      "Asynchronous — returns a confirmation.",
     category: "status",
     inputSchema: {
       type: "object",

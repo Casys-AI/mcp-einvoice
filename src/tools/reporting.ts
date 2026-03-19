@@ -34,7 +34,7 @@ export const reportingTools: EInvoiceTool[] = [
             "taxDetails (array): [{ vatRate: number, taxableAmount: number, taxAmount: number }]; " +
             "counterparty (object): { name, country, identifier }; " +
             "currency (string, default 'EUR'). " +
-            "Exact schema depends on the PA provider — check Iopole docs for the full specification.",
+            "Exact schema depends on the PA provider.",
         },
       },
       required: ["transaction"],
@@ -78,7 +78,7 @@ export const reportingTools: EInvoiceTool[] = [
             "taxDetails (array): [{ vatRate: number, taxableAmount: number, taxAmount: number }]; " +
             "periodicity (string): 'MONTHLY' or 'QUARTERLY'; " +
             "currency (string, default 'EUR'). " +
-            "Exact schema depends on the PA provider — check Iopole docs for the full specification.",
+            "Exact schema depends on the PA provider.",
         },
       },
       required: ["business_entity_id", "transaction"],

@@ -209,20 +209,20 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async generateCII(req: GenerateInvoiceRequest): Promise<string> {
-    return await this.client.postWithQuery("/tools/cii/generate", req.invoice, {
+    return await this.client.postWithQuery("/tools/cii/generate", normalizeForIopole(req.invoice), {
       flavor: req.flavor,
     });
   }
 
   override async generateUBL(req: GenerateInvoiceRequest): Promise<string> {
-    return await this.client.postWithQuery("/tools/ubl/generate", req.invoice, {
+    return await this.client.postWithQuery("/tools/ubl/generate", normalizeForIopole(req.invoice), {
       flavor: req.flavor,
     });
   }
 
   override async generateFacturX(req: GenerateFacturXRequest): Promise<DownloadResult> {
     // Factur-X returns a PDF (binary) — use postBinary to avoid text corruption
-    return await this.client.postBinary("/tools/facturx/generate", req.invoice, {
+    return await this.client.postBinary("/tools/facturx/generate", normalizeForIopole(req.invoice), {
       flavor: req.flavor,
       language: req.language,
     });
@@ -424,6 +424,50 @@ export class IopoleAdapter extends AfnorBaseAdapter {
 }
 
 // ─── Helpers ──────────────────────────────────────────
+
+/**
+ * Normalize invoice data for Iopole generate API.
+ * Adds EN16931 required fields that LLMs often forget (postalAddress, electronicAddress).
+ * Uses scheme 0225 (SIRET-based routing) for French PPF/PDP.
+ */
+// deno-lint-ignore no-explicit-any
+function normalizeForIopole(inv: any): Record<string, unknown> {
+  const normalized = { ...inv };
+
+  // Ensure seller/buyer have postalAddress (BR-08, BR-10)
+  for (const party of ["seller", "buyer"]) {
+    if (normalized[party] && !normalized[party].postalAddress) {
+      normalized[party] = {
+        ...normalized[party],
+        postalAddress: { country: normalized[party].country ?? "FR" },
+      };
+    }
+  }
+
+  // Auto-generate electronicAddress from SIRET when absent
+  for (const party of ["seller", "buyer"]) {
+    const p = normalized[party];
+    if (p && !p.electronicAddress && p.siren && p.siret) {
+      normalized[party] = {
+        ...p,
+        electronicAddress: `0225:${p.siren}_${p.siret}`,
+        identifiers: p.identifiers ?? [
+          { type: "ELECTRONIC_ADDRESS", value: `${p.siren}_${p.siret}`, scheme: "0225" },
+          { type: "PARTY_LEGAL_IDENTIFIER", value: p.siren, scheme: "0002" },
+        ],
+      };
+    }
+  }
+
+  // Ensure paymentTerms is a string, not an array
+  if (Array.isArray(normalized.paymentTerms)) {
+    normalized.paymentTerms = normalized.paymentTerms
+      .map((t: Record<string, unknown>) => t.description ?? t)
+      .join("; ");
+  }
+
+  return normalized;
+}
 
 /**
  * Auto-detect and wrap a raw directory search query into Iopole Lucene syntax.

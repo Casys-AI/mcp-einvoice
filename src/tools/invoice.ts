@@ -21,55 +21,9 @@ function uint8ToBase64(data: Uint8Array): string {
 
 
 /**
- * Normalize invoice data before sending to adapter generate API.
- * Adds missing fields that the EN16931 schematron requires
- * but that LLMs often forget (postalAddress, electronicAddress, etc.)
- */
-// deno-lint-ignore no-explicit-any
-function normalizeInvoiceForGenerate(inv: any): Record<string, unknown> {
-  const normalized = { ...inv };
-
-  // Ensure seller/buyer have postalAddress (BR-08, BR-10)
-  for (const party of ["seller", "buyer"]) {
-    if (normalized[party] && !normalized[party].postalAddress) {
-      normalized[party] = {
-        ...normalized[party],
-        postalAddress: { country: normalized[party].country ?? "FR" },
-      };
-    }
-  }
-
-  // Auto-generate electronicAddress from SIRET when absent.
-  // Uses scheme 0225 (SIRET-based routing) — standard for French PPF/PDP.
-  // NOTE: Explicit heuristic. If the entity uses a different routing scheme,
-  // the caller should provide electronicAddress directly to override this default.
-  for (const party of ["seller", "buyer"]) {
-    const p = normalized[party];
-    if (p && !p.electronicAddress && p.siren && p.siret) {
-      normalized[party] = {
-        ...p,
-        electronicAddress: `0225:${p.siren}_${p.siret}`,
-        identifiers: p.identifiers ?? [
-          { type: "ELECTRONIC_ADDRESS", value: `${p.siren}_${p.siret}`, scheme: "0225" },
-          { type: "PARTY_LEGAL_IDENTIFIER", value: p.siren, scheme: "0002" },
-        ],
-      };
-    }
-  }
-
-  // Ensure paymentTerms is a string, not an array
-  if (Array.isArray(normalized.paymentTerms)) {
-    normalized.paymentTerms = normalized.paymentTerms
-      .map((t: Record<string, unknown>) => t.description ?? t)
-      .join("; ");
-  }
-
-  return normalized;
-}
-
-/**
  * Map invoice input to invoice-viewer preview format.
- * Used by generate tools to show the invoice before sending.
+ * PA-agnostic: handles multiple input structures (nested Iopole-style,
+ * flat SuperPDP-style, or generic).
  */
 // deno-lint-ignore no-explicit-any
 function mapToViewerPreview(inv: any): Record<string, unknown> {
@@ -77,29 +31,29 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
     // deno-lint-ignore no-explicit-any
     const line = l as any;
     return {
-      description: line.item?.name ?? line.description,
+      description: line.item?.name ?? line.description ?? line.name,
       quantity: line.billedQuantity?.quantity ?? line.quantity,
-      unit_price: line.price?.netAmount?.amount ?? line.unit_price,
-      tax_rate: line.taxDetail?.percent ?? line.tax_rate,
+      unit_price: line.price?.netAmount?.amount ?? line.unitPrice ?? line.unit_price,
+      tax_rate: line.taxDetail?.percent ?? line.taxRate ?? line.tax_rate,
       amount: line.totalAmount?.amount ?? line.amount,
     };
   });
   return {
     id: "(aperçu)",
-    invoice_number: inv.invoiceId,
-    issue_date: inv.invoiceDate,
-    due_date: inv.invoiceDueDate,
-    invoice_type: inv.detailedType?.value ?? inv.type,
-    sender_name: inv.seller?.name,
-    sender_id: inv.seller?.siret ?? inv.seller?.siren,
-    sender_vat: inv.seller?.vatNumber,
-    receiver_name: inv.buyer?.name,
-    receiver_id: inv.buyer?.siret ?? inv.buyer?.siren,
-    receiver_vat: inv.buyer?.vatNumber,
-    currency: inv.monetary?.invoiceCurrency ?? "EUR",
-    total_ht: inv.monetary?.taxBasisTotalAmount?.amount ?? inv.monetary?.lineTotalAmount?.amount,
-    total_tax: inv.monetary?.taxTotalAmount?.amount,
-    total_ttc: inv.monetary?.invoiceAmount?.amount ?? inv.monetary?.payableAmount?.amount,
+    invoice_number: inv.invoiceId ?? inv.invoice_id ?? inv.invoiceNumber,
+    issue_date: inv.invoiceDate ?? inv.issue_date ?? inv.issueDate,
+    due_date: inv.invoiceDueDate ?? inv.due_date ?? inv.dueDate,
+    invoice_type: inv.detailedType?.value ?? inv.type ?? inv.invoiceType,
+    sender_name: inv.seller?.name ?? inv.senderName,
+    sender_id: inv.seller?.siret ?? inv.seller?.siren ?? inv.senderId,
+    sender_vat: inv.seller?.vatNumber ?? inv.senderVat,
+    receiver_name: inv.buyer?.name ?? inv.receiverName,
+    receiver_id: inv.buyer?.siret ?? inv.buyer?.siren ?? inv.receiverId,
+    receiver_vat: inv.buyer?.vatNumber ?? inv.receiverVat,
+    currency: inv.monetary?.invoiceCurrency ?? inv.currency ?? "EUR",
+    total_ht: inv.monetary?.taxBasisTotalAmount?.amount ?? inv.monetary?.lineTotalAmount?.amount ?? inv.totalHt,
+    total_tax: inv.monetary?.taxTotalAmount?.amount ?? inv.totalTax,
+    total_ttc: inv.monetary?.invoiceAmount?.amount ?? inv.monetary?.payableAmount?.amount ?? inv.totalTtc ?? inv.total_amount,
     items: lines,
     status: "aperçu",
     direction: "sent",
@@ -107,27 +61,24 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
 }
 
 
-/** Shared AX hint for generate tools — tells the LLM to check entities first. */
-const GENERATE_AX_HINT =
-  "Before generating, call einvoice_config_entities_list — the seller MUST be a registered entity " +
-  "(exact SIRET/SIREN/name) or the invoice gets WRONG_ROUTING. " +
+/** Shared hint for generate tools. */
+const GENERATE_HINT =
+  "Before generating, call einvoice_config_entities_list to verify the seller is registered. " +
   "After generating, the user can submit directly via the viewer button. ";
 
-/** Shared description for the invoice input schema (used by generate_cii/ubl/facturx). */
+/** PA-agnostic invoice input schema description. The adapter normalizes internally. */
 const INVOICE_SCHEMA_DESCRIPTION =
-  "Invoice data. Required fields: " +
-  "invoiceId (string, max 20 chars): invoice number e.g. \"CASYS-001\"; " +
+  "Invoice data (the adapter normalizes format-specific fields internally). " +
+  "Required fields: " +
+  "invoiceId (string): invoice number; " +
   "invoiceDate (string, YYYY-MM-DD): issue date; " +
-  "type (number): invoice type code, usually 380 for commercial invoice; " +
-  "processType (string): e.g. \"B1\" for goods; " +
+  "type (number): invoice type code (380 = commercial invoice); " +
   "invoiceDueDate (string, YYYY-MM-DD): due date; " +
-  "seller (object): { name, siren, siret, country, vatNumber, electronicAddress (format \"0225:siren_siret\"), identifiers: [{ type: \"ELECTRONIC_ADDRESS\", value: \"siren_siret\", scheme: \"0225\" }] }; " +
+  "seller (object): { name, siren, siret, country, vatNumber }; " +
   "buyer (object): same structure as seller; " +
-  "monetary (object): { invoiceCurrency: \"EUR\", invoiceAmount: { amount }, payableAmount: { amount }, taxTotalAmount: { amount, currency: \"EUR\" }, lineTotalAmount: { amount }, taxBasisTotalAmount: { amount } }; " +
+  "monetary (object): { invoiceCurrency, invoiceAmount: { amount }, taxTotalAmount: { amount }, lineTotalAmount: { amount }, taxBasisTotalAmount: { amount } }; " +
   "taxDetails (array): [{ percent, taxType: \"VAT\", categoryCode: \"S\", taxableAmount: { amount }, taxAmount: { amount } }]; " +
-  "lines (array): [{ id: \"1\", item: { name }, billedQuantity: { quantity, unitCode: \"DAY\"|\"C62\" }, price: { netAmount: { amount }, baseQuantity: { quantity: 1, unitCode } }, totalAmount: { amount }, taxDetail: { percent, taxType: \"VAT\", categoryCode: \"S\" } }]; " +
-  "paymentTerms (string, optional): payment conditions text; " +
-  "notes (array, optional): [{ type: { code: \"PMT\" }, content: \"...\" }]";
+  "lines (array): [{ id, item: { name }, billedQuantity: { quantity, unitCode }, price: { netAmount: { amount } }, totalAmount: { amount }, taxDetail: { percent } }]";
 
 export const invoiceTools: EInvoiceTool[] = [
   // ── Emit ────────────────────────────────────────────────
@@ -489,7 +440,7 @@ export const invoiceTools: EInvoiceTool[] = [
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     requires: ["generateCII"],
     description:
-      GENERATE_AX_HINT +
+      GENERATE_HINT +
       "Generate a CII invoice preview. Validates and converts to CII XML. " +
       "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931).",
@@ -513,7 +464,7 @@ export const invoiceTools: EInvoiceTool[] = [
       if (!input.invoice || !input.flavor) {
         throw new Error("[einvoice_invoice_generate_cii] 'invoice' and 'flavor' are required");
       }
-      const inv = normalizeInvoiceForGenerate(input.invoice);
+      const inv = input.invoice as Record<string, unknown>;
       const xml = await ctx.adapter.generateCII({
         invoice: inv,
         flavor: input.flavor as string,
@@ -536,7 +487,7 @@ export const invoiceTools: EInvoiceTool[] = [
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     requires: ["generateUBL"],
     description:
-      GENERATE_AX_HINT +
+      GENERATE_HINT +
       "Generate a UBL invoice preview. Validates and converts to UBL XML. " +
       "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931).",
@@ -560,7 +511,7 @@ export const invoiceTools: EInvoiceTool[] = [
       if (!input.invoice || !input.flavor) {
         throw new Error("[einvoice_invoice_generate_ubl] 'invoice' and 'flavor' are required");
       }
-      const inv = normalizeInvoiceForGenerate(input.invoice);
+      const inv = input.invoice as Record<string, unknown>;
       const xml = await ctx.adapter.generateUBL({
         invoice: inv,
         flavor: input.flavor as string,
@@ -583,7 +534,7 @@ export const invoiceTools: EInvoiceTool[] = [
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     requires: ["generateFacturX"],
     description:
-      GENERATE_AX_HINT +
+      GENERATE_HINT +
       "Generate a Factur-X invoice preview. Creates a hybrid PDF/XML. " +
       "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931). Optionally accepts a language (FRENCH, ENGLISH, GERMAN).",
@@ -612,7 +563,7 @@ export const invoiceTools: EInvoiceTool[] = [
       if (!input.invoice || !input.flavor) {
         throw new Error("[einvoice_invoice_generate_facturx] 'invoice' and 'flavor' are required");
       }
-      const inv = normalizeInvoiceForGenerate(input.invoice);
+      const inv = input.invoice as Record<string, unknown>;
       const { data: bytes } = await ctx.adapter.generateFacturX({
         invoice: inv,
         flavor: input.flavor as string,

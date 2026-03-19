@@ -129,7 +129,7 @@ export const configTools: EInvoiceTool[] = [
         },
         scope: {
           type: "string",
-          description: "Entity scope (required by Iopole)",
+          description: "Entity scope",
           enum: ["PRIVATE_TAX_PAYER", "PUBLIC", "PRIMARY", "SECONDARY"],
         },
       },
