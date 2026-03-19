@@ -102,7 +102,7 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
-function exportCsv(columns: string[], rows: Record<string, unknown>[], doctype?: string) {
+async function exportCsv(columns: string[], rows: Record<string, unknown>[], doctype?: string) {
   const header = columns.join(",");
   const body = rows.map((row) =>
     columns.map((col) => {
@@ -112,13 +112,29 @@ function exportCsv(columns: string[], rows: Record<string, unknown>[], doctype?:
   ).join("\n");
 
   const csv = `${header}\n${body}`;
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${doctype ?? "export"}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const filename = `${doctype ?? "export"}.csv`;
+  // Use MCP Apps SDK downloadFile — works in sandboxed iframes
+  try {
+    await app.downloadFile({
+      contents: [{
+        type: "resource",
+        resource: {
+          uri: `file:///${filename}`,
+          mimeType: "text/csv",
+          text: csv,
+        },
+      }],
+    });
+  } catch {
+    // Fallback to blob URL for non-MCP hosts (inspector, test harness)
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 }
 
 export function DoclistViewer() {

@@ -208,17 +208,20 @@ export function InvoiceViewer() {
     try {
       const file = JSON.parse(resultText);
       if (!file.data_base64) return;
-      const binary = atob(file.data_base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: file.content_type ?? "application/octet-stream" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      setActionMessage("Téléchargé");
+      const mimeType = file.content_type ?? "application/octet-stream";
+      // Use MCP Apps SDK downloadFile — works in sandboxed iframes
+      const { isError } = await app.downloadFile({
+        contents: [{
+          type: "resource",
+          resource: {
+            uri: `file:///${filename}`,
+            mimeType,
+            blob: file.data_base64,
+          },
+        }],
+      });
+      if (isError) setActionMessage("Téléchargement annulé");
+      else setActionMessage("Téléchargé");
     } catch { setActionMessage("Erreur de téléchargement"); }
   }
 
