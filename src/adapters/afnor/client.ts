@@ -11,6 +11,9 @@
  * @module lib/einvoice/src/adapters/afnor/client
  */
 
+import { BaseHttpClient } from "../shared/http-client.ts";
+import { AdapterAPIError } from "../shared/errors.ts";
+
 // ─── Types ──────────────────────────────────────────────
 
 export type FlowSyntax = "CII" | "UBL" | "Factur-X" | "CDAR" | "FRR";
@@ -70,40 +73,29 @@ export interface AfnorClientConfig {
 }
 
 /**
- * Error thrown when an AFNOR API request fails.
- */
-export class AfnorAPIError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-    public readonly body: string,
-  ) {
-    super(message);
-    this.name = "AfnorAPIError";
-  }
-}
-
-/**
  * AFNOR Flow API client (XP Z12-013).
  *
- * 3 endpoints — covers: invoice submission, flow search, flow download.
- * Shared across all French PA adapters that implement the AFNOR standard.
+ * Extends BaseHttpClient for standard request/download.
+ * Adds AFNOR-specific methods: submitFlow (multipart), searchFlows, downloadFlow.
  */
-export class AfnorClient {
-  private config: AfnorClientConfig;
+export class AfnorClient extends BaseHttpClient {
+  private getToken: () => Promise<string>;
 
   constructor(config: AfnorClientConfig) {
-    this.config = config;
+    super("AFNOR", { baseUrl: config.baseUrl, timeoutMs: config.timeoutMs });
+    this.getToken = config.getToken;
   }
 
-  // ─── Core Methods ────────────────────────────────────
+  protected async getAuthHeaders(): Promise<Record<string, string>> {
+    const token = await this.getToken();
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  // ─── AFNOR-Specific Methods ──────────────────────────
 
   /**
    * Submit a new flow (invoice, lifecycle event, or e-reporting).
-   * POST /v1/flows
-   *
-   * The file is sent as the request body with appropriate content-type.
-   * Flow metadata is passed via the flowInfo parameter.
+   * POST /v1/flows — multipart: flowInfo (JSON) + file (binary).
    */
   async submitFlow(
     file: Uint8Array,
@@ -111,7 +103,7 @@ export class AfnorClient {
     flowType?: FlowType,
   ): Promise<unknown> {
     const url = new URL(`${this.config.baseUrl}/v1/flows`);
-    const token = await this.config.getToken();
+    const authHeaders = await this.getAuthHeaders();
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
@@ -119,7 +111,6 @@ export class AfnorClient {
     );
 
     try {
-      // AFNOR spec uses multipart: flowInfo (JSON) + file (binary)
       const form = new FormData();
       form.append("flowInfo", JSON.stringify({
         ...flowInfo,
@@ -129,18 +120,16 @@ export class AfnorClient {
 
       const response = await fetch(url.toString(), {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
+        headers: { ...authHeaders, Accept: "application/json" },
         body: form,
         signal: controller.signal,
       });
 
       if (!response.ok) {
         const body = await response.text();
-        throw new AfnorAPIError(
-          `[AfnorClient] POST /v1/flows → ${response.status}: ${body.slice(0, 500)}`,
+        throw new AdapterAPIError(
+          "AFNOR",
+          `[AFNOR] POST /v1/flows → ${response.status}: ${body.slice(0, 500)}`,
           response.status,
           body,
         );
@@ -155,9 +144,6 @@ export class AfnorClient {
   /**
    * Search flows by criteria.
    * POST /v1/flows/search
-   *
-   * Returns flows matching the provided filters (AND between criteria,
-   * OR for criteria allowing lists). Pagination via updatedAfter.
    */
   async searchFlows(
     filters: FlowSearchFilters,
@@ -174,16 +160,14 @@ export class AfnorClient {
   /**
    * Download a flow file.
    * GET /v1/flows/{flowId}
-   *
-   * Returns the raw file (invoice XML/PDF, lifecycle CDAR, or e-reporting).
    */
   async downloadFlow(
     flowId: string,
     docType?: string,
   ): Promise<{ data: Uint8Array; contentType: string }> {
-    const url = new URL(`${this.config.baseUrl}/v1/flows/${flowId}`);
-    if (docType) url.searchParams.set("docType", docType);
-    const token = await this.config.getToken();
+    const query = docType ? { docType } : undefined;
+    const url = `${this.config.baseUrl}/v1/flows/${flowId}`;
+    const authHeaders = await this.getAuthHeaders();
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
@@ -191,16 +175,21 @@ export class AfnorClient {
     );
 
     try {
-      const response = await fetch(url.toString(), {
+      const fullUrl = new URL(url);
+      if (query) {
+        for (const [k, v] of Object.entries(query)) fullUrl.searchParams.set(k, v);
+      }
+      const response = await fetch(fullUrl.toString(), {
         method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders,
         signal: controller.signal,
       });
 
       if (!response.ok) {
         const body = await response.text();
-        throw new AfnorAPIError(
-          `[AfnorClient] GET /v1/flows/${flowId} → ${response.status}`,
+        throw new AdapterAPIError(
+          "AFNOR",
+          `[AFNOR] GET /v1/flows/${flowId} → ${response.status}`,
           response.status,
           body,
         );
@@ -215,8 +204,7 @@ export class AfnorClient {
   }
 
   /**
-   * Health check.
-   * GET /v1/healthcheck
+   * Health check — GET /v1/healthcheck
    */
   async healthcheck(): Promise<boolean> {
     try {
@@ -224,52 +212,6 @@ export class AfnorClient {
       return true;
     } catch {
       return false;
-    }
-  }
-
-  // ─── Generic Request ────────────────────────────────
-
-  private async request<T = unknown>(
-    method: string,
-    path: string,
-    options?: { body?: unknown },
-  ): Promise<T> {
-    const url = `${this.config.baseUrl}${path}`;
-    const token = await this.config.getToken();
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      this.config.timeoutMs ?? 30_000,
-    );
-
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    };
-    if (options?.body) headers["Content-Type"] = "application/json";
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: options?.body ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const body = await response.text();
-        throw new AfnorAPIError(
-          `[AfnorClient] ${method} ${path} → ${response.status}: ${body.slice(0, 500)}`,
-          response.status,
-          body,
-        );
-      }
-
-      const ct = response.headers.get("content-type") ?? "";
-      if (ct.includes("application/json")) return (await response.json()) as T;
-      return (await response.text()) as unknown as T;
-    } finally {
-      clearTimeout(timeout);
     }
   }
 }

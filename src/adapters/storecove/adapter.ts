@@ -12,6 +12,7 @@
 
 import type {
   EInvoiceAdapter,
+  AdapterMethodName,
   InvoiceDetail,
   SearchInvoicesResult,
   SearchDirectoryFrResult,
@@ -47,7 +48,7 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   readonly name = "storecove";
 
   /** Only methods with real Storecove API mappings. */
-  readonly capabilities = new Set([
+  readonly capabilities = new Set<AdapterMethodName>([
     // Invoice
     "emitInvoice", "getInvoice", "downloadInvoice",
     // Directory

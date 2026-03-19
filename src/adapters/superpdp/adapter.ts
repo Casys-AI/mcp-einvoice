@@ -13,6 +13,7 @@
 import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import { AfnorClient } from "../afnor/client.ts";
 import type {
+  AdapterMethodName,
   InvoiceDetail,
   SearchInvoicesResult,
   SearchDirectoryFrResult,
@@ -40,7 +41,7 @@ import { env } from "../../runtime.ts";
 export class SuperPDPAdapter extends AfnorBaseAdapter {
   readonly name = "superpdp";
 
-  readonly capabilities = new Set([
+  readonly capabilities = new Set<AdapterMethodName>([
     // Native overrides
     "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
     "generateCII", "generateUBL", "generateFacturX",

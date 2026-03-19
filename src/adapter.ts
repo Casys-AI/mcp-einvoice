@@ -201,14 +201,18 @@ export interface UpdateWebhookRequest {
  * Each method maps to a business operation, not a specific API endpoint.
  * PA adapters translate these calls to their concrete APIs.
  */
+/** Method names that can appear in capabilities (compile-time safety). */
+export type AdapterMethodName = Exclude<keyof EInvoiceAdapter, "name" | "capabilities">;
+
 export interface EInvoiceAdapter {
   /** Adapter identifier (e.g. "iopole", "storecove") */
   readonly name: string;
 
   /** Set of adapter method names that this adapter actually supports.
    *  Used to filter MCP tools at registration time — unsupported tools
-   *  are not exposed to the LLM, saving context tokens. */
-  readonly capabilities: Set<string>;
+   *  are not exposed to the LLM, saving context tokens.
+   *  Type-safe: only valid method names allowed (compile-time check). */
+  readonly capabilities: Set<AdapterMethodName>;
 
   // ─── Invoice Operations ───────────────────────────────
 

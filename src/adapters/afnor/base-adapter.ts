@@ -18,6 +18,7 @@
 
 import type {
   EInvoiceAdapter,
+  AdapterMethodName,
   InvoiceDetail,
   SearchInvoicesResult,
   SearchDirectoryFrResult,
@@ -50,7 +51,7 @@ import { NotSupportedError } from "../shared/errors.ts";
  */
 export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
   abstract readonly name: string;
-  abstract readonly capabilities: Set<string>;
+  abstract readonly capabilities: Set<AdapterMethodName>;
 
   protected afnor: AfnorClient | null;
 

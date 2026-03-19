@@ -6,7 +6,7 @@
  * @module lib/einvoice/src/testing/helpers
  */
 
-import type { EInvoiceAdapter, DownloadResult } from "../adapter.ts";
+import type { EInvoiceAdapter, AdapterMethodName, DownloadResult } from "../adapter.ts";
 
 // ─── Mock Fetch ──────────────────────────────────────────
 
@@ -105,7 +105,7 @@ export function createMockAdapter(
 
   const adapter: EInvoiceAdapter = {
     name: "mock",
-    capabilities: new Set([
+    capabilities: new Set<AdapterMethodName>([
       "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
       "downloadReadable", "getInvoiceFiles", "getAttachments", "downloadFile",
       "markInvoiceSeen", "getUnseenInvoices", "generateCII", "generateUBL", "generateFacturX",

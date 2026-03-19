@@ -12,6 +12,7 @@
 
 import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import type {
+  AdapterMethodName,
   InvoiceDetail,
   InvoiceDirection,
   InvoiceSearchRow,
@@ -48,7 +49,7 @@ const IOPOLE_DEFAULT_AUTH_URL =
  */
 export class IopoleAdapter extends AfnorBaseAdapter {
   readonly name = "iopole";
-  readonly capabilities = new Set([
+  readonly capabilities = new Set<AdapterMethodName>([
     "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
     "downloadReadable", "getInvoiceFiles", "getAttachments", "downloadFile",
     "markInvoiceSeen", "getUnseenInvoices", "generateCII", "generateUBL", "generateFacturX",
@@ -106,19 +107,23 @@ export class IopoleAdapter extends AfnorBaseAdapter {
       };
     });
 
-    // Enrich with lifecycle status in parallel (Iopole getInvoice has no state)
-    await Promise.all(rows.map(async (row) => {
-      if (!row.id) return;
-      try {
-        const history = await this.getStatusHistory(row.id);
-        if (history.entries.length > 0) {
-          const sorted = [...history.entries].sort((a, b) =>
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-          row.status = sorted[0].code;
-        }
-      } catch { /* keep row.status as fallback */ }
-    }));
+    // Enrich with lifecycle status — capped concurrency to avoid flooding the API
+    const CONCURRENCY = 5;
+    for (let i = 0; i < rows.length; i += CONCURRENCY) {
+      const batch = rows.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(async (row) => {
+        if (!row.id) return;
+        try {
+          const history = await this.getStatusHistory(row.id);
+          if (history.entries.length > 0) {
+            const sorted = [...history.entries].sort((a, b) =>
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            row.status = sorted[0].code;
+          }
+        } catch { /* keep row.status as fallback */ }
+      }));
+    }
 
     return { rows, count };
   }

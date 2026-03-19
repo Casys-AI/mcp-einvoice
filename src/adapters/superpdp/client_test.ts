@@ -7,7 +7,8 @@
  */
 
 import { assertEquals, assertRejects } from "jsr:@std/assert";
-import { SuperPDPClient, SuperPDPAPIError } from "./client.ts";
+import { SuperPDPClient } from "./client.ts";
+import { AdapterAPIError } from "../shared/errors.ts";
 import { mockFetch } from "../../testing/helpers.ts";
 
 function makeClient() {
@@ -142,7 +143,7 @@ Deno.test("SuperPDPClient.download() - returns Uint8Array and content type", asy
 
 // ── Errors ──────────────────────────────────────────────
 
-Deno.test("SuperPDPClient - throws SuperPDPAPIError on 4xx", async () => {
+Deno.test("SuperPDPClient - throws AdapterAPIError on 4xx", async () => {
   const { restore } = mockFetch([
     { status: 404, body: { error: "not found" } },
   ]);
@@ -151,14 +152,14 @@ Deno.test("SuperPDPClient - throws SuperPDPAPIError on 4xx", async () => {
     const client = makeClient();
     await assertRejects(
       () => client.get("/invoices/nonexistent"),
-      SuperPDPAPIError,
+      AdapterAPIError,
     );
   } finally {
     restore();
   }
 });
 
-Deno.test("SuperPDPClient - throws SuperPDPAPIError on 5xx", async () => {
+Deno.test("SuperPDPClient - throws AdapterAPIError on 5xx", async () => {
   const { restore } = mockFetch([
     { status: 500, body: { error: "server error" } },
   ]);
@@ -167,7 +168,7 @@ Deno.test("SuperPDPClient - throws SuperPDPAPIError on 5xx", async () => {
     const client = makeClient();
     await assertRejects(
       () => client.post("/invoices", {}),
-      SuperPDPAPIError,
+      AdapterAPIError,
     );
   } finally {
     restore();
