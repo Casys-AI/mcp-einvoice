@@ -252,7 +252,13 @@ export const invoiceTools: EInvoiceTool[] = [
         status: {
           type: "string",
           description: "Filter by lifecycle status (after enrichment)",
-          enum: ["APPROVED", "REFUSED", "DISPUTED", "PAYMENT_SENT", "PAYMENT_RECEIVED", "DELIVERED", "SUBMITTED", "ISSUED"],
+          enum: [
+            "SUBMITTED", "ISSUED", "MADE_AVAILABLE", "DELIVERED",
+            "IN_HAND", "APPROVED", "PARTIALLY_APPROVED",
+            "REFUSED", "DISPUTED", "SUSPENDED",
+            "PAYMENT_SENT", "PAYMENT_RECEIVED", "COMPLETED",
+            "WRONG_ROUTING", "INVALID", "DUPLICATED",
+          ],
         },
         offset: { type: "number", description: "Result offset (default 0)" },
         limit: { type: "number", description: "Max results (default 50, max 200)" },
