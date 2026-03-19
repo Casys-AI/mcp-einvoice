@@ -41,6 +41,7 @@ const AK = {
   PAYMENT_RECEIVED: "status_payment_received",
 
   DOWNLOAD_PDF: "download_pdf",
+  DOWNLOAD_XML: "download_xml",
 } as const;
 const REFRESH_INTERVAL_MS = 15_000;
 const TOOL_CALL_TIMEOUT_MS = 30_000;
@@ -199,6 +200,26 @@ export function InvoiceViewer() {
     } finally {
       setActionLoading(null);
     }
+  }
+
+  async function downloadFile(actionKey: string, toolName: string, filename: string) {
+    const resultText = await callAction(actionKey, toolName, { id: data.id }, "");
+    if (!resultText) return;
+    try {
+      const file = JSON.parse(resultText);
+      if (!file.data_base64) return;
+      const binary = atob(file.data_base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: file.content_type ?? "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setActionMessage("Téléchargé");
+    } catch { setActionMessage("Erreur de téléchargement"); }
   }
 
   useEffect(() => {
@@ -417,8 +438,12 @@ export function InvoiceViewer() {
           )}
           {/* Common: always available for real invoices */}
           {hasId && (
-            <ActionButton label="Télécharger PDF" variant="default" loading={actionLoading === AK.DOWNLOAD_PDF}
-              onClick={() => callAction(AK.DOWNLOAD_PDF, "einvoice_invoice_download_readable", { id: data.id }, "PDF téléchargé")} />
+            <>
+              <ActionButton label="PDF" variant="default" loading={actionLoading === AK.DOWNLOAD_PDF}
+                onClick={() => downloadFile(AK.DOWNLOAD_PDF, "einvoice_invoice_download_readable", `${data.invoice_number ?? data.id ?? "facture"}.pdf`)} />
+              <ActionButton label="XML source" variant="default" loading={actionLoading === AK.DOWNLOAD_XML}
+                onClick={() => downloadFile(AK.DOWNLOAD_XML, "einvoice_invoice_download", `${data.invoice_number ?? data.id ?? "facture"}.xml`)} />
+            </>
           )}
         </div>
 
