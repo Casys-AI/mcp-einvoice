@@ -39,6 +39,21 @@ Shared: `afnor/client.ts` (AfnorClient), `shared/oauth2.ts` (OAuth2 token provid
 2. Implement `EInvoiceAdapter` interface directly
 3. Follow same registration steps as above
 
+## Status Codes (CDAR — PPF Lifecycle)
+
+All adapters return status codes that the viewers resolve via `getStatus()` from
+`src/ui/shared/status.ts`. The viewers accept any format:
+
+- CDAR numeric: `"205"` → `approved`
+- CDAR prefixed: `"fr:205"` → `approved`
+- Iopole label: `"APPROVED"` → `approved`
+- AFNOR ack: `"Ok"` → `delivered`
+
+French PA adapters should use CDAR codes or Iopole-style labels.
+Non-French adapters (Storecove) can return any code — unknown codes display as-is.
+
+4 codes obligatoires PPF: **200** (Déposée), **210** (Refusée), **212** (Encaissée), **213** (Rejetée).
+
 ## Interface
 
 `EInvoiceAdapter` from `src/adapter.ts` — 43 methods covering:

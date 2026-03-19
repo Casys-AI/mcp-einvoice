@@ -194,6 +194,24 @@ Webhook support may come via the AFNOR callback mechanism (`WebhookCallback` in 
 | Webhooks | Full CRUD | Read + delete | Not yet available |
 | API maturity | v1 stable | v2 stable | v1.beta |
 
+## Status Code Mapping (CDAR)
+
+Super PDP uses French CDAR codes (`fr:205`, `fr:210`...). The viewers resolve
+these via `getStatus()` which maps CDAR numeric → lifecycle key automatically.
+
+| Super PDP code | CDAR | Lifecycle key | Label FR |
+|---|---|---|---|
+| `fr:200` | 200 | `submitted` | Déposée |
+| `fr:205` | 205 | `approved` | Approuvée |
+| `fr:207` | 207 | `disputed` | En litige |
+| `fr:210` | 210 | `refused` | Refusée |
+| `fr:211` | 211 | `payment_sent` | Paiement transmis |
+| `fr:212` | 212 | `payment_received` | Encaissée |
+| `fr:213` | 213 | `rejected` | Rejetée |
+
+No adapter-side mapping needed — the viewer's `getStatus()` strips the `fr:` prefix
+and resolves the numeric code.
+
 ## Environment Variables
 
 ```
