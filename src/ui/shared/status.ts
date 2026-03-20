@@ -29,45 +29,45 @@ export interface StatusScheme {
 
 const LIFECYCLE: Record<string, StatusScheme> = {
   // 200–204: Dépôt et routage
-  submitted:           { color: colors.info,         bg: colors.infoDim,      label: "Déposée",                   icon: "↗" },  // CDAR 200
-  issued:              { color: colors.info,         bg: colors.infoDim,      label: "Émise",                     icon: "→" },  // CDAR 201
-  received:            { color: colors.info,         bg: colors.infoDim,      label: "Reçue",                     icon: "↙" },  // CDAR 202
-  made_available:      { color: colors.info,         bg: colors.infoDim,      label: "Mise à disposition",        icon: "◈" },  // CDAR 203
-  in_hand:             { color: colors.info,         bg: colors.infoDim,      label: "Prise en charge",           icon: "◉" },  // CDAR 204
+  submitted:           { color: colors.info,         bg: colors.infoDim,      label: "Déposée",                   icon: "upload" },           // CDAR 200
+  issued:              { color: colors.info,         bg: colors.infoDim,      label: "Émise",                     icon: "send" },             // CDAR 201
+  received:            { color: colors.info,         bg: colors.infoDim,      label: "Reçue",                     icon: "move_to_inbox" },    // CDAR 202
+  made_available:      { color: colors.info,         bg: colors.infoDim,      label: "Mise à disposition",        icon: "inventory_2" },      // CDAR 203
+  in_hand:             { color: colors.info,         bg: colors.infoDim,      label: "Prise en charge",           icon: "visibility" },       // CDAR 204
   // 205–213: Traitement métier
-  approved:            { color: colors.success,      bg: colors.successDim,   label: "Approuvée",                 icon: "✓" },  // CDAR 205
-  partially_approved:  { color: colors.warning,      bg: colors.warningDim,   label: "Partiellement approuvée",   icon: "½" },  // CDAR 206
-  disputed:            { color: colors.warning,      bg: colors.warningDim,   label: "En litige",                 icon: "⚡" }, // CDAR 207
-  suspended:           { color: colors.warning,      bg: colors.warningDim,   label: "Suspendue",                 icon: "⏸" }, // CDAR 208
-  completed:           { color: colors.success,      bg: colors.successDim,   label: "Complétée",                 icon: "✓✓" },// CDAR 209
-  refused:             { color: colors.error,        bg: colors.errorDim,     label: "Refusée",                   icon: "✕" },  // CDAR 210
-  payment_sent:        { color: colors.success,      bg: colors.successDim,   label: "Paiement transmis",         icon: "€→" }, // CDAR 211
-  payment_received:    { color: colors.success,      bg: colors.successDim,   label: "Encaissée",                 icon: "€✓" }, // CDAR 212
-  rejected:            { color: colors.error,        bg: colors.errorDim,     label: "Rejetée",                   icon: "⊘" },  // CDAR 213
-  cancelled:           { color: colors.text.faint,   bg: colors.bg.elevated,  label: "Annulée",                   icon: "—" },
+  approved:            { color: colors.success,      bg: colors.successDim,   label: "Approuvée",                 icon: "check_circle" },     // CDAR 205
+  partially_approved:  { color: colors.warning,      bg: colors.warningDim,   label: "Partiellement approuvée",   icon: "rule" },             // CDAR 206
+  disputed:            { color: colors.warning,      bg: colors.warningDim,   label: "En litige",                 icon: "gavel" },            // CDAR 207
+  suspended:           { color: colors.warning,      bg: colors.warningDim,   label: "Suspendue",                 icon: "pause_circle" },     // CDAR 208
+  completed:           { color: colors.success,      bg: colors.successDim,   label: "Complétée",                 icon: "task_alt" },         // CDAR 209
+  refused:             { color: colors.error,        bg: colors.errorDim,     label: "Refusée",                   icon: "cancel" },           // CDAR 210
+  payment_sent:        { color: colors.success,      bg: colors.successDim,   label: "Paiement transmis",         icon: "payments" },         // CDAR 211
+  payment_received:    { color: colors.success,      bg: colors.successDim,   label: "Encaissée",                 icon: "price_check" },      // CDAR 212
+  rejected:            { color: colors.error,        bg: colors.errorDim,     label: "Rejetée",                   icon: "block" },            // CDAR 213
+  cancelled:           { color: colors.text.faint,   bg: colors.bg.elevated,  label: "Annulée",                   icon: "remove_circle" },
 };
 
 // ── Platform state (technical, pre-lifecycle) ───────────────
 
 const PLATFORM_STATE: Record<string, StatusScheme> = {
-  pending:             { color: colors.text.muted,   bg: colors.bg.elevated,  label: "En attente",         icon: "◌" },
-  processing:          { color: colors.info,         bg: colors.infoDim,      label: "En traitement",      icon: "⟳" },
-  valid:               { color: colors.success,      bg: colors.successDim,   label: "Valide",             icon: "✓" },
-  invalid:             { color: colors.error,        bg: colors.errorDim,     label: "Invalide",           icon: "✕" },
-  duplicated:          { color: colors.warning,      bg: colors.warningDim,   label: "Doublon",            icon: "⧉" },
-  wrong_routing:       { color: colors.error,        bg: colors.errorDim,     label: "Erreur routage",     icon: "⚠" },
-  delivered:           { color: colors.info,         bg: colors.infoDim,      label: "Livrée",             icon: "✓" },
-  not_delivered:       { color: colors.error,        bg: colors.errorDim,     label: "Non livrée",         icon: "✕" },
-  delivery_pending:    { color: colors.text.muted,   bg: colors.bg.elevated,  label: "Livraison en cours", icon: "◌" },
-  converted:           { color: colors.success,      bg: colors.successDim,   label: "Convertie",          icon: "⇄" },
-  conversion_failed:   { color: colors.error,        bg: colors.errorDim,     label: "Conversion échouée", icon: "⚠" },
+  pending:             { color: colors.text.muted,   bg: colors.bg.elevated,  label: "En attente",         icon: "hourglass_empty" },
+  processing:          { color: colors.info,         bg: colors.infoDim,      label: "En traitement",      icon: "sync" },
+  valid:               { color: colors.success,      bg: colors.successDim,   label: "Valide",             icon: "check_circle" },
+  invalid:             { color: colors.error,        bg: colors.errorDim,     label: "Invalide",           icon: "error" },
+  duplicated:          { color: colors.warning,      bg: colors.warningDim,   label: "Doublon",            icon: "content_copy" },
+  wrong_routing:       { color: colors.error,        bg: colors.errorDim,     label: "Erreur routage",     icon: "wrong_location" },
+  delivered:           { color: colors.info,         bg: colors.infoDim,      label: "Livrée",             icon: "local_shipping" },
+  not_delivered:       { color: colors.error,        bg: colors.errorDim,     label: "Non livrée",         icon: "local_shipping" },
+  delivery_pending:    { color: colors.text.muted,   bg: colors.bg.elevated,  label: "Livraison en cours", icon: "schedule" },
+  converted:           { color: colors.success,      bg: colors.successDim,   label: "Convertie",          icon: "swap_horiz" },
+  conversion_failed:   { color: colors.error,        bg: colors.errorDim,     label: "Conversion échouée", icon: "error" },
 };
 
 // ── Internal ────────────────────────────────────────────────
 
 const INTERNAL: Record<string, StatusScheme> = {
-  "aperçu":            { color: colors.warning,     bg: colors.warningDim,   label: "Aperçu",  icon: "◎" },
-  "apercu":            { color: colors.warning,     bg: colors.warningDim,   label: "Aperçu",  icon: "◎" },
+  "aperçu":            { color: colors.warning,     bg: colors.warningDim,   label: "Aperçu",  icon: "preview" },
+  "apercu":            { color: colors.warning,     bg: colors.warningDim,   label: "Aperçu",  icon: "preview" },
 };
 
 // ── CDAR numeric code → lifecycle key mapping ───────────────
@@ -124,7 +124,7 @@ export function getStatus(code: string): StatusScheme {
   if (ALIASES[key] && STATUS_REGISTRY[ALIASES[key]]) return STATUS_REGISTRY[ALIASES[key]];
 
   // Unknown
-  return { color: colors.text.muted, bg: colors.bg.elevated, label: code, icon: "?" };
+  return { color: colors.text.muted, bg: colors.bg.elevated, label: code, icon: "help" };
 }
 
 /** Get just the French label for a status code. */

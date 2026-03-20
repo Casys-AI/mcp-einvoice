@@ -54,18 +54,17 @@ function StatusCell({ value }: { value: string }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 24,
-        height: 24,
+        width: 26,
+        height: 26,
         borderRadius: 6,
         background: s.bg,
         color: s.color,
-        fontSize: 14,
-        fontWeight: 700,
         cursor: "default",
-        lineHeight: 1,
       }}
     >
-      {s.icon}
+      <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
+        {s.icon}
+      </span>
     </span>
   );
 }
