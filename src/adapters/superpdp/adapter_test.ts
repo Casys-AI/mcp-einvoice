@@ -35,7 +35,7 @@ Deno.test("SuperPDPAdapter - name is 'superpdp'", () => {
 
 Deno.test("SuperPDPAdapter - capabilities contains 22 methods", () => {
   const adapter = makeAdapter();
-  assertEquals(adapter.capabilities.size, 22);
+  assertEquals(adapter.capabilities.size, 21);
   // Core native
   assertEquals(adapter.capabilities.has("emitInvoice"), true);
   assertEquals(adapter.capabilities.has("searchInvoices"), true);
@@ -124,7 +124,7 @@ Deno.test("SuperPDPAdapter.downloadInvoice() - GET /invoices/{id}/download", asy
 
 // ── Format Conversion (native) ──────────────────────────
 
-Deno.test("SuperPDPAdapter.generateCII() - POST /invoices/convert?to=cii", async () => {
+Deno.test("SuperPDPAdapter.generateCII() - GET /invoices/generate_test_invoice", async () => {
   const { restore, captured } = mockFetch([
     { status: 200, body: "<cii:invoice/>", contentType: "application/xml" },
   ]);
@@ -133,30 +133,16 @@ Deno.test("SuperPDPAdapter.generateCII() - POST /invoices/convert?to=cii", async
     const adapter = makeAdapter();
     await adapter.generateCII({ invoice: { invoiceId: "F-001" }, flavor: "EN16931" });
 
-    assertEquals(captured[0].method, "POST");
+    assertEquals(captured[0].method, "GET");
     const url = new URL(captured[0].url);
-    assertEquals(url.pathname, "/v1.beta/invoices/convert");
-    assertEquals(url.searchParams.get("to"), "cii");
+    assertEquals(url.pathname, "/v1.beta/invoices/generate_test_invoice");
+    assertEquals(url.searchParams.get("format"), "cii");
   } finally {
     restore();
   }
 });
 
-Deno.test("SuperPDPAdapter.generateFacturX() - POST /invoices/convert?to=facturx", async () => {
-  const { restore, captured } = mockFetch([
-    { status: 200, body: "<facturx/>", contentType: "application/xml" },
-  ]);
-
-  try {
-    const adapter = makeAdapter();
-    await adapter.generateFacturX({ invoice: { invoiceId: "F-002" }, flavor: "EN16931" });
-
-    const url = new URL(captured[0].url);
-    assertEquals(url.searchParams.get("to"), "facturx");
-  } finally {
-    restore();
-  }
-});
+// generateFacturX removed from capabilities — SuperPDP requires PDF for Factur-X
 
 // ── Status / Events (native) ────────────────────────────
 
