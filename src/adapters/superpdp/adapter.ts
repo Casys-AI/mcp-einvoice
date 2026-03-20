@@ -26,6 +26,7 @@ import type {
   GenerateInvoiceRequest,
 } from "../../adapter.ts";
 import { SuperPDPClient } from "./client.ts";
+import { normalizeForSuperPDP } from "./normalize.ts";
 import { createOAuth2TokenProvider } from "../shared/oauth2.ts";
 import { requireEnv } from "../shared/env.ts";
 import { env } from "../../runtime.ts";
@@ -120,12 +121,14 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   // ─── Format Conversion (native) ───────────────────────
 
   override async generateCII(req: GenerateInvoiceRequest): Promise<string> {
-    const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
+    const invoice = normalizeForSuperPDP(req.invoice);
+    const payload = new TextEncoder().encode(JSON.stringify(invoice));
     return await this.client.convert(payload, "en16931", "cii");
   }
 
   override async generateUBL(req: GenerateInvoiceRequest): Promise<string> {
-    const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
+    const invoice = normalizeForSuperPDP(req.invoice);
+    const payload = new TextEncoder().encode(JSON.stringify(invoice));
     return await this.client.convert(payload, "en16931", "ubl");
   }
 
