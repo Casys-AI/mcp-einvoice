@@ -63,11 +63,9 @@ Deno.test("einvoice_directory_fr_search - formats rows with French columns", asy
   assertEquals(result.count, 1);
   const data = result.data as Record<string, unknown>[];
   assertEquals(data.length, 1);
+  // Priority columns only (Type, SIREN, Pays in drill-down)
   assertEquals(data[0]["Nom"], "Casys AI");
-  assertEquals(data[0]["Type"], "Entité juridique");
-  assertEquals(data[0]["SIREN"], "434466371");
   assertEquals(data[0]["SIRET"], "43446637100011");
-  assertEquals(data[0]["Pays"], "FR");
   assertEquals(data[0]["_id"], "be-123");
 });
 
@@ -81,9 +79,9 @@ Deno.test("einvoice_directory_fr_search - handles OFFICE type", async () => {
 
   const result = await tool.handler({ q: "Bureau" }, { adapter }) as Record<string, unknown>;
   const data = result.data as Record<string, unknown>[];
-  assertEquals(data[0]["Type"], "Établissement");
+  // Priority columns — Type not shown in table (drill-down only)
   assertEquals(data[0]["SIRET"], "43446637100029");
-  assertEquals(data[0]["SIREN"], "—");
+  assertEquals(data[0]["Nom"], "Bureau Paris");
 });
 
 Deno.test("einvoice_directory_int_search - calls adapter.searchDirectoryInt with value", async () => {

@@ -55,15 +55,13 @@ export const configTools: EInvoiceTool[] = [
       // Adapter returns normalized ListBusinessEntitiesResult
       const { rows, count } = await ctx.adapter.listBusinessEntities();
 
+      // Priority columns only — Type, SIREN, Scope, Pays visible in drill-down
       return {
         data: rows.map((r) => ({
           _id: r.entityId,
           "Nom": r.name ?? "—",
-          "Type": ENTITY_TYPE_LABELS[r.type ?? ""] ?? r.type ?? "—",
-          "SIREN": r.siren ?? "—",
           "SIRET": r.siret ?? "—",
-          "Scope": r.scope ?? "—",
-          "Pays": r.country ?? "FR",
+          "Type": ENTITY_TYPE_LABELS[r.type ?? ""] ?? r.type ?? "—",
         })),
         count,
         _title: "Entités opérateur",

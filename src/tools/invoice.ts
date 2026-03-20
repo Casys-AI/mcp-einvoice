@@ -215,17 +215,13 @@ export const invoiceTools: EInvoiceTool[] = [
         filtered = filtered.filter((r) => r.status === statusFilter);
       }
 
-      // Format for French doclist-viewer
+      // Format for French doclist-viewer — priority columns only (no horizontal scroll)
+      // Secondary info (Destinataire, Date, Direction) visible in drill-down panel
       const data = filtered.map((r) => ({
         _id: r.id,
         "N°": r.invoiceNumber ?? "—",
         "Statut": r.status ?? "—",
-        ...(dirFilter ? {} : {
-          "Direction": r.direction === "received" ? "Entrante" : r.direction === "sent" ? "Sortante" : "—",
-        }),
         "Émetteur": r.senderName ?? "—",
-        "Destinataire": r.receiverName ?? "—",
-        "Date": r.date ? new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—",
         "Montant": r.amount != null ? `${Number(r.amount).toLocaleString("fr-FR")} ${r.currency ?? "EUR"}` : "—",
       }));
 
