@@ -98,9 +98,16 @@ function normalizeTotals(totals: any): any {
   setIfAbsent(t, "total_with_vat", t.tax_inclusive_amount ?? t.grandTotalAmount);
   setIfAbsent(t, "amount_due_for_payment", t.amount_due_for_payment ?? t.payableAmount);
 
-  // Convert all amounts to decimal strings
+  // Convert simple amounts to decimal strings
   for (const key of ["sum_invoice_lines_amount", "total_without_vat", "total_with_vat", "amount_due_for_payment"]) {
     if (t[key] != null) t[key] = toDecimal(t[key]);
+  }
+
+  // total_vat_amount is an object { value, currency_code }, not a plain string
+  if (t.total_vat_amount != null && typeof t.total_vat_amount !== "object") {
+    t.total_vat_amount = { value: toDecimal(t.total_vat_amount) };
+  } else if (t.total_vat_amount?.value != null) {
+    t.total_vat_amount = { ...t.total_vat_amount, value: toDecimal(t.total_vat_amount.value) };
   }
 
   for (const f of TOTALS_SOURCE_FIELDS) delete t[f];
@@ -218,9 +225,29 @@ export function normalizeForSuperPDP(inv: Record<string, unknown>): Record<strin
     n.lines = n.lines.map(normalizeLine);
   }
 
+  // payment_instructions: fix credit_transfer → credit_transfers (plural)
+  // IBAN scheme must be "" (empty string) for SuperPDP to map to <ram:IBANID>
+  if (n.payment_instructions) {
+    const pi = { ...n.payment_instructions };
+    if (pi.credit_transfer && !pi.credit_transfers) {
+      pi.credit_transfers = Array.isArray(pi.credit_transfer) ? pi.credit_transfer : [pi.credit_transfer];
+      delete pi.credit_transfer;
+    }
+    // Fix IBAN scheme: SuperPDP expects scheme="" for IBAN accounts
+    if (Array.isArray(pi.credit_transfers)) {
+      pi.credit_transfers = pi.credit_transfers.map((ct: any) => {
+        if (ct?.payment_account_identifier?.scheme?.toUpperCase() === "IBAN") {
+          return { ...ct, payment_account_identifier: { ...ct.payment_account_identifier, scheme: "" } };
+        }
+        return ct;
+      });
+    }
+    n.payment_instructions = pi;
+  }
+
   // PEPPOL-EN16931-R008: avoid empty ApplicableHeaderTradeDelivery
   if (!n.delivery_information) {
-    n.delivery_information = { actual_delivery_date: n.issue_date ?? new Date().toISOString().slice(0, 10) };
+    n.delivery_information = { delivery_date: n.issue_date ?? new Date().toISOString().slice(0, 10) };
   }
 
   // BR-FR-05: French mandatory notes (PMT, PMD, AAB) — auto-add if absent
