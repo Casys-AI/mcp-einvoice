@@ -181,6 +181,9 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
       name: entry.company?.formal_name ?? entry.company?.trade_name ?? entry.name,
       siret: entry.identifier,
       country: entry.company?.country ?? "FR",
+      directory: entry.directory,
+      status: entry.status,
+      createdAt: entry.created_at,
     }));
     return { rows, count: rows.length };
   }

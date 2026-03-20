@@ -52,13 +52,24 @@ export const directoryTools: EInvoiceTool[] = [
         limit: input.limit as number | undefined,
       });
 
-      // Priority columns only — Type, SIREN, Pays visible in drill-down
       return {
         data: rows.map((r) => ({
           _id: r.entityId,
-          _identifiers: r.identifiers,
+          _detail: {
+            name: r.name,
+            type: r.type ? (ENTITY_TYPE_LABELS[r.type] ?? r.type) : undefined,
+            siren: r.siren,
+            siret: r.siret,
+            country: r.country,
+            directory: r.directory,
+            status: r.status,
+            createdAt: r.createdAt,
+            identifiers: r.identifiers,
+          },
           "Nom": r.name ?? "—",
+          "Type": r.type ? (ENTITY_TYPE_LABELS[r.type] ?? r.type) : "—",
           "SIRET": r.siret ?? "—",
+          "Pays": r.country ?? "—",
         })),
         count,
         _title: "Annuaire français",

@@ -65,6 +65,9 @@ export interface DirectoryFrRow {
   siren?: string;
   siret?: string;
   country?: string;
+  directory?: string;
+  status?: string;
+  createdAt?: string;
   identifiers?: unknown[];
 }
 

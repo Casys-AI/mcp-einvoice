@@ -436,13 +436,15 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
   const actionTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const rowAction = data._rowAction;
-  const isClickable = !!rowAction;
+  // Rows are clickable if there's a _rowAction OR if rows have _detail (local expand)
+  const dataRows = data.data ?? [];
+  const hasLocalDetail = dataRows.length > 0 && dataRows[0]._detail != null;
+  const isClickable = !!rowAction || hasLocalDetail;
 
   async function onRowClick(row: Record<string, unknown>) {
-    if (!rowAction) return;
-    const idValue = getNestedValue(row, rowAction.idField);
+    const idValue = row._id != null ? String(row._id) : null;
     if (idValue == null) return;
-    const idStr = String(idValue);
+    const idStr = idValue;
 
     // Toggle: click same row = collapse
     if (expandedId === idStr) {
@@ -450,6 +452,15 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
       setExpandedData(null);
       return;
     }
+
+    // Local expand: use _detail data directly without calling a tool
+    if (!rowAction && row._detail) {
+      setExpandedId(idStr);
+      setExpandedData(row._detail as Record<string, unknown>);
+      return;
+    }
+
+    if (!rowAction) return;
 
     setExpandedId(idStr);
     setExpandedData(null);
@@ -684,7 +695,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
               {pageRows.length === 0 ? (
                 <tr><td colSpan={columns.length} style={{ ...styles.tableCell, textAlign: "center", color: colors.text.muted, padding: 32 }}>Aucun résultat</td></tr>
               ) : pageRows.map((row, idx) => {
-                const rowId = rowAction ? String(getNestedValue(row, rowAction.idField) ?? "") : "";
+                const rowId = rowAction ? String(getNestedValue(row, rowAction.idField) ?? "") : String(row._id ?? "");
                 const isExpanded = expandedId === rowId && rowId !== "";
                 return (
                 <Fragment key={idx}>

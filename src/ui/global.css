@@ -91,6 +91,11 @@
   padding: 0;
 }
 
+html {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
 html, body {
   background: var(--bg-root);
   color: var(--text-primary);
@@ -99,6 +104,10 @@ html, body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow: auto;
 }
 
 #app {}
