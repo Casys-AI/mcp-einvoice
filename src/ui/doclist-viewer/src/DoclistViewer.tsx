@@ -112,11 +112,34 @@ function DoclistEmptyState() {
 }
 
 const STATUS_FIELDS = new Set(["status", "state", "statut", "lifecycle_status"]);
+const DIRECTION_FIELDS = new Set(["direction", "Direction"]);
 const HIDDEN_FIELDS = new Set(["doctype", "owner", "modified_by", "creation", "modified", "idx", "_rowAction"]);
 const FILTERABLE_COLUMNS = new Set(["Direction", "Statut", "Type", "Scope", "Pays", "status", "direction", "type"]);
 
 function isStatusField(key: string): boolean {
   return STATUS_FIELDS.has(key.toLowerCase());
+}
+
+function isDirectionField(key: string): boolean {
+  return DIRECTION_FIELDS.has(key);
+}
+
+function DirectionCell({ value }: { value: string }) {
+  const isReceived = value === "Entrante" || value === "received";
+  const isSent = value === "Sortante" || value === "sent";
+  const icon = isReceived ? "call_received" : isSent ? "call_made" : null;
+  const label = isReceived ? "Entrante" : isSent ? "Sortante" : value;
+  const color = isReceived ? colors.info : isSent ? colors.accent : colors.text.muted;
+  const path = icon ? MATERIAL_ICON_PATHS[icon] : null;
+  return (
+    <span title={label} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 6, cursor: "default" }}>
+      {path ? (
+        <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 -960 960 960" fill={color}><path d={path} /></svg>
+      ) : (
+        <span style={{ fontSize: 12, color }}>{label}</span>
+      )}
+    </span>
+  );
 }
 
 function formatCell(value: unknown): string {
@@ -708,6 +731,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                     const val = row[col];
                     const isNum = typeof val === "number";
                     const isStatus = isStatusField(col) && typeof val === "string";
+                    const isDirection = isDirectionField(col) && typeof val === "string";
                     return (
                       <td key={col} style={{ ...styles.tableCell, ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 12 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -717,7 +741,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                           {expandedLoading && isExpanded && colIdx === 0 && (
                             <span className="skeleton" style={{ width: 12, height: 12, borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
                           )}
-                          {isStatus ? <StatusCell value={statusOverrides[rowId] ?? val as string} /> : formatCell(val)}
+                          {isStatus ? <StatusCell value={statusOverrides[rowId] ?? val as string} /> : isDirection ? <DirectionCell value={val as string} /> : formatCell(val)}
                         </span>
                       </td>
                     );

@@ -216,15 +216,15 @@ export const invoiceTools: EInvoiceTool[] = [
       }
 
       // Priority columns — fits ~500px without horizontal scroll
-      // Direction shown as arrow icon (↓=reçue ↑=émise), date shortened
+      // Direction as normalized value for icon rendering in doclist-viewer
       const data = filtered.map((r) => {
-        const arrow = r.direction === "received" ? "↓" : r.direction === "sent" ? "↑" : "";
         const shortDate = r.date
           ? new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
           : "";
         return {
           _id: r.id,
-          " ": arrow,
+          _direction: r.direction,
+          "Direction": r.direction === "received" ? "Entrante" : r.direction === "sent" ? "Sortante" : "—",
           "N°": r.invoiceNumber ?? "—",
           "Statut": r.status ?? "—",
           "Émetteur": r.senderName ?? "—",
