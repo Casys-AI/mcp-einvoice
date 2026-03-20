@@ -172,11 +172,10 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     const data = Array.isArray(raw) ? raw : (raw?.data ?? []);
     // deno-lint-ignore no-explicit-any
     const rows = data.map((entry: any) => ({
-      entityId: entry.id ?? "",
-      name: entry.name,
-      siret: entry.siret,
-      siren: entry.siren,
-      country: entry.country ?? "FR",
+      entityId: String(entry.id ?? ""),
+      name: entry.company?.formal_name ?? entry.company?.trade_name ?? entry.name,
+      siret: entry.identifier,
+      country: entry.company?.country ?? "FR",
     }));
     return { rows, count: rows.length };
   }
