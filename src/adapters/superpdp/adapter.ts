@@ -118,21 +118,19 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   // ─── Format Conversion (native) ───────────────────────
 
-  override async generateCII(_req: GenerateInvoiceRequest): Promise<string> {
-    // SuperPDP convert accepts XML (cii/ubl), not JSON.
-    // Use generate_test_invoice as base, then the user submits it.
-    // For real generation, the invoice data should already be XML.
-    return await this.client.get("/invoices/generate_test_invoice", { format: "cii" });
+  override async generateCII(req: GenerateInvoiceRequest): Promise<string> {
+    // SuperPDP convert: from=en16931 (JSON) → to=cii (XML)
+    const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
+    return await this.client.convert(payload, "en16931", "cii");
   }
 
-  override async generateUBL(_req: GenerateInvoiceRequest): Promise<string> {
-    // Get CII test invoice then convert to UBL
-    const cii: string = await this.client.get("/invoices/generate_test_invoice", { format: "cii" });
-    const ciiBytes = new TextEncoder().encode(cii);
-    return await this.client.convert(ciiBytes, "cii", "ubl");
+  override async generateUBL(req: GenerateInvoiceRequest): Promise<string> {
+    // SuperPDP convert: from=en16931 (JSON) → to=ubl (XML)
+    const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
+    return await this.client.convert(payload, "en16931", "ubl");
   }
 
-  // generateFacturX not in capabilities — SuperPDP requires a PDF for Factur-X merge
+  // generateFacturX not in capabilities — SuperPDP says "output in the future"
 
   // ─── Status / Events (native) ─────────────────────────
 

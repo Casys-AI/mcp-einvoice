@@ -124,7 +124,7 @@ Deno.test("SuperPDPAdapter.downloadInvoice() - GET /invoices/{id}/download", asy
 
 // ── Format Conversion (native) ──────────────────────────
 
-Deno.test("SuperPDPAdapter.generateCII() - GET /invoices/generate_test_invoice", async () => {
+Deno.test("SuperPDPAdapter.generateCII() - POST /invoices/convert?from=en16931&to=cii", async () => {
   const { restore, captured } = mockFetch([
     { status: 200, body: "<cii:invoice/>", contentType: "application/xml" },
   ]);
@@ -133,10 +133,11 @@ Deno.test("SuperPDPAdapter.generateCII() - GET /invoices/generate_test_invoice",
     const adapter = makeAdapter();
     await adapter.generateCII({ invoice: { invoiceId: "F-001" }, flavor: "EN16931" });
 
-    assertEquals(captured[0].method, "GET");
+    assertEquals(captured[0].method, "POST");
     const url = new URL(captured[0].url);
-    assertEquals(url.pathname, "/v1.beta/invoices/generate_test_invoice");
-    assertEquals(url.searchParams.get("format"), "cii");
+    assertEquals(url.pathname, "/v1.beta/invoices/convert");
+    assertEquals(url.searchParams.get("from"), "en16931");
+    assertEquals(url.searchParams.get("to"), "cii");
   } finally {
     restore();
   }
