@@ -47,7 +47,27 @@ type SortDir = "asc" | "desc";
 
 function StatusCell({ value }: { value: string }) {
   const s = getStatus(value);
-  return <span style={styles.badge(s.color, s.bg)}>{s.label}</span>;
+  return (
+    <span
+      title={s.label}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 24,
+        height: 24,
+        borderRadius: 6,
+        background: s.bg,
+        color: s.color,
+        fontSize: 14,
+        fontWeight: 700,
+        cursor: "default",
+        lineHeight: 1,
+      }}
+    >
+      {s.icon}
+    </span>
+  );
 }
 
 function LoadingSkeleton() {
