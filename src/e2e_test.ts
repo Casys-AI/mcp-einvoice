@@ -16,7 +16,7 @@ import type { EInvoiceAdapter } from "./adapter.ts";
 import type { EInvoiceToolContext } from "./tools/types.ts";
 
 // Load .env from project root (best-effort)
-const envPath = new URL("../../.env", import.meta.url).pathname;
+const envPath = new URL("../.env", import.meta.url).pathname;
 try {
   const text = await Deno.readTextFile(envPath);
   for (const line of text.split("\n")) {

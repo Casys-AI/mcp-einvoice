@@ -67,7 +67,6 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     return await afnor.submitFlow(
       req.file,
       { flowSyntax: syntax, name: req.filename, processingRule: "B2B" },
-      "CustomerInvoice",
     );
   }
 
@@ -112,7 +111,7 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
 
   async downloadInvoice(id: string): Promise<DownloadResult> {
     const afnor = this.requireAfnor("downloadInvoice");
-    return await afnor.downloadFlow(id);
+    return await afnor.downloadFlow(id, "Original");
   }
 
   // ─── Status (AFNOR: lifecycle flows) ───────────────────
@@ -129,7 +128,6 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     return await afnor.submitFlow(
       new TextEncoder().encode(cdarPayload),
       { flowSyntax: "CDAR", name: `status-${req.invoiceId}.json`, processingRule: "B2B" },
-      "CustomerInvoiceLC",
     );
   }
 
@@ -157,7 +155,6 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     return await afnor.submitFlow(
       payload,
       { flowSyntax: "FRR", name: "report.json", processingRule: "B2C" },
-      "UnitaryCustomerTransactionReport",
     );
   }
 
@@ -167,7 +164,6 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     return await afnor.submitFlow(
       payload,
       { flowSyntax: "FRR", name: "report.json", processingRule: "B2C" },
-      "AggregatedCustomerTransactionReport",
     );
   }
 

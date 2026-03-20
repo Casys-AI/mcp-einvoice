@@ -1,8 +1,9 @@
 # CLAUDE.md — mcp-einvoice
 
 ## Project
-MCP server for French e-invoicing (Iopole adapter). Deno + TypeScript + React viewers.
-39 tools, 5 viewers (invoice, doclist, timeline, directory-card, action-result).
+MCP server for e-invoicing — PA-agnostic via the adapter pattern.
+3 adapters (Iopole, Storecove, Super PDP), 39 tools, 5 viewers, AFNOR base class.
+Deno + TypeScript + React viewers.
 
 ## Commands
 - `deno task serve` — HTTP mode on port 3015
@@ -19,43 +20,68 @@ MCP server for French e-invoicing (Iopole adapter). Deno + TypeScript + React vi
 - **GitButler merge conflict trap**: if >5 branches are applied, `but commit` fails with "Failed to merge bases". Fix: unapply old branches in the app, or `but teardown` → `git commit` → `git push` → `but setup`
 - **Database lock**: if `but` CLI says "database is locked", quit the GitButler desktop app first (it holds the SQLite lock)
 
+## Architecture
+- `EInvoiceAdapter` interface (43 methods, 8 typed returns) in `src/adapter.ts`
+- `AdapterMethodName` type ensures compile-time safety for capabilities
+- `AfnorBaseAdapter` (abstract) in `src/adapters/afnor/` — AFNOR XP Z12-013 socle for French PAs
+- `BaseHttpClient` in `src/adapters/shared/http-client.ts` — shared HTTP logic, subclasses provide auth
+- Shared: `errors.ts` (NotSupportedError, AdapterAPIError), `env.ts` (requireEnv), `encoding.ts` (uint8ToBase64), `oauth2.ts` (token provider)
+- Tools declare `requires: ["methodName"]` — only exposed when adapter supports them
+
+## Adapters
+| Adapter | Base | Tools | Auth |
+|---------|------|-------|------|
+| **Iopole** | AfnorBaseAdapter (afnor=null) | 39/39 | OAuth2 |
+| **Storecove** | EInvoiceAdapter (direct) | 21/39 | API key |
+| **Super PDP** | AfnorBaseAdapter (afnor=active) | 22/39 | OAuth2 |
+
+- Adding a French PA: extend `AfnorBaseAdapter`, override with native API
+- Adding a non-French platform: implement `EInvoiceAdapter` directly
+- Each adapter normalizes its native responses to typed return types (InvoiceDetail, SearchInvoicesResult, etc.)
+- Iopole-specific logic (Lucene wrapping, status enrichment N+1, invoice normalization) lives in IopoleAdapter, NOT in tools
+
 ## Iopole API
-- **Local API specs**: `src/adapters/api-specs/` — 6 OpenAPI JSON specs (operator-invoicing, operator-config, operator-reporting, operator-edi, platform, stats)
-- **Reference doc**: `src/adapters/README.md` — complete endpoint inventory, lifecycle, enums, sandbox behavior
+- **Local API specs**: `src/adapters/iopole/api-specs/` — 6 OpenAPI JSON specs
 - Sandbox API: api.ppd.iopole.fr/v1, Auth: auth.ppd.iopole.fr (NOT auth.iopole.com)
-- Factur-X generate returns binary PDF — use `postBinary()`, NOT `request()` (corrupts binary via text encoding)
-- Search valid Lucene fields: senderName, receiverName, invoiceId (NOT status, direction)
-- Search has `direction` and `status` params for server-side filtering (not Lucene)
-- Entities must be registered on DOMESTIC_FR network before invoices route (WRONG_ROUTING otherwise)
-- Enrollment requires both siret AND siren
-- Sandbox entities: BRASSILA NAPPUS (47846336700019), FABRICE ALFIER (79889661900011)
-- `getInvoice` returns NO state field — status enrichment via `Promise.all(getInvoice, getStatusHistory)`
-- INBOUND copies have no status history — fallback to row data from search
-- Sandbox has active webhook → `notSeen` always empty (PUSH mode). Disable webhook to test PULL.
-- `seen` field not exposed in search/getInvoice — opaque mechanism, only via `notSeen` endpoint
+- Factur-X generate returns binary PDF — use `postBinary()` in IopoleClient
+- Status enrichment: IopoleAdapter.searchInvoices does N+1 getStatusHistory (capped at 5 concurrent)
+- IopoleAdapter.getInvoice does parallel fetch (invoice + statusHistory)
+- `normalizeForIopole()` adds postalAddress, electronicAddress 0225 for generate
+
+## Super PDP API
+- **Local API specs**: `src/adapters/superpdp/api-specs/` — `superpdp.json` (v1.13.0.beta), `afnor-flow.json` (v1.2.0)
+- Sandbox API: api.superpdp.tech/v1.beta, Auth: api.superpdp.tech/oauth2/token
+- Invoice data lives in nested `en_invoice.*` (EN16931 model) — NOT flat fields
+- Status comes from `events[last].status_code` — NOT a top-level `status` field
+- Direction values: `"in"/"out"` (not "incoming"/"outgoing")
+- Use `expand[]=en_invoice&expand[]=events` on GET /invoices to get nested data
+- `sendStatus` body: `{ invoice_id: integer, status_code, details?: [{ reason?, amounts? }] }`
+- Directory entries: `{ directory: "ppf"|"peppol", identifier: "scheme:value" }`
+- `mapNetworkToDirectory()` maps `DOMESTIC_FR→ppf`, `PEPPOL_INTERNATIONAL→peppol`
+
+## Status Codes (CDAR)
+- Viewers use CDAR codes (PPF lifecycle, XP Z12-012)
+- `getStatus()` in `src/ui/shared/status.ts` resolves any format: CDAR numeric ("205"), prefixed ("fr:205"), Iopole ("APPROVED"), AFNOR ("Ok")
+- 4 obligatoires PPF: 200 (Déposée), 210 (Refusée), 212 (Encaissée), 213 (Rejetée)
+- Lifecycle transition guards: `canAcceptReject()`, `canSendPayment()`, `canReceivePayment()`
 
 ## Viewers (MCP Apps)
-- Viewers are React single-file HTML bundles in src/ui/dist/
+- React single-file HTML bundles in src/ui/dist/
 - After editing any TSX: must run `node build-all.mjs` AND rebuild dist
 - New viewers auto-discovered by build BUT must be registered in server.ts registerViewers()
-- callServerTool = for actions (result stays in current viewer) and drill-down (inline detail panel)
-- sendMessage = for navigation (triggers new conversation turn + new viewer in Claude Desktop)
-- callServerTool works in MCP Inspector, sendMessage does not
-- Status badges: use only real Iopole statuses (no legacy aliases, "submitted" not "deposited")
+- callServerTool = actions + drill-down, sendMessage = navigation (new conversation turn)
+- Status badges: use `getStatus(code)` from shared/status.ts — never hardcode colors
 - Doclist inline drill-down: chevron ▶, expandable panel, auto-detects invoice vs generic data
-- `consumeToolResult` guard: only consumes results with `data[]` or doclist markers (`_title`, `_rowAction`, `count`)
 
 ## Code Patterns
+- Tools are PA-agnostic — they consume typed returns (InvoiceDetail, SearchInvoicesResult, etc.)
 - Tool handlers return JSON with `_title` for doclist heading and `_rowAction` for drill-down
-- `normalizeInvoiceForGenerate()` adds EN16931 required fields (postalAddress, electronicAddress)
-- Use `mapToViewerPreview(inv)` with normalized invoice, not raw input
+- `mapToViewerPreview(inv)` is PA-agnostic — handles nested (Iopole-style), flat, or camelCase input
 - `Number(amount).toLocaleString("fr-FR")` — coerce to number before locale formatting
 - ActionButton `confirm` prop = double-click pattern for destructive actions
-- GENERATE_AX_HINT in tool descriptions guides LLM to check entities before generating
-- Status fallback in doclist drill-down: row["Statut"] used when getInvoice has no status
 
 ## Testing
-- E2E via deno eval: `import { EInvoiceToolsClient } from "./src/client.ts"`
+- E2E tests require IOPOLE_* env vars, skip gracefully without them
 - MCP Inspector: `deno task serve` + inspector on http://localhost:6274, connect Streamable HTTP to localhost:3015/mcp
-- Test harness: src/ui/dist/test-harness.html (deleted by builds, recreate if needed)
 - generated-store: 10min TTL, in-memory only, lost on restart
+- Mock adapter in `src/testing/helpers.ts` returns typed responses for all 8 typed methods

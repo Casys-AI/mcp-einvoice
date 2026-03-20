@@ -47,9 +47,9 @@ export interface FlowInfo {
 
 export interface FlowSearchFilters {
   flowType?: FlowType[];
-  flowDirection?: FlowDirection;
+  flowDirection?: FlowDirection[];
   processingRule?: ProcessingRule[];
-  ackStatus?: FlowAckStatus[];
+  ackStatus?: FlowAckStatus;
   trackingId?: string;
   updatedAfter?: string;
   updatedBefore?: string;
@@ -100,7 +100,6 @@ export class AfnorClient extends BaseHttpClient {
   async submitFlow(
     file: Uint8Array,
     flowInfo: FlowInfo,
-    flowType?: FlowType,
   ): Promise<unknown> {
     const url = new URL(`${this.config.baseUrl}/v1/flows`);
     const authHeaders = await this.getAuthHeaders();
@@ -112,10 +111,7 @@ export class AfnorClient extends BaseHttpClient {
 
     try {
       const form = new FormData();
-      form.append("flowInfo", JSON.stringify({
-        ...flowInfo,
-        ...(flowType ? { flowType } : {}),
-      }));
+      form.append("flowInfo", JSON.stringify(flowInfo));
       form.append("file", new Blob([file as BlobPart]), flowInfo.name ?? "invoice.xml");
 
       const response = await fetch(url.toString(), {

@@ -24,7 +24,6 @@ import type {
   DirectoryFrSearchFilters,
   SendStatusRequest,
   GenerateInvoiceRequest,
-  GenerateFacturXRequest,
 } from "../../adapter.ts";
 import { SuperPDPClient } from "./client.ts";
 import { createOAuth2TokenProvider } from "../shared/oauth2.ts";
@@ -71,24 +70,26 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+    const direction = (filters.q === "in" || filters.q === "out") ? filters.q : undefined;
+    // expand[] embedded in path (BaseHttpClient.get query only supports single values per key)
     // deno-lint-ignore no-explicit-any
-    const raw = await this.client.get("/invoices", {
-      direction: filters.q,  // Super PDP uses direction param, not Lucene
-      limit: filters.limit,
+    const raw = await this.client.get("/invoices?expand[]=en_invoice&expand[]=events", {
+      ...(direction ? { direction } : {}),
+      ...(filters.limit ? { limit: filters.limit } : {}),
       ...(filters.offset ? { starting_after_id: String(filters.offset) } : {}),
     }) as any;
     const data = Array.isArray(raw) ? raw : (raw?.data ?? []);
     // deno-lint-ignore no-explicit-any
     const rows = data.map((inv: any) => ({
-      id: inv.id ?? "",
-      invoiceNumber: inv.invoice_id ?? inv.external_id,
-      status: inv.status,
-      direction: (inv.direction === "incoming" ? "received" : "sent") as "received" | "sent",
-      senderName: inv.sender?.name,
-      receiverName: inv.receiver?.name,
-      date: inv.issue_date,
-      amount: inv.total_amount,
-      currency: inv.currency ?? "EUR",
+      id: String(inv.id ?? ""),
+      invoiceNumber: inv.en_invoice?.number ?? inv.external_id,
+      status: lastEventCode(inv.events),
+      direction: mapDirection(inv.direction) as "received" | "sent",
+      senderName: inv.en_invoice?.seller?.name,
+      receiverName: inv.en_invoice?.buyer?.name,
+      date: inv.en_invoice?.issue_date,
+      amount: inv.en_invoice?.totals?.amount_due_for_payment,
+      currency: inv.en_invoice?.currency_code ?? "EUR",
     }));
     return { rows, count: raw?.count ?? rows.length };
   }
@@ -96,19 +97,19 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   override async getInvoice(id: string): Promise<InvoiceDetail> {
     // deno-lint-ignore no-explicit-any
     const inv = await this.client.get(`/invoices/${id}`) as any;
+    const en = inv.en_invoice;
     return {
-      id: inv.id ?? id,
-      invoiceNumber: inv.invoice_id ?? inv.external_id,
-      status: inv.status,
-      direction: inv.direction === "incoming" ? "received" : inv.direction === "outgoing" ? "sent" : undefined,
-      senderName: inv.sender?.name,
-      senderId: inv.sender?.siret,
-      receiverName: inv.receiver?.name,
-      receiverId: inv.receiver?.siret,
-      issueDate: inv.issue_date,
-      dueDate: inv.due_date,
-      currency: inv.currency ?? "EUR",
-      totalTtc: inv.total_amount,
+      id: String(inv.id ?? id),
+      invoiceNumber: en?.number ?? inv.external_id,
+      status: lastEventCode(inv.events),
+      direction: mapDirection(inv.direction),
+      senderName: en?.seller?.name,
+      receiverName: en?.buyer?.name,
+      issueDate: en?.issue_date,
+      dueDate: en?.due_date,
+      currency: en?.currency_code ?? "EUR",
+      totalHt: en?.totals?.tax_exclusive_amount,
+      totalTtc: en?.totals?.tax_inclusive_amount,
     };
   }
 
@@ -119,27 +120,32 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   // ─── Format Conversion (native) ───────────────────────
 
   override async generateCII(req: GenerateInvoiceRequest): Promise<string> {
-    // SuperPDP convert: from=en16931 (JSON) → to=cii (XML)
     const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
     return await this.client.convert(payload, "en16931", "cii");
   }
 
   override async generateUBL(req: GenerateInvoiceRequest): Promise<string> {
-    // SuperPDP convert: from=en16931 (JSON) → to=ubl (XML)
     const payload = new TextEncoder().encode(JSON.stringify(req.invoice));
     return await this.client.convert(payload, "en16931", "ubl");
   }
 
-  // generateFacturX not in capabilities — SuperPDP says "output in the future"
-
   // ─── Status / Events (native) ─────────────────────────
 
   override async sendStatus(req: SendStatusRequest): Promise<unknown> {
+    // Spec: { invoice_id: integer, status_code, details?: invoice_event_detail[] }
+    // invoice_event_detail = { reason?: string, amounts?: invoice_event_amount[] }
+    const details: Record<string, unknown>[] = [];
+    if (req.message) {
+      details.push({ reason: req.message });
+    }
+    if (req.payment) {
+      const amounts = Array.isArray(req.payment.amounts) ? req.payment.amounts : [req.payment];
+      details.push({ amounts });
+    }
     return await this.client.post("/invoice_events", {
-      invoice_id: req.invoiceId,
+      invoice_id: toInvoiceId(req.invoiceId),
       status_code: req.code,
-      ...(req.message ? { message: req.message } : {}),
-      ...(req.payment ? { payment: req.payment } : {}),
+      ...(details.length > 0 ? { details } : {}),
     });
   }
 
@@ -200,18 +206,18 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     return await this.client.post("/directory_entries", data);
   }
 
-  override async registerNetwork(_identifierId: string, _network: string): Promise<unknown> {
-    // In Super PDP, registration is implicit via directory entry creation
+  override async registerNetwork(identifierId: string, network: string): Promise<unknown> {
+    // Spec: { directory: "peppol"|"ppf", identifier: "scheme:value" }
     return await this.client.post("/directory_entries", {
-      identifier_id: _identifierId,
-      network: _network,
+      directory: mapNetworkToDirectory(network),
+      identifier: identifierId,
     });
   }
 
-  override async registerNetworkByScheme(scheme: string, value: string, _network: string): Promise<unknown> {
+  override async registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown> {
     return await this.client.post("/directory_entries", {
-      scheme,
-      value,
+      directory: mapNetworkToDirectory(network),
+      identifier: `${scheme}:${value}`,
     });
   }
 
@@ -222,11 +228,18 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   // ─── Identifier Management (native via directory) ─────
 
   override async createIdentifier(_entityId: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post("/directory_entries", data);
+    // Spec: { directory: "peppol"|"ppf", identifier: "scheme:value" }
+    return await this.client.post("/directory_entries", {
+      directory: data.directory ?? "ppf",
+      identifier: data.identifier,
+    });
   }
 
-  override async createIdentifierByScheme(_scheme: string, _value: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post("/directory_entries", data);
+  override async createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
+    return await this.client.post("/directory_entries", {
+      directory: data.directory ?? "ppf",
+      identifier: `${scheme}:${value}`,
+    });
   }
 
   override async deleteIdentifier(identifierId: string): Promise<unknown> {
@@ -240,6 +253,40 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   // listBusinessEntities, createLegalUnit, deleteBusinessEntity,
   // configureBusinessEntity, claimBusinessEntity, claimBusinessEntityByIdentifier,
   // enrollInternational, searchDirectoryInt, checkPeppolParticipant, deleteClaim
+}
+
+// ─── Helpers ─────────────────────────────────────────
+
+/** Extract status_code from the last event in the array, or undefined. */
+// deno-lint-ignore no-explicit-any
+function lastEventCode(events: any[] | undefined): string | undefined {
+  if (!events?.length) return undefined;
+  return events[events.length - 1].status_code;
+}
+
+/** Map SuperPDP direction ("in"/"out") to adapter direction ("received"/"sent"). */
+function mapDirection(dir: string | undefined): "received" | "sent" | undefined {
+  if (dir === "in") return "received";
+  if (dir === "out") return "sent";
+  return undefined;
+}
+
+/** Map adapter network names to SuperPDP directory values. */
+function mapNetworkToDirectory(network: string): "ppf" | "peppol" {
+  if (network === "DOMESTIC_FR" || network === "ppf") return "ppf";
+  if (network === "PEPPOL_INTERNATIONAL" || network === "peppol") return "peppol";
+  throw new Error(
+    `[SuperPDP] Unknown network "${network}". Supported: "DOMESTIC_FR"/"ppf", "PEPPOL_INTERNATIONAL"/"peppol".`,
+  );
+}
+
+/** Parse invoiceId string to integer, fail-fast on non-numeric values. */
+function toInvoiceId(id: string): number {
+  const n = Number(id);
+  if (!Number.isFinite(n)) {
+    throw new Error(`[SuperPDP] invoice_id must be numeric, got "${id}".`);
+  }
+  return n;
 }
 
 // ─── Factory ──────────────────────────────────────────
