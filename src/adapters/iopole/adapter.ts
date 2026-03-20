@@ -36,6 +36,7 @@ import type {
 } from "../../adapter.ts";
 import { IopoleClient, createOAuth2TokenProvider } from "./client.ts";
 import { requireEnv } from "../shared/env.ts";
+import { encodePathSegment } from "../shared/encoding.ts";
 import { env } from "../../runtime.ts";
 
 const IOPOLE_DEFAULT_AUTH_URL =
@@ -131,7 +132,7 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   override async getInvoice(id: string): Promise<InvoiceDetail> {
     // Fetch invoice + status history in parallel (Iopole getInvoice has no state field)
     const [raw, history] = await Promise.all([
-      this.client.get(`/invoice/${id}`, { expand: "businessData" }),
+      this.client.get(`/invoice/${encodePathSegment(id)}`, { expand: "businessData" }),
       this.getStatusHistory(id).catch(() => ({ entries: [] })),
     ]);
     // deno-lint-ignore no-explicit-any
@@ -178,27 +179,27 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async downloadInvoice(id: string): Promise<DownloadResult> {
-    return await this.client.download(`/invoice/${id}/download`);
+    return await this.client.download(`/invoice/${encodePathSegment(id)}/download`);
   }
 
   override async downloadReadable(id: string): Promise<DownloadResult> {
-    return await this.client.download(`/invoice/${id}/download/readable`);
+    return await this.client.download(`/invoice/${encodePathSegment(id)}/download/readable`);
   }
 
   override async getInvoiceFiles(id: string): Promise<unknown> {
-    return await this.client.get(`/invoice/${id}/files`);
+    return await this.client.get(`/invoice/${encodePathSegment(id)}/files`);
   }
 
   override async getAttachments(id: string): Promise<unknown> {
-    return await this.client.get(`/invoice/${id}/files/attachments`);
+    return await this.client.get(`/invoice/${encodePathSegment(id)}/files/attachments`);
   }
 
   override async downloadFile(fileId: string): Promise<DownloadResult> {
-    return await this.client.download(`/invoice/file/${fileId}/download`);
+    return await this.client.download(`/invoice/file/${encodePathSegment(fileId)}/download`);
   }
 
   override async markInvoiceSeen(id: string): Promise<unknown> {
-    return await this.client.put(`/invoice/${id}/markAsSeen`);
+    return await this.client.put(`/invoice/${encodePathSegment(id)}/markAsSeen`);
   }
 
   override async getUnseenInvoices(pagination: PaginatedRequest): Promise<unknown> {
@@ -266,14 +267,16 @@ export class IopoleAdapter extends AfnorBaseAdapter {
 
   override async checkPeppolParticipant(scheme: string, value: string): Promise<unknown> {
     return await this.client.get(
-      `/directory/international/check/scheme/${scheme}/value/${value}`,
+      `/directory/international/check/scheme/${encodePathSegment(scheme)}/value/${
+        encodePathSegment(value)
+      }`,
     );
   }
 
   // ─── Status ───────────────────────────────────────────
 
   override async sendStatus(req: SendStatusRequest): Promise<unknown> {
-    return await this.client.post(`/invoice/${req.invoiceId}/status`, {
+    return await this.client.post(`/invoice/${encodePathSegment(req.invoiceId)}/status`, {
       code: req.code,
       message: req.message,
       payment: req.payment,
@@ -281,7 +284,7 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
-    const raw = await this.client.get(`/invoice/${invoiceId}/status-history`);
+    const raw = await this.client.get(`/invoice/${encodePathSegment(invoiceId)}/status-history`);
     return normalizeStatusHistory(raw);
   }
 
@@ -293,7 +296,7 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async markStatusSeen(statusId: string): Promise<unknown> {
-    return await this.client.put(`/invoice/status/${statusId}/markAsSeen`);
+    return await this.client.put(`/invoice/status/${encodePathSegment(statusId)}/markAsSeen`);
   }
 
   // ─── Reporting ────────────────────────────────────────
@@ -303,7 +306,10 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post(`/reporting/fr/transaction/${businessEntityId}`, transaction);
+    return await this.client.post(
+      `/reporting/fr/transaction/${encodePathSegment(businessEntityId)}`,
+      transaction,
+    );
   }
 
   // ─── Webhooks ─────────────────────────────────────────
@@ -313,7 +319,7 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async getWebhook(id: string): Promise<unknown> {
-    return await this.client.get(`/config/webhook/${id}`);
+    return await this.client.get(`/config/webhook/${encodePathSegment(id)}`);
   }
 
   override async createWebhook(req: CreateWebhookRequest): Promise<unknown> {
@@ -321,11 +327,11 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async updateWebhook(id: string, req: UpdateWebhookRequest): Promise<unknown> {
-    return await this.client.put(`/config/webhook/${id}`, req);
+    return await this.client.put(`/config/webhook/${encodePathSegment(id)}`, req);
   }
 
   override async deleteWebhook(id: string): Promise<unknown> {
-    return await this.client.delete(`/config/webhook/${id}`);
+    return await this.client.delete(`/config/webhook/${encodePathSegment(id)}`);
   }
 
   // ─── Operator Config ───────────────────────────────────
@@ -355,7 +361,7 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async getBusinessEntity(id: string): Promise<unknown> {
-    return await this.client.get(`/config/business/entity/${id}`);
+    return await this.client.get(`/config/business/entity/${encodePathSegment(id)}`);
   }
 
   override async createLegalUnit(data: Record<string, unknown>): Promise<unknown> {
@@ -367,19 +373,24 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async deleteBusinessEntity(id: string): Promise<unknown> {
-    return await this.client.delete(`/config/business/entity/${id}`);
+    return await this.client.delete(`/config/business/entity/${encodePathSegment(id)}`);
   }
 
   override async configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post(`/config/business/entity/${id}/configure`, data);
+    return await this.client.post(`/config/business/entity/${encodePathSegment(id)}/configure`, data);
   }
 
   override async claimBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post(`/config/business/entity/${id}/claim`, data);
+    return await this.client.post(`/config/business/entity/${encodePathSegment(id)}/claim`, data);
   }
 
   override async claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post(`/config/business/entity/scheme/${scheme}/value/${value}/claim`, data);
+    return await this.client.post(
+      `/config/business/entity/scheme/${encodePathSegment(scheme)}/value/${
+        encodePathSegment(value)
+      }/claim`,
+      data,
+    );
   }
 
   override async enrollFrench(data: Record<string, unknown>): Promise<unknown> {
@@ -391,35 +402,50 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async registerNetwork(identifierId: string, network: string): Promise<unknown> {
-    return await this.client.post(`/config/business/entity/identifier/${identifierId}/network/${network}`);
+    return await this.client.post(
+      `/config/business/entity/identifier/${encodePathSegment(identifierId)}/network/${
+        encodePathSegment(network)
+      }`,
+    );
   }
 
   override async registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown> {
-    return await this.client.post(`/config/business/entity/identifier/scheme/${scheme}/value/${value}/network/${network}`);
+    return await this.client.post(
+      `/config/business/entity/identifier/scheme/${encodePathSegment(scheme)}/value/${
+        encodePathSegment(value)
+      }/network/${encodePathSegment(network)}`,
+    );
   }
 
   override async unregisterNetwork(directoryId: string): Promise<unknown> {
-    return await this.client.delete(`/config/business/entity/identifier/directory/${directoryId}`);
+    return await this.client.delete(
+      `/config/business/entity/identifier/directory/${encodePathSegment(directoryId)}`,
+    );
   }
 
   // ─── Identifier Management ───────────────────────────────
 
   override async createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post(`/config/business/entity/${entityId}/identifier`, data);
+    return await this.client.post(`/config/business/entity/${encodePathSegment(entityId)}/identifier`, data);
   }
 
   override async createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post(`/config/business/entity/scheme/${scheme}/value/${value}/identifier`, data);
+    return await this.client.post(
+      `/config/business/entity/scheme/${encodePathSegment(scheme)}/value/${
+        encodePathSegment(value)
+      }/identifier`,
+      data,
+    );
   }
 
   override async deleteIdentifier(identifierId: string): Promise<unknown> {
-    return await this.client.delete(`/config/business/entity/identifier/${identifierId}`);
+    return await this.client.delete(`/config/business/entity/identifier/${encodePathSegment(identifierId)}`);
   }
 
   // ─── Claim Management ────────────────────────────────────
 
   override async deleteClaim(entityId: string): Promise<unknown> {
-    return await this.client.delete(`/config/business/entity/${entityId}/claim`);
+    return await this.client.delete(`/config/business/entity/${encodePathSegment(entityId)}/claim`);
   }
 }
 

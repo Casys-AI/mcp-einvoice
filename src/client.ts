@@ -15,7 +15,7 @@ import {
   toolsByCategory,
 } from "./tools/mod.ts";
 import type { EInvoiceTool, EInvoiceToolCategory, JSONSchema, MCPToolWireFormat } from "./tools/types.ts";
-import type { EInvoiceAdapter, AdapterMethodName } from "./adapter.ts";
+import type { EInvoiceAdapter } from "./adapter.ts";
 
 // Re-export from tools
 export {
@@ -61,7 +61,7 @@ export class EInvoiceToolsClient {
   /** Filter tools to only those supported by the given adapter's capabilities. */
   private supportedTools(adapter: EInvoiceAdapter): EInvoiceTool[] {
     return this.tools.filter((t) =>
-      !t.requires || t.requires.every((m) => adapter.capabilities.has(m as AdapterMethodName))
+      !t.requires || t.requires.every((m) => adapter.capabilities.has(m))
     );
   }
 

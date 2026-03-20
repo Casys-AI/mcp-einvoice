@@ -283,7 +283,10 @@ export class StorecoveAdapter implements EInvoiceAdapter {
   // ─── Webhooks ─────────────────────────────────────────
 
   async listWebhooks(): Promise<unknown> {
-    return await this.client.get("/webhook_instances/");
+    throw new NotSupportedError("storecove",
+      "listWebhooks",
+      "Storecove /webhook_instances is a pull queue, not webhook config CRUD.",
+    );
   }
 
   async getWebhook(_id: string): Promise<unknown> {
@@ -308,8 +311,11 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async deleteWebhook(id: string): Promise<unknown> {
-    return await this.client.delete(`/webhook_instances/${id}`);
+  async deleteWebhook(_id: string): Promise<unknown> {
+    throw new NotSupportedError("storecove",
+      "deleteWebhook",
+      "Storecove /webhook_instances is a pull queue, not webhook config CRUD.",
+    );
   }
 
   // ─── Operator Config ───────────────────────────────────
@@ -333,15 +339,11 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     return await this.client.get(`/legal_entities/${id}`);
   }
 
-  async createLegalUnit(data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post("/legal_entities", {
-      party_name: data.name,
-      line1: data.address ?? "",
-      city: data.city ?? "",
-      zip: data.zip ?? "",
-      country: data.country ?? "FR",
-      ...(data.siren ? { tax_registered: true } : {}),
-    });
+  async createLegalUnit(_data: Record<string, unknown>): Promise<unknown> {
+    throw new NotSupportedError("storecove",
+      "createLegalUnit",
+      "Storecove requires address fields (line1, city, zip) not collected by the generic tool schema. Implement normalizeForStorecove when ready.",
+    );
   }
 
   async createOffice(_data: Record<string, unknown>): Promise<unknown> {
@@ -355,8 +357,11 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     return await this.client.delete(`/legal_entities/${id}`);
   }
 
-  async configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.patch(`/legal_entities/${id}`, data);
+  async configureBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
+    throw new NotSupportedError("storecove",
+      "configureBusinessEntity",
+      "Storecove PATCH /legal_entities uses a different model than the generic tool schema.",
+    );
   }
 
   async claimBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
@@ -447,21 +452,15 @@ export class StorecoveAdapter implements EInvoiceAdapter {
     );
   }
 
-  async createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
-    // Need to resolve entity ID from scheme/value — Storecove doesn't support this directly
-    // Use the data.legalEntityId if provided
-    const entityId = data.legalEntityId as string;
-    if (!entityId) {
-      throw new Error(
-        "[StorecoveAdapter] createIdentifierByScheme requires data.legalEntityId " +
-        "(Storecove cannot look up entities by scheme/value)",
-      );
-    }
-    return await this.createIdentifier(entityId, {
-      ...data,
-      scheme: data.newScheme ?? scheme,
-      value: data.newValue ?? value,
-    });
+  async createIdentifierByScheme(
+    _scheme: string,
+    _value: string,
+    _data: Record<string, unknown>,
+  ): Promise<unknown> {
+    throw new NotSupportedError("storecove",
+      "createIdentifierByScheme",
+      "Storecove cannot look up entities by scheme/value — requires legalEntityId. Implement when tool schema supports it.",
+    );
   }
 
   async deleteIdentifier(identifierId: string): Promise<unknown> {

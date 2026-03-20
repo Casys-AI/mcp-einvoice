@@ -7,7 +7,7 @@
  * @module lib/einvoice/src/tools/types
  */
 
-import type { EInvoiceAdapter } from "../adapter.ts";
+import type { AdapterMethodName, EInvoiceAdapter } from "../adapter.ts";
 
 /** Available tool categories */
 export type EInvoiceToolCategory =
@@ -51,7 +51,7 @@ export interface EInvoiceTool {
   _meta?: { ui: { resourceUri: string } };
   /** Adapter method names this tool requires. Tool is hidden when the
    *  active adapter doesn't support all listed methods. */
-  requires?: string[];
+  requires?: readonly AdapterMethodName[];
   /** Execute the tool and return a JSON-serializable result */
   handler: (
     input: Record<string, unknown>,

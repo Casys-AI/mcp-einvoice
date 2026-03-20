@@ -12,3 +12,8 @@ export function uint8ToBase64(data: Uint8Array): string {
   }
   return btoa(binary);
 }
+
+/** Encode a single URL path segment so user input cannot alter path structure. */
+export function encodePathSegment(s: string): string {
+  return encodeURIComponent(s);
+}

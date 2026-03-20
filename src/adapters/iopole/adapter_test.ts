@@ -334,11 +334,11 @@ Deno.test("IopoleAdapter.checkPeppolParticipant() - GET /directory/international
 
   try {
     const adapter = makeAdapter();
-    await adapter.checkPeppolParticipant("iso6523-actorid-upis", "0208:FR123");
+    await adapter.checkPeppolParticipant("iso6523-actorid-upis", "0208:FR/123");
 
     assertEquals(
       new URL(captured[0].url).pathname,
-      "/v1/directory/international/check/scheme/iso6523-actorid-upis/value/0208:FR123",
+      "/v1/directory/international/check/scheme/iso6523-actorid-upis/value/0208%3AFR%2F123",
     );
   } finally {
     restore();
