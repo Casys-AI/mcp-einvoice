@@ -49,7 +49,7 @@ const IOPOLE_DEFAULT_AUTH_URL =
  */
 export class IopoleAdapter extends AfnorBaseAdapter {
   readonly name = "iopole";
-  readonly capabilities = new Set<AdapterMethodName>([
+  readonly capabilities: Set<AdapterMethodName> = new Set<AdapterMethodName>([
     "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
     "downloadReadable", "getInvoiceFiles", "getAttachments", "downloadFile",
     "markInvoiceSeen", "getUnseenInvoices", "generateCII", "generateUBL", "generateFacturX",
@@ -464,6 +464,24 @@ function normalizeForIopole(inv: any): Record<string, unknown> {
     normalized.paymentTerms = normalized.paymentTerms
       .map((t: Record<string, unknown>) => t.description ?? t)
       .join("; ");
+  }
+
+  // Auto-fill monetary.payableAmount from invoiceAmount when absent (now required by Iopole API)
+  if (normalized.monetary && !normalized.monetary.payableAmount) {
+    normalized.monetary = {
+      ...normalized.monetary,
+      payableAmount: normalized.monetary.invoiceAmount ?? normalized.monetary.payableAmount,
+    };
+  }
+
+  // Auto-fill lines[].taxDetail.categoryCode when absent (now required by Iopole API)
+  if (Array.isArray(normalized.lines)) {
+    normalized.lines = normalized.lines.map((line: any) => {
+      if (line.taxDetail && !line.taxDetail.categoryCode) {
+        return { ...line, taxDetail: { ...line.taxDetail, categoryCode: "S" } };
+      }
+      return line;
+    });
   }
 
   return normalized;

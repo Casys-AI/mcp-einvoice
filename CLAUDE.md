@@ -46,7 +46,7 @@ Deno + TypeScript + React viewers.
 - Factur-X generate returns binary PDF — use `postBinary()` in IopoleClient
 - Status enrichment: IopoleAdapter.searchInvoices does N+1 getStatusHistory (capped at 5 concurrent)
 - IopoleAdapter.getInvoice does parallel fetch (invoice + statusHistory)
-- `normalizeForIopole()` adds postalAddress, electronicAddress 0225 for generate
+- `normalizeForIopole()` auto-fills: postalAddress, electronicAddress 0225, payableAmount (from invoiceAmount), lines[].taxDetail.categoryCode ("S" default)
 
 ## Super PDP API
 - **Local API specs**: `src/adapters/superpdp/api-specs/` — `superpdp.json` (v1.13.0.beta), `afnor-flow.json` (v1.2.0)

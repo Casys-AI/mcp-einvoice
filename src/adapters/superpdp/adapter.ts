@@ -41,7 +41,7 @@ import { env } from "../../runtime.ts";
 export class SuperPDPAdapter extends AfnorBaseAdapter {
   readonly name = "superpdp";
 
-  readonly capabilities = new Set<AdapterMethodName>([
+  readonly capabilities: Set<AdapterMethodName> = new Set<AdapterMethodName>([
     // Native overrides
     "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
     "generateCII", "generateUBL",
