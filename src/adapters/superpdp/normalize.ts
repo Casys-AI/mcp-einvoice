@@ -87,6 +87,9 @@ function normalizeParty(party: any, requireElectronicAddress: boolean): any {
   return p;
 }
 
+/** Source fields consumed by normalizeTotals — cleaned up to avoid empty XML elements. */
+const TOTALS_SOURCE_FIELDS = ["line_extension_amount", "lineTotalAmount", "tax_exclusive_amount", "taxBasisTotalAmount", "tax_inclusive_amount", "grandTotalAmount", "payableAmount"];
+
 /** Normalize totals field names to SuperPDP EN16931 format. */
 function normalizeTotals(totals: any): any {
   if (!totals || typeof totals !== "object") return totals;
@@ -96,7 +99,7 @@ function normalizeTotals(totals: any): any {
   setIfAbsent(t, "sum_invoice_lines_amount", t.line_extension_amount ?? t.lineTotalAmount);
   setIfAbsent(t, "total_without_vat", t.tax_exclusive_amount ?? t.taxBasisTotalAmount);
   setIfAbsent(t, "total_with_vat", t.tax_inclusive_amount ?? t.grandTotalAmount);
-  setIfAbsent(t, "amount_due_for_payment", t.amount_due_for_payment ?? t.payableAmount);
+  setIfAbsent(t, "amount_due_for_payment", t.payableAmount);
 
   // Convert simple amounts to decimal strings
   for (const key of ["sum_invoice_lines_amount", "total_without_vat", "total_with_vat", "amount_due_for_payment"]) {
@@ -113,6 +116,9 @@ function normalizeTotals(totals: any): any {
   for (const f of TOTALS_SOURCE_FIELDS) delete t[f];
   return t;
 }
+
+/** Source fields consumed by normalizeVatBreakdown — cleaned up to avoid empty XML elements. */
+const VAT_SOURCE_FIELDS = ["category_code", "categoryCode", "rate", "percent", "vat_rate", "taxable_amount", "taxableAmount", "tax_amount", "taxAmount"];
 
 /** Normalize a single VAT breakdown entry. */
 function normalizeVatBreakdown(vat: any): any {
@@ -133,9 +139,8 @@ function normalizeVatBreakdown(vat: any): any {
   return v;
 }
 
+/** Source fields consumed by normalizeLine — cleaned up to avoid empty XML elements. */
 const LINE_SOURCE_FIELDS = ["id", "name", "item_name", "description", "quantity", "billed_quantity", "unit_code", "unitCode", "net_price", "price", "unit_price", "unitPrice", "line_amount", "line_total_amount", "line_net_amount", "amount", "totalAmount", "tax_category", "vat_category_code", "line_vat_category_code", "vatCategoryCode", "tax_percent", "vat_rate", "line_vat_rate", "vatRate"];
-const VAT_SOURCE_FIELDS = ["category_code", "categoryCode", "rate", "percent", "vat_rate", "taxable_amount", "taxableAmount", "tax_amount", "taxAmount"];
-const TOTALS_SOURCE_FIELDS = ["line_extension_amount", "lineTotalAmount", "tax_exclusive_amount", "taxBasisTotalAmount", "tax_inclusive_amount", "grandTotalAmount", "payableAmount"];
 
 /** Normalize a single invoice line. */
 function normalizeLine(line: any): any {
@@ -205,7 +210,10 @@ export function normalizeForSuperPDP(inv: Record<string, unknown>): Record<strin
     const due = n.due_date ?? n.dueDate ?? n.invoiceDueDate;
     if (due) n.payment_due_date = String(due);
   }
-  delete n.due_date; delete n.dueDate; delete n.invoiceDueDate;
+  for (const f of ["due_date", "dueDate", "invoiceDueDate"]) delete n[f];
+
+  // Save buyer SIRET before normalizeParty deletes source fields (needed for BR-FR-12)
+  const buyerSiret = n.buyer?.siret ?? n.buyer?.siretNumber;
 
   // Normalize parties
   if (n.seller) n.seller = normalizeParty(n.seller, true);
@@ -214,10 +222,15 @@ export function normalizeForSuperPDP(inv: Record<string, unknown>): Record<strin
   // Normalize totals
   if (n.totals) n.totals = normalizeTotals(n.totals);
 
-  // Normalize VAT breakdown
-  const vatKey = n.vat_break_down ? "vat_break_down" : (n.taxDetails ? "taxDetails" : (n.vatBreakdown ? "vatBreakdown" : null));
-  if (vatKey && Array.isArray(n[vatKey])) {
-    n.vat_break_down = n[vatKey].map(normalizeVatBreakdown);
+  // Normalize VAT breakdown — accept multiple key aliases
+  let vatSource: unknown[] | undefined;
+  if (Array.isArray(n.vat_break_down)) vatSource = n.vat_break_down;
+  else if (Array.isArray(n.taxDetails)) vatSource = n.taxDetails;
+  else if (Array.isArray(n.vatBreakdown)) vatSource = n.vatBreakdown;
+  if (vatSource) {
+    n.vat_break_down = vatSource.map(normalizeVatBreakdown);
+    delete n.taxDetails;
+    delete n.vatBreakdown;
   }
 
   // Normalize lines
@@ -265,8 +278,8 @@ export function normalizeForSuperPDP(inv: Record<string, unknown>): Record<strin
 
   // BR-FR-12: buyer electronic_address (BT-49) is mandatory in France
   if (n.buyer && !n.buyer.electronic_address) {
-    const buyerSiret = n.buyer.siret ?? n.buyer.siretNumber ?? n.buyer.legal_registration_identifier?.value;
-    n.buyer.electronic_address = { scheme: "0009", value: buyerSiret ?? "0000000000000" };
+    const siret = buyerSiret ?? n.buyer.legal_registration_identifier?.value;
+    n.buyer.electronic_address = { scheme: "0009", value: siret ?? "0000000000000" };
   }
 
   return n;

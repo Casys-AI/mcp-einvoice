@@ -53,24 +53,27 @@ export const directoryTools: EInvoiceTool[] = [
       });
 
       return {
-        data: rows.map((r) => ({
-          _id: r.entityId,
-          _detail: {
-            name: r.name,
-            type: r.type ? (ENTITY_TYPE_LABELS[r.type] ?? r.type) : undefined,
-            siren: r.siren,
-            siret: r.siret,
-            country: r.country,
-            directory: r.directory,
-            status: r.status,
-            createdAt: r.createdAt,
-            identifiers: r.identifiers,
-          },
-          "Nom": r.name ?? "—",
-          "Type": r.type ? (ENTITY_TYPE_LABELS[r.type] ?? r.type) : "—",
-          "SIRET": r.siret ?? "—",
-          "Pays": r.country ?? "—",
-        })),
+        data: rows.map((r) => {
+          const typeLabel = r.type ? (ENTITY_TYPE_LABELS[r.type] ?? r.type) : undefined;
+          return {
+            _id: r.entityId,
+            _detail: {
+              name: r.name,
+              type: typeLabel,
+              siren: r.siren,
+              siret: r.siret,
+              country: r.country,
+              directory: r.directory,
+              status: r.status,
+              createdAt: r.createdAt,
+              identifiers: r.identifiers,
+            },
+            "Nom": r.name ?? "—",
+            "Type": typeLabel ?? "—",
+            "SIRET": r.siret ?? "—",
+            "Pays": r.country ?? "—",
+          };
+        }),
         count,
         _title: "Annuaire français",
       };

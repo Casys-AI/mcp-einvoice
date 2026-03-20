@@ -58,6 +58,10 @@ Deno + TypeScript + React viewers.
 - `sendStatus` body: `{ invoice_id: integer, status_code, details?: [{ reason?, amounts? }] }`
 - Directory entries: `{ directory: "ppf"|"peppol", identifier: "scheme:value" }`
 - `mapNetworkToDirectory()` maps `DOMESTIC_FR→ppf`, `PEPPOL_INTERNATIONAL→peppol`
+- `normalizeForSuperPDP()` in `normalize.ts` — maps intuitive field names to EN16931 (same pattern as `normalizeForIopole()`)
+- EN16931 quirks: `credit_transfers` (plural), `delivery_date` (not actual_delivery_date), `total_vat_amount` is `{ value, currency_code }` (not string)
+- IBAN: `payment_account_identifier.scheme` must be `""` (empty string) — any other value breaks CII conversion
+- FR mandatory: BR-FR-05 requires 3 notes (PMT/PMD/AAB), BR-FR-12 requires buyer `electronic_address`
 
 ## Status Codes (CDAR)
 - Viewers use CDAR codes (PPF lifecycle, XP Z12-012)
@@ -72,16 +76,21 @@ Deno + TypeScript + React viewers.
 - callServerTool = actions + drill-down, sendMessage = navigation (new conversation turn)
 - Status badges: use `getStatus(code)` from shared/status.ts — never hardcode colors
 - Doclist inline drill-down: chevron ▶, expandable panel, auto-detects invoice vs generic data
+- Doclist local expand: `_detail` in row data → inline expand without tool call (used by directory search)
+- `_rowAction` = remote expand (calls tool), `_detail` = local expand (data already in row)
+- CSS `border-radius` on iframe: apply `overflow: hidden` to `html` only — NOT `body` (kills scroll)
 
 ## Code Patterns
 - Tools are PA-agnostic — they consume typed returns (InvoiceDetail, SearchInvoicesResult, etc.)
 - Tool handlers return JSON with `_title` for doclist heading and `_rowAction` for drill-down
+- `_detail` in row data = local drill-down data (no tool call needed, doclist-viewer expands inline)
 - `mapToViewerPreview(inv)` is PA-agnostic — handles nested (Iopole-style), flat, or camelCase input
 - `Number(amount).toLocaleString("fr-FR")` — coerce to number before locale formatting
 - ActionButton `confirm` prop = double-click pattern for destructive actions
 
 ## Testing
-- E2E tests require IOPOLE_* env vars, skip gracefully without them
+- E2E tests per adapter: `e2e_test.ts` (Iopole), `e2e_superpdp_test.ts` (SuperPDP) — both skip without env vars
+- `.env` at project root (gitignored) loads credentials for E2E — same vars as Claude Desktop config
 - MCP Inspector: `deno task serve` + inspector on http://localhost:6274, connect Streamable HTTP to localhost:3015/mcp
 - generated-store: 10min TTL, in-memory only, lost on restart
 - Mock adapter in `src/testing/helpers.ts` returns typed responses for all 8 typed methods
