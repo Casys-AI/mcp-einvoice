@@ -45,8 +45,11 @@ interface DoclistData {
 
 type SortDir = "asc" | "desc";
 
+import { MATERIAL_ICON_PATHS } from "~/shared/material-icons";
+
 function StatusCell({ value }: { value: string }) {
   const s = getStatus(value);
+  const path = MATERIAL_ICON_PATHS[s.icon];
   return (
     <span
       title={s.label}
@@ -58,13 +61,16 @@ function StatusCell({ value }: { value: string }) {
         height: 26,
         borderRadius: 6,
         background: s.bg,
-        color: s.color,
         cursor: "default",
       }}
     >
-      <span className="material-symbols-rounded" style={{ fontSize: 18 }}>
-        {s.icon}
-      </span>
+      {path ? (
+        <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 -960 960 960" fill={s.color}>
+          <path d={path} />
+        </svg>
+      ) : (
+        <span style={{ fontSize: 12, color: s.color, fontWeight: 700 }}>{s.icon.charAt(0).toUpperCase()}</span>
+      )}
     </span>
   );
 }
