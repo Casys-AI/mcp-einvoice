@@ -442,9 +442,8 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
   const isClickable = !!rowAction || hasLocalDetail;
 
   async function onRowClick(row: Record<string, unknown>) {
-    const idValue = row._id != null ? String(row._id) : null;
-    if (idValue == null) return;
-    const idStr = idValue;
+    if (row._id == null) return;
+    const idStr = String(row._id);
 
     // Toggle: click same row = collapse
     if (expandedId === idStr) {
