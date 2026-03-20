@@ -30,6 +30,6 @@
     ]
   },
   "imports": {
-    "@casys/mcp-server": "jsr:@casys/mcp-server@^0.9.0"
+    "@casys/mcp-server": "jsr:@casys/mcp-server@^0.11.0"
   }
 }
