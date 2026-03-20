@@ -37,6 +37,8 @@ import type {
 import { IopoleClient, createOAuth2TokenProvider } from "./client.ts";
 import { requireEnv } from "../shared/env.ts";
 import { encodePathSegment } from "../shared/encoding.ts";
+import { normalizeDirection } from "../shared/direction.ts";
+import type { NormalizeFn } from "../shared/types.ts";
 import { env } from "../../runtime.ts";
 
 const IOPOLE_DEFAULT_AUTH_URL =
@@ -457,7 +459,7 @@ export class IopoleAdapter extends AfnorBaseAdapter {
  * Uses scheme 0225 (SIRET-based routing) for French PPF/PDP.
  */
 // deno-lint-ignore no-explicit-any
-function normalizeForIopole(inv: any): Record<string, unknown> {
+const normalizeForIopole: NormalizeFn = (inv: any): Record<string, unknown> => {
   const normalized = { ...inv };
 
   // Ensure seller/buyer have postalAddress (BR-08, BR-10)
@@ -516,7 +518,7 @@ function normalizeForIopole(inv: any): Record<string, unknown> {
   }
 
   return normalized;
-}
+};
 
 /**
  * Auto-detect and wrap a raw directory search query into Iopole Lucene syntax.
@@ -533,13 +535,7 @@ function autoWrapDirectoryQuery(q: string): string {
   return trimmed;
 }
 
-/** Map Iopole direction codes to normalized InvoiceDirection. */
-function normalizeDirection(raw: string | undefined): InvoiceDirection | undefined {
-  if (!raw) return undefined;
-  if (raw === "RECEIVED" || raw === "INBOUND") return "received";
-  if (raw === "SENT" || raw === "EMITTED" || raw === "OUTBOUND") return "sent";
-  return undefined;
-}
+// normalizeDirection imported from shared/direction.ts
 
 /** Normalize Iopole status history response (array, {data}, {entries}, {history}) into StatusHistoryResult. */
 function normalizeStatusHistory(raw: unknown): StatusHistoryResult {

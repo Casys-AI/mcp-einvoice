@@ -27,6 +27,7 @@ import type {
 } from "../../adapter.ts";
 import { SuperPDPClient } from "./client.ts";
 import { normalizeForSuperPDP } from "./normalize.ts";
+import { normalizeDirection } from "../shared/direction.ts";
 import { createOAuth2TokenProvider } from "../shared/oauth2.ts";
 import { requireEnv } from "../shared/env.ts";
 import { env } from "../../runtime.ts";
@@ -85,7 +86,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
       id: String(inv.id ?? ""),
       invoiceNumber: inv.en_invoice?.number ?? inv.external_id,
       status: lastEventCode(inv.events),
-      direction: mapDirection(inv.direction) as "received" | "sent",
+      direction: normalizeDirection(inv.direction) as "received" | "sent",
       senderName: inv.en_invoice?.seller?.name,
       receiverName: inv.en_invoice?.buyer?.name,
       date: inv.en_invoice?.issue_date,
@@ -103,7 +104,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
       id: String(inv.id ?? id),
       invoiceNumber: en?.number ?? inv.external_id,
       status: lastEventCode(inv.events),
-      direction: mapDirection(inv.direction),
+      direction: normalizeDirection(inv.direction),
       senderName: en?.seller?.name,
       receiverName: en?.buyer?.name,
       issueDate: en?.issue_date,
@@ -270,12 +271,7 @@ function lastEventCode(events: any[] | undefined): string | undefined {
   return events[events.length - 1].status_code;
 }
 
-/** Map SuperPDP direction ("in"/"out") to adapter direction ("received"/"sent"). */
-function mapDirection(dir: string | undefined): "received" | "sent" | undefined {
-  if (dir === "in") return "received";
-  if (dir === "out") return "sent";
-  return undefined;
-}
+// mapDirection replaced by shared normalizeDirection
 
 /** Map adapter network names to SuperPDP directory values. */
 function mapNetworkToDirectory(network: string): "ppf" | "peppol" {

@@ -13,3 +13,4 @@ export { StorecoveAdapter, createStorecoveAdapter } from "./storecove/adapter.ts
 export { SuperPDPAdapter, createSuperPDPAdapter } from "./superpdp/adapter.ts";
 export { AfnorBaseAdapter } from "./afnor/base-adapter.ts";
 export { AfnorClient } from "./afnor/client.ts";
+export { createAdapter, listAdapterNames } from "./registry.ts";

@@ -11,6 +11,8 @@
  * @module lib/einvoice/src/adapters/superpdp/normalize
  */
 
+import type { NormalizeFn } from "../shared/types.ts";
+
 // deno-lint-ignore-file no-explicit-any
 
 /** Convert a number or string to a decimal string ("1000" → "1000.00"). */
@@ -197,7 +199,7 @@ function normalizeLine(line: any): any {
  *
  * Non-destructive: existing correctly-named fields are preserved.
  */
-export function normalizeForSuperPDP(inv: Record<string, unknown>): Record<string, unknown> {
+export const normalizeForSuperPDP: NormalizeFn = (inv: Record<string, unknown>): Record<string, unknown> => {
   const n: any = { ...inv };
 
   // Auto-add process_control if absent
@@ -283,4 +285,4 @@ export function normalizeForSuperPDP(inv: Record<string, unknown>): Record<strin
   }
 
   return n;
-}
+};

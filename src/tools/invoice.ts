@@ -9,15 +9,7 @@
 
 import type { EInvoiceTool } from "./types.ts";
 import { storeGenerated, getGenerated } from "../generated-store.ts";
-
-/** Encode a Uint8Array to base64, chunked to avoid stack overflow on large files. */
-function uint8ToBase64(data: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < data.length; i += 8192) {
-    binary += String.fromCharCode(...data.subarray(i, i + 8192));
-  }
-  return btoa(binary);
-}
+import { uint8ToBase64 } from "../adapters/shared/encoding.ts";
 
 
 /**

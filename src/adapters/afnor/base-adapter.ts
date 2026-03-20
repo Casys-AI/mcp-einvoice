@@ -38,6 +38,7 @@ import type {
 } from "../../adapter.ts";
 import type { AfnorClient } from "./client.ts";
 import { NotSupportedError } from "../shared/errors.ts";
+import { normalizeDirection } from "../shared/direction.ts";
 
 /**
  * Abstract base adapter for French PA using AFNOR XP Z12-013.
@@ -83,7 +84,7 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
     const rows = (result.results ?? []).map((r: any) => ({
       id: r.flowId ?? "",
       status: r.ackStatus,
-      direction: (r.flowDirection === "In" ? "received" : "sent") as "received" | "sent",
+      direction: normalizeDirection(r.flowDirection),
       date: r.updatedAt ?? r.submittedAt,
     }));
     return { rows, count: rows.length };
@@ -99,7 +100,7 @@ export abstract class AfnorBaseAdapter implements EInvoiceAdapter {
         id,
         invoiceNumber: doc.invoiceId ?? doc.invoiceNumber,
         status: doc.ackStatus ?? doc.status,
-        direction: doc.flowDirection === "In" ? "received" : doc.flowDirection === "Out" ? "sent" : undefined,
+        direction: normalizeDirection(doc.flowDirection),
         senderName: doc.seller?.name,
         receiverName: doc.buyer?.name,
         issueDate: doc.invoiceDate,
