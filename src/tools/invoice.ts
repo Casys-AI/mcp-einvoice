@@ -215,15 +215,23 @@ export const invoiceTools: EInvoiceTool[] = [
         filtered = filtered.filter((r) => r.status === statusFilter);
       }
 
-      // Format for French doclist-viewer — priority columns only (no horizontal scroll)
-      // Secondary info (Destinataire, Date, Direction) visible in drill-down panel
-      const data = filtered.map((r) => ({
-        _id: r.id,
-        "N°": r.invoiceNumber ?? "—",
-        "Statut": r.status ?? "—",
-        "Émetteur": r.senderName ?? "—",
-        "Montant": r.amount != null ? `${Number(r.amount).toLocaleString("fr-FR")} ${r.currency ?? "EUR"}` : "—",
-      }));
+      // Priority columns — fits ~500px without horizontal scroll
+      // Direction shown as arrow icon (↓=reçue ↑=émise), date shortened
+      const data = filtered.map((r) => {
+        const arrow = r.direction === "received" ? "↓" : r.direction === "sent" ? "↑" : "";
+        const shortDate = r.date
+          ? new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+          : "";
+        return {
+          _id: r.id,
+          " ": arrow,
+          "N°": r.invoiceNumber ?? "—",
+          "Statut": r.status ?? "—",
+          "Émetteur": r.senderName ?? "—",
+          "Date": shortDate || "—",
+          "Montant": r.amount != null ? `${Number(r.amount).toLocaleString("fr-FR")} ${r.currency ?? "EUR"}` : "—",
+        };
+      });
 
       // Dynamic title
       const dirLabel = dirFilter === "received" ? "reçues" : dirFilter === "sent" ? "envoyées" : "";
