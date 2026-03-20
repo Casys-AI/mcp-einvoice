@@ -466,12 +466,17 @@ function normalizeForIopole(inv: any): Record<string, unknown> {
       .join("; ");
   }
 
-  // Auto-fill monetary.payableAmount from invoiceAmount when absent (now required by Iopole API)
-  if (normalized.monetary && !normalized.monetary.payableAmount) {
-    normalized.monetary = {
-      ...normalized.monetary,
-      payableAmount: normalized.monetary.invoiceAmount ?? normalized.monetary.payableAmount,
-    };
+  // Auto-fill monetary fields now required by Iopole API
+  if (normalized.monetary) {
+    const m = { ...normalized.monetary };
+    const currency = m.invoiceCurrency ?? "EUR";
+    // payableAmount defaults to invoiceAmount
+    if (!m.payableAmount) m.payableAmount = m.invoiceAmount;
+    // taxTotalAmount.currency is now required
+    if (m.taxTotalAmount && !m.taxTotalAmount.currency) {
+      m.taxTotalAmount = { ...m.taxTotalAmount, currency };
+    }
+    normalized.monetary = m;
   }
 
   // Auto-fill lines[].taxDetail.categoryCode when absent (now required by Iopole API)
