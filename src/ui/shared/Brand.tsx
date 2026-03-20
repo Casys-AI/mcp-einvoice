@@ -8,6 +8,7 @@
 
 import { CSSProperties } from "react";
 import { colors, fonts } from "./theme";
+import { t } from "./i18n";
 
 function EInvoiceIcon() {
   return (
@@ -63,7 +64,7 @@ export function BrandHeader() {
       </div>
       <span style={wordmarkStyle}>E-Invoice</span>
       <div style={dotStyle} />
-      <span style={taglineStyle}>facturation électronique</span>
+      <span style={taglineStyle}>{t("tagline")}</span>
     </div>
   );
 }

@@ -8,6 +8,7 @@
 import { Fragment, useState, useEffect, useMemo, useCallback, useRef, CSSProperties } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles, formatNumber, formatCurrency } from "~/shared/theme";
+import { t } from "~/shared/i18n";
 import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import { FeedbackBanner } from "~/shared/Feedback";
 import { STATUS_REGISTRY, getStatus, getStatusLabel, canAcceptReject, canSendPayment, canReceivePayment } from "~/shared/status";
@@ -102,9 +103,9 @@ function DoclistEmptyState() {
         <path d="M8 28h40M8 38h40" stroke="currentColor" strokeWidth="1" opacity="0.3" />
       </svg>
       <div style={{ fontSize: 13, textAlign: "center" }}>
-        Aucun document
+        {t("no_documents")}
         <div style={{ fontSize: 11, color: colors.text.faint, marginTop: 4 }}>
-          Lancez une recherche pour afficher les résultats
+          {t("search_prompt")}
         </div>
       </div>
     </div>
@@ -128,7 +129,7 @@ function DirectionCell({ value }: { value: string }) {
   const isReceived = value === "Entrante" || value === "received";
   const isSent = value === "Sortante" || value === "sent";
   const icon = isReceived ? "call_received" : isSent ? "call_made" : null;
-  const label = isReceived ? "Entrante" : isSent ? "Sortante" : value;
+  const label = isReceived ? t("received") : isSent ? t("sent") : value;
   const color = isReceived ? colors.info : isSent ? colors.accent : colors.text.muted;
   const path = icon ? MATERIAL_ICON_PATHS[icon] : null;
   return (
@@ -145,7 +146,7 @@ function DirectionCell({ value }: { value: string }) {
 function formatCell(value: unknown): string {
   if (value == null) return "—";
   if (typeof value === "number") return formatNumber(value, value % 1 === 0 ? 0 : 2);
-  if (typeof value === "boolean") return value ? "Oui" : "Non";
+  if (typeof value === "boolean") return value ? t("yes") : t("no");
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
@@ -223,7 +224,7 @@ export function DoclistViewer() {
       setLoading(false);
       return true;
     } catch {
-      setError("Erreur de parsing");
+      setError(t("error_parsing"));
       setLoading(false);
       return false;
     }
@@ -248,8 +249,8 @@ export function DoclistViewer() {
 
     try {
       const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
-      if (result.isError) setError("Échec du rafraîchissement");
-      else if (!consumeToolResult(result)) setError("Aucune donnée");
+      if (result.isError) setError(t("error_refresh"));
+      else if (!consumeToolResult(result)) setError(t("no_data"));
     } catch (cause) {
       setError(normalizeUiRefreshFailureMessage(cause));
     } finally {
@@ -335,7 +336,7 @@ function InlineDetailPanel({ data, loading, onClose, onAction }: {
     setActMsg(null);
     const ok = await onAction(tool, args);
     setActOk(ok);
-    setActMsg(ok ? msg : "Action échouée");
+    setActMsg(ok ? msg : t("action_failed"));
     setActLoading(null);
   }
 
@@ -355,13 +356,13 @@ function InlineDetailPanel({ data, loading, onClose, onAction }: {
           if (sv != null && typeof sv !== "object") flatEntries.push([`${k}.${sk}`, String(sv)]);
         }
       } else if (Array.isArray(v)) {
-        flatEntries.push([k, `${v.length} élément${v.length > 1 ? "s" : ""}`]);
+        flatEntries.push([k, `${v.length} ${v.length > 1 ? t("items") : t("item")}`]);
       } else {
         flatEntries.push([k, formatCell(v)]);
       }
     }
     // Extract a title from common name fields
-    const title = String(inv.name ?? inv.corporateName ?? inv.label ?? "Détails");
+    const title = String(inv.name ?? inv.corporateName ?? inv.label ?? t("details"));
     return (
       <div style={{ padding: 16, background: colors.bg.surface, borderTop: `2px solid ${colors.accent}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
@@ -396,7 +397,7 @@ function InlineDetailPanel({ data, loading, onClose, onAction }: {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: colors.text.primary }}>{String(inv.invoice_number ?? inv.id)}</span>
           <span style={styles.badge(statusScheme.color, statusScheme.bg)}>{statusScheme.label}</span>
-          {inv.direction && <span style={{ fontSize: 11, color: colors.text.muted }}>{isReceived ? "Entrante" : "Sortante"}</span>}
+          {inv.direction && <span style={{ fontSize: 11, color: colors.text.muted }}>{isReceived ? t("received") : t("sent")}</span>}
           {inv.format && <span style={{ ...styles.badge(colors.text.secondary, colors.bg.elevated), fontSize: 10 }}>{String(inv.format).toUpperCase()}</span>}
         </div>
         <button onClick={onClose} style={{ ...styles.button, padding: "2px 8px", fontSize: 11 }}>✕</button>
@@ -404,12 +405,12 @@ function InlineDetailPanel({ data, loading, onClose, onAction }: {
 
       {/* Info grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 6, marginBottom: 10 }}>
-        {inv.sender_name && <InfoCard label="Émetteur" value={String(inv.sender_name)} sub={inv.sender_id ? `SIRET ${inv.sender_id}` : undefined} />}
-        {inv.receiver_name && <InfoCard label="Destinataire" value={String(inv.receiver_name)} sub={inv.receiver_id ? `SIRET ${inv.receiver_id}` : undefined} />}
-        {inv.issue_date && <InfoCard label="Date d'émission" value={String(inv.issue_date)} />}
-        {inv.due_date && <InfoCard label="Échéance" value={String(inv.due_date)} />}
-        {inv.total_ttc != null && <InfoCard label="Total TTC" value={formatCurrency(Number(inv.total_ttc), currency)} bold />}
-        {inv.total_ht != null && <InfoCard label="Total HT" value={formatCurrency(Number(inv.total_ht), currency)} />}
+        {inv.sender_name && <InfoCard label={t("sender")} value={String(inv.sender_name)} sub={inv.sender_id ? `SIRET ${inv.sender_id}` : undefined} />}
+        {inv.receiver_name && <InfoCard label={t("recipient")} value={String(inv.receiver_name)} sub={inv.receiver_id ? `SIRET ${inv.receiver_id}` : undefined} />}
+        {inv.issue_date && <InfoCard label={t("issue_date_long")} value={String(inv.issue_date)} />}
+        {inv.due_date && <InfoCard label={t("due_date")} value={String(inv.due_date)} />}
+        {inv.total_ttc != null && <InfoCard label={t("total_ttc")} value={formatCurrency(Number(inv.total_ttc), currency)} bold />}
+        {inv.total_ht != null && <InfoCard label={t("total_ht")} value={formatCurrency(Number(inv.total_ht), currency)} />}
       </div>
 
       {/* Action feedback */}
@@ -419,24 +420,24 @@ function InlineDetailPanel({ data, loading, onClose, onAction }: {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingTop: 8, borderTop: `1px solid ${colors.border}` }}>
         {showAcceptReject && (
           <>
-            <ActionButton size="sm" label="Accepter" variant="success" loading={actLoading === "accept"}
-              onClick={() => act("accept", "einvoice_status_send", { invoice_id: inv.id, code: "APPROVED" }, "Facture acceptée")} />
-            <ActionButton size="sm" label="Rejeter" variant="error" confirm loading={actLoading === "reject"}
-              onClick={() => act("reject", "einvoice_status_send", { invoice_id: inv.id, code: "REFUSED" }, "Facture refusée")} />
-            <ActionButton size="sm" label="Contester" variant="default" confirm loading={actLoading === "dispute"}
-              onClick={() => act("dispute", "einvoice_status_send", { invoice_id: inv.id, code: "DISPUTED" }, "Litige signalé")} />
+            <ActionButton size="sm" label={t("accept")} variant="success" loading={actLoading === "accept"}
+              onClick={() => act("accept", "einvoice_status_send", { invoice_id: inv.id, code: "APPROVED" }, t("invoice_accepted"))} />
+            <ActionButton size="sm" label={t("reject")} variant="error" confirm loading={actLoading === "reject"}
+              onClick={() => act("reject", "einvoice_status_send", { invoice_id: inv.id, code: "REFUSED" }, t("invoice_refused"))} />
+            <ActionButton size="sm" label={t("dispute")} variant="default" confirm loading={actLoading === "dispute"}
+              onClick={() => act("dispute", "einvoice_status_send", { invoice_id: inv.id, code: "DISPUTED" }, t("dispute_filed"))} />
           </>
         )}
         {showSendPayment && (
-          <ActionButton size="sm" label="Paiement envoyé" variant="success" loading={actLoading === "pay"}
-            onClick={() => act("pay", "einvoice_status_send", { invoice_id: inv.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
+          <ActionButton size="sm" label={t("payment_sent")} variant="success" loading={actLoading === "pay"}
+            onClick={() => act("pay", "einvoice_status_send", { invoice_id: inv.id, code: "PAYMENT_SENT" }, t("payment_sent"))} />
         )}
         {showReceivePayment && (
-          <ActionButton size="sm" label="Paiement reçu" variant="success" loading={actLoading === "payrcv"}
-            onClick={() => act("payrcv", "einvoice_status_send", { invoice_id: inv.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
+          <ActionButton size="sm" label={t("payment_received")} variant="success" loading={actLoading === "payrcv"}
+            onClick={() => act("payrcv", "einvoice_status_send", { invoice_id: inv.id, code: "PAYMENT_RECEIVED" }, t("payment_received"))} />
         )}
         {hasId && (
-          <ActionButton size="sm" label="Détails complets →"
+          <ActionButton size="sm" label={t("full_details")}
             onClick={async () => {
               try { await app.sendMessage({ role: "user", content: [{ type: "text", text: `Montre-moi les détails de la facture ${inv.id}` }] }); } catch {}
             }} />
@@ -512,11 +513,11 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
           setExpandedData(detail);
         }
       } else {
-        onError("Erreur lors du chargement des détails");
+        onError(t("error_loading_details"));
         setExpandedId(null);
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Erreur lors du chargement");
+      onError(err instanceof Error ? err.message : t("error_loading"));
       setExpandedId(null);
     } finally {
       setExpandedLoading(false);
@@ -639,14 +640,14 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>{data._title ?? data.doctype ?? "Documents"}</div>
-          <div style={{ fontSize: 12, color: colors.text.muted }}>{sorted.length} sur {data.count ?? rows.length} résultats</div>
+          <div style={{ fontSize: 12, color: colors.text.muted }}>{sorted.length} {t("of")} {data.count ?? rows.length} {t("results")}</div>
           <div aria-live="polite" style={{ fontSize: 11, color: colors.text.faint, marginTop: 4 }}>
-            {refreshing ? "Rafraîchissement…" : "Rafraîchissement auto au focus"}
+            {refreshing ? t("refreshing") : t("refresh_auto")}
           </div>
           {error && <FeedbackBanner type="error" message={error} onDismiss={() => onError(null)} />}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="text" placeholder="Rechercher..." value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }}
+          <input type="text" placeholder={t("search")} value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }}
             style={{ ...styles.input, maxWidth: 200 }}
             onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = colors.accent; }}
             onBlur={(e) => { (e.target as HTMLInputElement).style.borderColor = colors.border; }}
@@ -660,7 +661,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                 <path d="M10 6a4 4 0 1 1-1.1-2.76" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                 <path d="M10 2v2.8H7.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              {refreshing ? "…" : "Rafraîchir"}
+              {refreshing ? "…" : t("refresh")}
             </span>
           </button>
           <button onClick={() => exportCsv(columns, sorted, data.doctype)} style={styles.button}
@@ -679,7 +680,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
               <button
                 onClick={() => { setChipFilters(prev => { const next = { ...prev }; delete next[col]; return next; }); setPage(0); }}
                 style={{ ...styles.button, padding: "2px 8px", fontSize: 10, ...(chipFilters[col] == null ? { background: colors.accentDim, borderColor: colors.accent, color: colors.accent } : {}) }}
-              >Tous</button>
+              >{t("all")}</button>
               {values.map(v => {
                 const isActive = chipFilters[col] === v;
                 const statusScheme = isStatusField(col) ? STATUS_REGISTRY[v.toLowerCase()] : null;
@@ -715,7 +716,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
             </thead>
             <tbody>
               {pageRows.length === 0 ? (
-                <tr><td colSpan={columns.length} style={{ ...styles.tableCell, textAlign: "center", color: colors.text.muted, padding: 32 }}>Aucun résultat</td></tr>
+                <tr><td colSpan={columns.length} style={{ ...styles.tableCell, textAlign: "center", color: colors.text.muted, padding: 32 }}>{t("no_results")}</td></tr>
               ) : pageRows.map((row, idx) => {
                 const rowId = rowAction ? String(getNestedValue(row, rowAction.idField) ?? "") : String(row._id ?? "");
                 const isExpanded = expandedId === rowId && rowId !== "";
@@ -769,12 +770,12 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
 
       {totalPages > 1 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 12, color: colors.text.muted }}>Page {page + 1} / {totalPages}</div>
+          <div style={{ fontSize: 12, color: colors.text.muted }}>{t("page")} {page + 1} / {totalPages}</div>
           <div style={{ display: "flex", gap: 4 }}>
-            <PageButton label="Début" onClick={() => setPage(0)} disabled={page === 0} />
-            <PageButton label="Préc" onClick={() => setPage(page - 1)} disabled={page === 0} />
-            <PageButton label="Suiv" onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1} />
-            <PageButton label="Fin" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} />
+            <PageButton label={t("first")} onClick={() => setPage(0)} disabled={page === 0} />
+            <PageButton label={t("prev")} onClick={() => setPage(page - 1)} disabled={page === 0} />
+            <PageButton label={t("next")} onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1} />
+            <PageButton label={t("last")} onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} />
           </div>
         </div>
       )}

@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
+import { t } from "~/shared/i18n";
 import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import {
   extractToolResultText,
@@ -32,10 +33,12 @@ interface ActionResultData {
   };
 }
 
-const STATUS_ICONS = {
-  success: { symbol: "\u2713", color: colors.success, bg: colors.successDim, label: "Succès" },
-  error: { symbol: "\u2717", color: colors.error, bg: colors.errorDim, label: "Erreur" },
-};
+function getStatusIcons() {
+  return {
+    success: { symbol: "\u2713", color: colors.success, bg: colors.successDim, label: t("success") },
+    error: { symbol: "\u2717", color: colors.error, bg: colors.errorDim, label: t("error") },
+  };
+}
 
 export function ActionResult() {
   const [data, setData] = useState<ActionResultData | null>(null);
@@ -51,7 +54,7 @@ export function ActionResult() {
       const isAlreadyShaped = parsed.action || parsed.status || parsed.title;
       const next: ActionResultData = isAlreadyShaped
         ? parsed
-        : { status: "success", title: "Opération réussie", details: parsed };
+        : { status: "success", title: t("operation_ok"), details: parsed };
       dataRef.current = next;
       setData(next);
       setLoading(false);
@@ -85,14 +88,14 @@ export function ActionResult() {
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <BrandHeader />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
-          <div style={{ fontSize: 13 }}>Aucun résultat</div>
+          <div style={{ fontSize: 13 }}>{t("no_results")}</div>
         </div>
         <BrandFooter />
       </div>
     );
   }
 
-  const statusInfo = STATUS_ICONS[data.status ?? "success"];
+  const statusInfo = getStatusIcons()[data.status ?? "success"];
   const details = data.details ?? {};
   const detailEntries = Object.entries(details).filter(([k]) => !k.startsWith("_"));
 

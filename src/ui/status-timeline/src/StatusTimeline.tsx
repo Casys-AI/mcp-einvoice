@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef, CSSProperties } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
+import { t, dateLocale } from "~/shared/i18n";
 import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import { FeedbackBanner, EmptyTimelineIcon } from "~/shared/Feedback";
 import { getStatus } from "~/shared/status";
@@ -60,9 +61,10 @@ function getStatusScheme(code: string) {
 function formatDate(iso: string): { date: string; time: string } {
   try {
     const d = new Date(iso);
+    const loc = dateLocale();
     return {
-      date: d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }),
-      time: d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+      date: d.toLocaleDateString(loc, { day: "2-digit", month: "short", year: "numeric" }),
+      time: d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" }),
     };
   } catch {
     return { date: iso, time: "" };
@@ -73,15 +75,16 @@ function formatDate(iso: string): { date: string; time: string } {
 // Dest type labels
 // ============================================================================
 
-const DEST_TYPE_LABELS: Record<string, string> = {
-  PLATFORM: "Plateforme",
-  BUYER: "Acheteur",
-  SELLER: "Vendeur",
-  TAX_AUTHORITY: "Administration fiscale",
+const DEST_TYPE_KEYS: Record<string, string> = {
+  PLATFORM: "platform",
+  BUYER: "buyer",
+  SELLER: "seller_label",
+  TAX_AUTHORITY: "tax_authority",
 };
 
 function formatDestType(destType: string): string {
-  return DEST_TYPE_LABELS[destType.toUpperCase()] ?? destType;
+  const key = DEST_TYPE_KEYS[destType.toUpperCase()];
+  return key ? t(key) : destType;
 }
 
 // ============================================================================
@@ -152,7 +155,7 @@ export function StatusTimeline() {
       setLoading(false);
       return true;
     } catch {
-      setError("Erreur de parsing");
+      setError(t("error_parsing"));
       setLoading(false);
       return false;
     }
@@ -178,7 +181,7 @@ export function StatusTimeline() {
     try {
       const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (!result.isError) consumeToolResult(result);
-      else setError("Echec du rafraichissement");
+      else setError(t("error_refresh"));
     } catch (cause) {
       setError(normalizeUiRefreshFailureMessage(cause));
     } finally {
@@ -229,7 +232,7 @@ export function StatusTimeline() {
         <BrandHeader />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
           <EmptyTimelineIcon />
-          <div style={{ fontSize: 13 }}>Aucun historique de statut</div>
+          <div style={{ fontSize: 13 }}>{t("no_history")}</div>
         </div>
         <BrandFooter />
       </div>
@@ -245,10 +248,10 @@ export function StatusTimeline() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>
-            Historique des statuts
+            {t("status_history_title")}
           </div>
           <button onClick={() => void requestRefresh({ ignoreInterval: true })} disabled={refreshing} style={styles.button}>
-            {refreshing ? "..." : "Rafra\u00eechir"}
+            {refreshing ? "..." : t("refresh")}
           </button>
         </div>
 

@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { colors, styles } from "./theme";
+import { t } from "./i18n";
 
 const VARIANT_COLORS: Record<string, { color: string; bg: string }> = {
   success: { color: colors.success, bg: colors.successDim },
@@ -53,7 +54,7 @@ export function ActionButton({ label, variant = "default", disabled, loading, co
         ...(isSm ? { fontSize: 11, padding: "4px 10px" } : {}),
       }}
     >
-      {loading ? "…" : confirming ? "Confirmer ?" : label}
+      {loading ? "…" : confirming ? t("confirm") : label}
     </button>
   );
 }

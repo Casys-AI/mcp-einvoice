@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
+import { t } from "~/shared/i18n";
 import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import {
   canRequestUiRefresh,
@@ -147,7 +148,7 @@ function DetailsSection({ data }: { data: DirectoryResult }) {
         >
           <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        D{"\u00e9"}tails ({extraEntries.length})
+        {t("details")} ({extraEntries.length})
       </button>
 
       {expanded && (
@@ -207,7 +208,7 @@ export function DirectoryCard() {
     try {
       const parsed = normalizePayload(JSON.parse(text));
       if (!parsed) {
-        setError("Aucun résultat");
+        setError(t("no_results"));
         setLoading(false);
         return false;
       }
@@ -216,7 +217,7 @@ export function DirectoryCard() {
       setLoading(false);
       return true;
     } catch {
-      setError("Erreur de parsing");
+      setError(t("error_parsing"));
       setLoading(false);
       return false;
     }
@@ -242,7 +243,7 @@ export function DirectoryCard() {
     try {
       const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (!result.isError) consumeToolResult(result);
-      else setError("Échec du rafraîchissement");
+      else setError(t("error_refresh"));
     } catch (cause) {
       setError(normalizeUiRefreshFailureMessage(cause));
     } finally {
@@ -297,7 +298,7 @@ export function DirectoryCard() {
             <circle cx="28" cy="22" r="6" stroke="currentColor" strokeWidth="1.5" />
             <path d="M16 42c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <div style={{ fontSize: 13 }}>Aucune entreprise à afficher</div>
+          <div style={{ fontSize: 13 }}>{t("no_company")}</div>
         </div>
         <BrandFooter />
       </div>
@@ -334,7 +335,7 @@ export function DirectoryCard() {
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => void requestRefresh({ ignoreInterval: true })} disabled={refreshing} style={styles.button}>
-              {refreshing ? "\u2026" : "Rafra\u00eechir"}
+              {refreshing ? "\u2026" : t("refresh")}
             </button>
           </div>
         </div>
@@ -350,9 +351,9 @@ export function DirectoryCard() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
           {data.siren != null && <InfoField label="SIREN" value={data.siren} />}
           {data.siret != null && <InfoField label="SIRET" value={data.siret} />}
-          {data.vatNumber != null && <InfoField label="TVA intracommunautaire" value={data.vatNumber} />}
-          {hasAddress && <InfoField label="Adresse" value={formatAddress(data.address!)} />}
-          {data.address?.country && !hasAddress && <InfoField label="Pays" value={data.address.country} />}
+          {data.vatNumber != null && <InfoField label={t("vat_intra")} value={data.vatNumber} />}
+          {hasAddress && <InfoField label={t("address")} value={formatAddress(data.address!)} />}
+          {data.address?.country && !hasAddress && <InfoField label={t("country")} value={data.address.country} />}
         </div>
 
 
@@ -360,7 +361,7 @@ export function DirectoryCard() {
         {hasNetworks && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, fontWeight: 600 }}>
-              Réseaux
+              {t("networks")}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {data.networks!.map((net, i) => (

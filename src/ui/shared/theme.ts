@@ -6,6 +6,7 @@
  */
 
 import { CSSProperties } from "react";
+import { dateLocale } from "./i18n";
 
 function cssVar(name: string): string {
   return `var(${name})`;
@@ -124,14 +125,14 @@ export const styles = {
 } as const;
 
 export function formatNumber(n: number, decimals = 2): string {
-  return n.toLocaleString("fr-FR", {
+  return n.toLocaleString(dateLocale(), {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
 }
 
 export function formatCurrency(n: number, currency = "EUR"): string {
-  return n.toLocaleString("fr-FR", {
+  return n.toLocaleString(dateLocale(), {
     style: "currency",
     currency,
     minimumFractionDigits: 2,

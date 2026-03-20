@@ -15,6 +15,7 @@
 import { useState, useEffect, useRef } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles, formatCurrency } from "~/shared/theme";
+import { t } from "~/shared/i18n";
 import { BrandHeader, BrandFooter } from "~/shared/Brand";
 import { FeedbackBanner, EmptyInvoiceIcon } from "~/shared/Feedback";
 import { getStatus, canAcceptReject as canAccept, canSendPayment as canPay, canReceivePayment as canReceivePay } from "~/shared/status";
@@ -142,7 +143,7 @@ export function InvoiceViewer() {
       setLoading(false);
       return true;
     } catch {
-      setError("Erreur de parsing");
+      setError(t("error_parsing"));
       setLoading(false);
       return false;
     }
@@ -168,7 +169,7 @@ export function InvoiceViewer() {
     try {
       const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (!result.isError) consumeToolResult(result);
-      else setError("Échec du rafraîchissement");
+      else setError(t("error_refresh"));
     } catch (cause) {
       setError(normalizeUiRefreshFailureMessage(cause));
     } finally {
@@ -185,7 +186,7 @@ export function InvoiceViewer() {
     try {
       const result = await app.callServerTool({ name: toolName, arguments: args }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (result.isError) {
-        setActionMessage("Action échouée");
+        setActionMessage(t("action_failed"));
         return null;
       } else {
         if (successMsg) setActionMessage(successMsg);
@@ -195,7 +196,7 @@ export function InvoiceViewer() {
         return extractToolResultText(result) ?? "";
       }
     } catch {
-      setActionMessage("Erreur réseau");
+      setActionMessage(t("network_error"));
       return null;
     } finally {
       setActionLoading(null);
@@ -219,10 +220,10 @@ export function InvoiceViewer() {
           },
         }],
       });
-      if (isError) { setActionMessage("Téléchargement annulé"); return false; }
-      setActionMessage("Téléchargé");
+      if (isError) { setActionMessage(t("download_cancelled")); return false; }
+      setActionMessage(t("downloaded"));
       return true;
-    } catch { setActionMessage("Erreur de téléchargement"); return false; }
+    } catch { setActionMessage(t("download_error")); return false; }
   }
 
   useEffect(() => {
@@ -267,7 +268,7 @@ export function InvoiceViewer() {
         <BrandHeader />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
           <EmptyInvoiceIcon />
-          <div style={{ fontSize: 13 }}>Aucune facture à afficher</div>
+          <div style={{ fontSize: 13 }}>{t("no_invoice")}</div>
         </div>
         <BrandFooter />
       </div>
@@ -303,7 +304,7 @@ export function InvoiceViewer() {
               {data.network && <span style={{ ...styles.badge(colors.text.secondary, colors.bg.elevated), fontSize: 10 }}>{data.network.replace(/_/g, " ")}</span>}
               {data.direction && !isPreview && (
                 <span style={{ fontSize: 11, color: colors.text.muted }}>
-                  {isReceived ? "Entrante" : "Sortante"}
+                  {isReceived ? t("received") : t("sent")}
                 </span>
               )}
               {data.invoice_type && (
@@ -315,7 +316,7 @@ export function InvoiceViewer() {
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => void requestRefresh({ ignoreInterval: true })} disabled={refreshing} style={styles.button}>
-              {refreshing ? "…" : "Rafraîchir"}
+              {refreshing ? "…" : t("refresh")}
             </button>
           </div>
         </div>
@@ -327,13 +328,13 @@ export function InvoiceViewer() {
         {/* Parties — two columns */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16, borderBottom: `1px solid ${colors.border}`, paddingBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Émetteur</div>
+            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{t("sender")}</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: colors.text.primary }}>{data.sender_name ?? "—"}</div>
             {data.sender_id && <div style={{ fontSize: 11, color: colors.text.secondary }}>SIRET {data.sender_id}</div>}
             {data.sender_vat && <div style={{ fontSize: 11, color: colors.text.faint }}>TVA {data.sender_vat}</div>}
           </div>
           <div>
-            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Destinataire</div>
+            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{t("recipient")}</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: colors.text.primary }}>{data.receiver_name ?? "—"}</div>
             {data.receiver_id && <div style={{ fontSize: 11, color: colors.text.secondary }}>SIRET {data.receiver_id}</div>}
             {data.receiver_vat && <div style={{ fontSize: 11, color: colors.text.faint }}>TVA {data.receiver_vat}</div>}
@@ -342,9 +343,9 @@ export function InvoiceViewer() {
 
         {/* Dates — inline */}
         <div style={{ display: "flex", gap: 24, marginBottom: 16, fontSize: 12 }}>
-          {data.issue_date && <span><span style={{ color: colors.text.muted }}>Émission </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.issue_date}</span></span>}
-          {data.due_date && <span><span style={{ color: colors.text.muted }}>Échéance </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.due_date}</span></span>}
-          {data.receipt_date && <span><span style={{ color: colors.text.muted }}>Réception </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.receipt_date.split("T")[0]}</span></span>}
+          {data.issue_date && <span><span style={{ color: colors.text.muted }}>{t("issue_date")} </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.issue_date}</span></span>}
+          {data.due_date && <span><span style={{ color: colors.text.muted }}>{t("due_date")} </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.due_date}</span></span>}
+          {data.receipt_date && <span><span style={{ color: colors.text.muted }}>{t("receipt_date")} </span><span style={{ color: colors.text.primary, fontWeight: 500 }}>{data.receipt_date.split("T")[0]}</span></span>}
         </div>
 
         {/* Line Items */}
@@ -353,11 +354,11 @@ export function InvoiceViewer() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ ...styles.tableHeader, background: colors.bg.surface }}>Description</th>
-                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>Qté</th>
-                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>P.U.</th>
-                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>TVA %</th>
-                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>Montant</th>
+                  <th style={{ ...styles.tableHeader, background: colors.bg.surface }}>{t("description")}</th>
+                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>{t("qty")}</th>
+                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>{t("unit_price")}</th>
+                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>{t("vat_pct")}</th>
+                  <th style={{ ...styles.tableHeader, background: colors.bg.surface, textAlign: "right" }}>{t("amount")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -382,16 +383,16 @@ export function InvoiceViewer() {
         {/* Totals — aligned right */}
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
           <div style={{ minWidth: 220, borderTop: `1px solid ${colors.border}`, paddingTop: 8 }}>
-            {data.total_ht != null && <TotalRow label="Total HT" value={formatCurrency(data.total_ht, currency)} />}
-            {data.total_tax != null && <TotalRow label="TVA" value={formatCurrency(data.total_tax, currency)} />}
-            {data.total_ttc != null && <TotalRow label="Total TTC" value={formatCurrency(data.total_ttc, currency)} bold />}
+            {data.total_ht != null && <TotalRow label={t("total_ht")} value={formatCurrency(data.total_ht, currency)} />}
+            {data.total_tax != null && <TotalRow label={t("total_tax")} value={formatCurrency(data.total_tax, currency)} />}
+            {data.total_ttc != null && <TotalRow label={t("total_ttc")} value={formatCurrency(data.total_ttc, currency)} bold />}
           </div>
         </div>
 
         {/* Notes */}
         {data.notes && data.notes.length > 0 && (
           <div style={{ marginBottom: 16, borderTop: `1px solid ${colors.border}`, paddingTop: 8 }}>
-            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Notes</div>
+            <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{t("notes")}</div>
             {data.notes.map((note, i) => (
               <div key={i} style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 4, whiteSpace: "pre-wrap" }}>{note}</div>
             ))}
@@ -402,14 +403,14 @@ export function InvoiceViewer() {
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 0", borderTop: `1px solid ${colors.border}` }}>
           {/* Preview: emit */}
           {isPreview && (
-            <ActionButton label="Soumettre la facture" variant="success" confirm loading={actionLoading === AK.EMIT}
+            <ActionButton label={t("submit_invoice")} variant="success" confirm loading={actionLoading === AK.EMIT}
               onClick={async () => {
                 const resultText = await callAction(AK.EMIT, "einvoice_invoice_submit", { generated_id: data.generated_id }, "");
                 if (resultText) {
                   try {
                     const emitResponse = JSON.parse(resultText);
                     setEmitSuccess(true);
-                    setActionMessage("Facture soumise");
+                    setActionMessage(t("invoice_submitted"));
                     hydrateData({ ...data, id: emitResponse.id ?? data.id, status: "submitted", generated_id: undefined });
                   } catch {
                     setEmitSuccess(true);
@@ -421,37 +422,37 @@ export function InvoiceViewer() {
           {/* Received: accept/reject/dispute — only when DELIVERED or IN_HAND or DISPUTED */}
           {showAcceptReject && (
             <>
-              <ActionButton label="Accepter" variant="success" loading={actionLoading === AK.ACCEPT}
-                onClick={() => callAction(AK.ACCEPT, "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, "Facture acceptée")} />
-              <ActionButton label="Rejeter" variant="error" confirm loading={actionLoading === AK.REJECT}
-                onClick={() => callAction(AK.REJECT, "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, "Facture refusée")} />
-              <ActionButton label="Contester" variant="info" confirm loading={actionLoading === AK.DISPUTE}
-                onClick={() => callAction(AK.DISPUTE, "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, "Litige signalé")} />
+              <ActionButton label={t("accept")} variant="success" loading={actionLoading === AK.ACCEPT}
+                onClick={() => callAction(AK.ACCEPT, "einvoice_status_send", { invoice_id: data.id, code: "APPROVED" }, t("invoice_accepted"))} />
+              <ActionButton label={t("reject")} variant="error" confirm loading={actionLoading === AK.REJECT}
+                onClick={() => callAction(AK.REJECT, "einvoice_status_send", { invoice_id: data.id, code: "REFUSED" }, t("invoice_refused"))} />
+              <ActionButton label={t("dispute")} variant="info" confirm loading={actionLoading === AK.DISPUTE}
+                onClick={() => callAction(AK.DISPUTE, "einvoice_status_send", { invoice_id: data.id, code: "DISPUTED" }, t("dispute_filed"))} />
             </>
           )}
           {/* Received: payment — only when APPROVED */}
           {showSendPayment && (
-            <ActionButton label="Paiement envoyé" variant="success" loading={actionLoading === AK.PAYMENT_SENT}
-              onClick={() => callAction(AK.PAYMENT_SENT, "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_SENT" }, "Paiement envoyé")} />
+            <ActionButton label={t("payment_sent")} variant="success" loading={actionLoading === AK.PAYMENT_SENT}
+              onClick={() => callAction(AK.PAYMENT_SENT, "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_SENT" }, t("payment_sent"))} />
           )}
           {/* Sent: payment received — only when APPROVED or DELIVERED */}
           {showReceivePayment && (
-            <ActionButton label="Paiement reçu" variant="success" loading={actionLoading === AK.PAYMENT_RECEIVED}
-              onClick={() => callAction(AK.PAYMENT_RECEIVED, "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_RECEIVED" }, "Paiement reçu")} />
+            <ActionButton label={t("payment_received")} variant="success" loading={actionLoading === AK.PAYMENT_RECEIVED}
+              onClick={() => callAction(AK.PAYMENT_RECEIVED, "einvoice_status_send", { invoice_id: data.id, code: "PAYMENT_RECEIVED" }, t("payment_received"))} />
           )}
           {/* Common: always available for real invoices */}
           {hasId && (
             <>
-              <ActionButton label="PDF" variant="default" loading={actionLoading === AK.DOWNLOAD_PDF}
+              <ActionButton label={t("download_pdf")} variant="default" loading={actionLoading === AK.DOWNLOAD_PDF}
                 onClick={async () => {
                   // Try readable PDF first, fallback to source file
                   const ok = await downloadFile(AK.DOWNLOAD_PDF, "einvoice_invoice_download_readable", `${data.invoice_number ?? data.id ?? "facture"}.pdf`);
                   if (!ok) {
-                    setActionMessage("PDF non disponible — téléchargement du source");
+                    setActionMessage(t("pdf_unavailable"));
                     await downloadFile(AK.DOWNLOAD_PDF, "einvoice_invoice_download", `${data.invoice_number ?? data.id ?? "facture"}.xml`);
                   }
                 }} />
-              <ActionButton label="XML source" variant="default" loading={actionLoading === AK.DOWNLOAD_XML}
+              <ActionButton label={t("download_xml")} variant="default" loading={actionLoading === AK.DOWNLOAD_XML}
                 onClick={() => downloadFile(AK.DOWNLOAD_XML, "einvoice_invoice_download", `${data.invoice_number ?? data.id ?? "facture"}.xml`)} />
             </>
           )}
@@ -460,7 +461,7 @@ export function InvoiceViewer() {
         {/* Navigation — send message to conversation so Claude opens the right viewer */}
         {hasId && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingBottom: 12 }}>
-            <ActionButton label="Historique statuts" variant="default" loading={actionLoading === "nav_history"}
+            <ActionButton label={t("status_history")} variant="default" loading={actionLoading === "nav_history"}
               onClick={async () => {
                 setActionLoading("nav_history");
                 try {
@@ -472,7 +473,7 @@ export function InvoiceViewer() {
                 setActionLoading(null);
               }} />
             {data.sender_id && (
-              <ActionButton label="Voir émetteur" variant="default" loading={actionLoading === "nav_dir_sender"}
+              <ActionButton label={t("view_sender")} variant="default" loading={actionLoading === "nav_dir_sender"}
                 onClick={async () => {
                   setActionLoading("nav_dir_sender");
                   try {
