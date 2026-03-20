@@ -8,6 +8,7 @@
     "compile": "deno compile -A --output mcp-einvoice server.ts",
     "test": "deno test --allow-all src/",
     "ui:build": "cd src/ui && node build-all.mjs",
+    "ui:watch": "deno run --allow-read --allow-run watch-ui.ts",
     "build:node": "./scripts/build-node.sh",
     "inspect": "deno run --allow-all server.ts --inspect"
   },
