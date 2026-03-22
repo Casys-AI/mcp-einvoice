@@ -62,6 +62,7 @@ export class StorecoveAdapter extends BaseAdapter {
   private defaultLegalEntityId?: string;
 
   constructor(client: StorecoveClient, defaultLegalEntityId?: string) {
+    super();
     this.client = client;
     this.defaultLegalEntityId = defaultLegalEntityId;
   }

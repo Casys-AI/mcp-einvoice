@@ -14,7 +14,6 @@ import { BaseAdapter } from "../base-adapter.ts";
 import type {
   AdapterMethodName,
   InvoiceDetail,
-  InvoiceDirection,
   InvoiceSearchRow,
   SearchInvoicesResult,
   SearchDirectoryFrResult,

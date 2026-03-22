@@ -67,13 +67,3 @@ export interface MCPToolWireFormat {
   _meta?: { ui: { resourceUri: string } };
 }
 
-/** Convert an EInvoiceTool to MCP wire format */
-export function toMCPWireFormat(tool: EInvoiceTool): MCPToolWireFormat {
-  const wire: MCPToolWireFormat = {
-    name: tool.name,
-    description: tool.description,
-    inputSchema: tool.inputSchema,
-  };
-  if (tool._meta) wire._meta = tool._meta;
-  return wire;
-}

@@ -27,6 +27,7 @@ import type {
 } from "../../adapter.ts";
 import type { AfnorClient } from "./client.ts";
 import { BaseAdapter } from "../base-adapter.ts";
+import { NotSupportedError } from "../shared/errors.ts";
 import { normalizeDirection } from "../shared/direction.ts";
 
 /**
@@ -163,9 +164,10 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
   /** Get the AFNOR client or throw if not configured. */
   protected requireAfnor(method: string): AfnorClient {
     if (!this.afnor) {
-      throw new Error(
-        `[${this.name}] ${method}: AFNOR API not configured. ` +
-        `Override this method with native implementation.`,
+      throw new NotSupportedError(
+        this.name,
+        method,
+        "AFNOR API not configured. Override this method with native implementation.",
       );
     }
     return this.afnor;

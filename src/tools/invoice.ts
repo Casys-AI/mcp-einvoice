@@ -232,7 +232,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
       return {
         data,
-        count: rows.length,
+        count: count ?? rows.length,
         _title: titleParts.join(" "),
         _rowAction: {
           toolName: "einvoice_invoice_get",
