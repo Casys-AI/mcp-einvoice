@@ -107,6 +107,10 @@ const DIRECTION_FIELDS = new Set(["direction", "Direction"]);
 const HIDDEN_FIELDS = new Set(["doctype", "owner", "modified_by", "creation", "modified", "idx", "_rowAction"]);
 const FILTERABLE_COLUMNS = new Set(["Direction", "Statut", "Type", "Scope", "Pays", "status", "direction", "type"]);
 
+// Statuts pertinents selon la direction (lifecycle PPF)
+const RECEIVED_STATUSES = new Set(["delivered", "in_hand", "approved", "partially_approved", "refused", "disputed", "suspended", "payment_sent", "completed"]);
+const SENT_STATUSES = new Set(["submitted", "issued", "delivered", "approved", "payment_received", "completed", "rejected"]);
+
 function isStatusField(key: string): boolean {
   return STATUS_FIELDS.has(key.toLowerCase());
 }
@@ -557,6 +561,8 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
   const rows = data.data ?? [];
 
   // Auto-detect filterable columns: columns with 2-8 distinct values
+  // Status values are filtered by active direction chip
+  const activeDirection = chipFilters["Direction"];
   const filterableColumns = useMemo(() => {
     if (rows.length < 2) return [];
     const candidates: { col: string; values: string[] }[] = [];
@@ -569,11 +575,22 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
         if (distinct.size > 8) break;
       }
       if (distinct.size >= 2 && distinct.size <= 8) {
-        candidates.push({ col, values: Array.from(distinct).sort() });
+        let values = Array.from(distinct).sort();
+        // Filter status chips by direction when a direction filter is active
+        if (isStatusField(col) && activeDirection) {
+          const relevantStatuses = activeDirection === "Entrante" ? RECEIVED_STATUSES
+            : activeDirection === "Sortante" ? SENT_STATUSES : null;
+          if (relevantStatuses) {
+            values = values.filter((v) => relevantStatuses.has(v.toLowerCase()));
+          }
+        }
+        if (values.length >= 2) {
+          candidates.push({ col, values });
+        }
       }
     }
     return candidates;
-  }, [rows]);
+  }, [rows, activeDirection]);
 
   const columns = useMemo(() => {
     if (rows.length === 0) return [];
