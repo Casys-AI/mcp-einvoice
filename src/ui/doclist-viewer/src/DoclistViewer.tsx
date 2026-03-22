@@ -107,9 +107,11 @@ const DIRECTION_FIELDS = new Set(["direction", "Direction"]);
 const HIDDEN_FIELDS = new Set(["doctype", "owner", "modified_by", "creation", "modified", "idx", "_rowAction"]);
 const FILTERABLE_COLUMNS = new Set(["Direction", "Statut", "Type", "Scope", "Pays", "status", "direction", "type"]);
 
-// Statuts pertinents selon la direction (lifecycle PPF)
+// Statuts pertinents selon la direction (lifecycle PPF/CDAR)
+// Reçue (acheteur): on reçoit, on accepte/refuse, on paie
 const RECEIVED_STATUSES = new Set(["delivered", "in_hand", "approved", "partially_approved", "refused", "disputed", "suspended", "payment_sent", "completed"]);
-const SENT_STATUSES = new Set(["submitted", "issued", "delivered", "approved", "payment_received", "completed", "rejected"]);
+// Envoyée (vendeur): on émet, c'est livré, l'acheteur traite, on reçoit le paiement
+const SENT_STATUSES = new Set(["submitted", "issued", "delivered", "approved", "partially_approved", "refused", "disputed", "payment_received", "completed", "rejected"]);
 
 function isStatusField(key: string): boolean {
   return STATUS_FIELDS.has(key.toLowerCase());
