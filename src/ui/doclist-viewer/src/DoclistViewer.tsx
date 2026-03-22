@@ -625,77 +625,212 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
     else { setSortKey(key); setSortDir("asc"); }
   }, [sortKey]);
 
+  const title = data._title ?? data.doctype ?? "Documents";
+  const secondaryButtonStyle: CSSProperties = {
+    ...styles.button,
+    background: colors.bg.elevated,
+    border: "1px solid transparent",
+    borderRadius: 10,
+    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.04em",
+    padding: "0 12px",
+    height: 32,
+  };
+
   return (
     <div style={{ padding: 16, fontFamily: fonts.sans }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>{data._title ?? data.doctype ?? "Documents"}</div>
-          <div style={{ fontSize: 12, color: colors.text.muted }}>{sorted.length} {t("of")} {data.count ?? rows.length} {t("results")}</div>
-          <div aria-live="polite" style={{ fontSize: 11, color: colors.text.faint, marginTop: 4 }}>
-            {refreshing ? t("refreshing") : t("refresh_auto")}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary, lineHeight: 1.2 }}>{title}</div>
+            <div style={{ fontSize: 12, color: colors.text.muted, marginTop: 4 }}>
+              {sorted.length} {t("of")} {data.count ?? rows.length} {t("results")}
+            </div>
+            <div
+              aria-live="polite"
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                color: colors.text.faint,
+                opacity: 0.55,
+                marginTop: 6,
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+              }}
+            >
+              {refreshing ? t("refreshing") : t("refresh_auto")}
+            </div>
           </div>
-          {error && <FeedbackBanner type="error" message={error} onDismiss={() => onError(null)} />}
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="text" placeholder={t("search")} value={filter} onChange={(e) => { setFilter(e.target.value); setPage(0); }}
-            style={{ ...styles.input, maxWidth: 200 }}
-            onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = colors.accent; }}
-            onBlur={(e) => { (e.target as HTMLInputElement).style.borderColor = colors.border; }}
-          />
-          <button onClick={onRefresh} disabled={refreshing} style={styles.button}
-            onMouseEnter={(e) => { if (!refreshing) { (e.currentTarget as HTMLElement).style.borderColor = colors.accent; (e.currentTarget as HTMLElement).style.color = colors.accent; } }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = colors.border; (e.currentTarget as HTMLElement).style.color = colors.text.secondary; }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+            <button
+              onClick={onRefresh}
+              disabled={refreshing}
+              title={t("refresh")}
+              aria-label={t("refresh")}
+              style={{
+                ...secondaryButtonStyle,
+                width: 32,
+                minWidth: 32,
+                padding: 0,
+                justifyContent: "center",
+                opacity: refreshing ? 0.65 : 1,
+              }}
+              onMouseEnter={(e) => {
+                if (!refreshing) {
+                  (e.currentTarget as HTMLElement).style.background = colors.bg.hover;
+                  (e.currentTarget as HTMLElement).style.color = colors.accent;
+                }
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = colors.bg.elevated;
+                (e.currentTarget as HTMLElement).style.color = colors.text.secondary;
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <path d="M10 6a4 4 0 1 1-1.1-2.76" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                 <path d="M10 2v2.8H7.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              {refreshing ? "…" : t("refresh")}
-            </span>
-          </button>
-          <button onClick={() => exportCsv(columns, sorted, data.doctype)} style={styles.button}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = colors.accent; (e.currentTarget as HTMLElement).style.color = colors.accent; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = colors.border; (e.currentTarget as HTMLElement).style.color = colors.text.secondary; }}
-          >CSV</button>
+            </button>
+            <button
+              onClick={() => exportCsv(columns, sorted, data.doctype)}
+              style={secondaryButtonStyle}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = colors.bg.hover;
+                (e.currentTarget as HTMLElement).style.color = colors.accent;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = colors.bg.elevated;
+                (e.currentTarget as HTMLElement).style.color = colors.text.secondary;
+              }}
+            >
+              CSV
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Filter chips */}
-      {filterableColumns.length > 0 && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
-          {filterableColumns.map(({ col, values }) => (
-            <Fragment key={col}>
-              <span style={{ fontSize: 10, color: colors.text.faint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{col}</span>
-              <button
-                onClick={() => { setChipFilters(prev => { const next = { ...prev }; delete next[col]; return next; }); setPage(0); }}
-                style={{ ...styles.button, padding: "2px 8px", fontSize: 10, ...(chipFilters[col] == null ? { background: colors.accentDim, borderColor: colors.accent, color: colors.accent } : {}) }}
-              >{t("all")}</button>
-              {values.map(v => {
-                const isActive = chipFilters[col] === v;
-                const statusScheme = isStatusField(col) ? STATUS_REGISTRY[v.toLowerCase()] : null;
-                return (
-                  <button key={v}
-                    onClick={() => { setChipFilters(prev => ({ ...prev, [col]: v })); setPage(0); }}
-                    style={{
-                      ...styles.button, padding: "2px 8px", fontSize: 10,
-                      ...(isActive ? { background: statusScheme?.bg ?? colors.accentDim, borderColor: statusScheme?.color ?? colors.accent, color: statusScheme?.color ?? colors.accent } : {}),
-                    }}
-                  >{getStatusLabel(v)}</button>
-                );
-              })}
-            </Fragment>
-          ))}
+        <div style={{ position: "relative", width: "100%" }}>
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: 14,
+              transform: "translateY(-50%)",
+              color: colors.text.faint,
+              opacity: 0.6,
+              pointerEvents: "none",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+              <path d="M14.1667 14.1667L17.5 17.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              <circle cx="8.75" cy="8.75" r="5.41667" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            placeholder={t("search")}
+            value={filter}
+            onChange={(e) => { setFilter(e.target.value); setPage(0); }}
+            style={{
+              ...styles.input,
+              width: "100%",
+              maxWidth: "100%",
+              background: colors.bg.elevated,
+              border: "1px solid transparent",
+              borderRadius: 12,
+              padding: "10px 14px 10px 40px",
+              fontSize: 13,
+            }}
+            onFocus={(e) => {
+              (e.target as HTMLInputElement).style.borderColor = colors.accent;
+              (e.target as HTMLInputElement).style.boxShadow = `0 0 0 1px ${colors.accentDim}`;
+            }}
+            onBlur={(e) => {
+              (e.target as HTMLInputElement).style.borderColor = "transparent";
+              (e.target as HTMLInputElement).style.boxShadow = "none";
+            }}
+          />
         </div>
-      )}
+
+        {error && <FeedbackBanner type="error" message={error} onDismiss={() => onError(null)} />}
+
+        {filterableColumns.length > 0 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            {filterableColumns.map(({ col, values }) => (
+              <Fragment key={col}>
+                <span style={{ fontSize: 10, color: colors.text.faint, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                  {col}
+                </span>
+                <button
+                  onClick={() => { setChipFilters(prev => { const next = { ...prev }; delete next[col]; return next; }); setPage(0); }}
+                  style={{
+                    ...styles.button,
+                    padding: "4px 10px",
+                    fontSize: 10,
+                    borderRadius: 8,
+                    border: "1px solid transparent",
+                    background: chipFilters[col] == null ? colors.accentDim : colors.bg.elevated,
+                    color: chipFilters[col] == null ? colors.accent : colors.text.secondary,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  {t("all")}
+                </button>
+                {values.map(v => {
+                  const isActive = chipFilters[col] === v;
+                  const statusScheme = isStatusField(col) ? STATUS_REGISTRY[v.toLowerCase()] : null;
+                  return (
+                    <button
+                      key={v}
+                      onClick={() => { setChipFilters(prev => ({ ...prev, [col]: v })); setPage(0); }}
+                      style={{
+                        ...styles.button,
+                        padding: "4px 10px",
+                        fontSize: 10,
+                        borderRadius: 8,
+                        border: "1px solid transparent",
+                        background: isActive ? statusScheme?.bg ?? colors.accentDim : colors.bg.elevated,
+                        color: isActive ? statusScheme?.color ?? colors.accent : colors.text.secondary,
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {getStatusLabel(v)}
+                    </button>
+                  );
+                })}
+              </Fragment>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div style={{ background: colors.bg.surface, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: Math.max(600, columns.length * 120) }}>
+          <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: Math.max(600, columns.length * 110) }}>
             <thead>
               <tr>
                 {columns.map((col) => (
-                  <th key={col} onClick={() => handleSort(col)} style={{ ...styles.tableHeader, background: colors.bg.elevated, color: sortKey === col ? colors.accent : colors.text.faint }}>
+                  <th
+                    key={col}
+                    onClick={() => handleSort(col)}
+                    style={{
+                      ...styles.tableHeader,
+                      background: colors.bg.elevated,
+                      color: sortKey === col ? colors.accent : colors.text.faint,
+                      padding: "9px 12px",
+                      fontSize: 10,
+                      letterSpacing: "0.1em",
+                      borderBottom: "none",
+                    }}
+                  >
                     {col.replace(/_/g, " ")}
                     <span style={{ marginLeft: 4, opacity: sortKey === col ? 1 : 0.3, fontSize: 10 }}>
                       {sortKey === col ? (sortDir === "asc" ? "\u25B2" : "\u25BC") : "\u21C5"}
@@ -704,9 +839,13 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody style={{ background: colors.bg.root }}>
               {pageRows.length === 0 ? (
-                <tr><td colSpan={columns.length} style={{ ...styles.tableCell, textAlign: "center", color: colors.text.muted, padding: 32 }}>{t("no_results")}</td></tr>
+                <tr>
+                  <td colSpan={columns.length} style={{ ...styles.tableCell, textAlign: "center", color: colors.text.muted, padding: 32, background: colors.bg.root }}>
+                    {t("no_results")}
+                  </td>
+                </tr>
               ) : pageRows.map((row, idx) => {
                 const rowId = rowAction ? String(getNestedValue(row, rowAction.idField) ?? "") : String(row._id ?? "");
                 const isExpanded = expandedId === rowId && rowId !== "";
@@ -714,29 +853,72 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                 <Fragment key={idx}>
                 <tr
                   style={{
-                    transition: "background 0.1s",
+                    transition: "background 0.15s",
                     cursor: isClickable ? "pointer" : "default",
-                    background: isExpanded ? colors.bg.hover : idx % 2 === 1 ? colors.bg.surface : undefined,
+                    background: isExpanded ? colors.bg.hover : idx % 2 === 1 ? colors.bg.surface : colors.bg.root,
                   }}
                   onClick={isClickable ? () => void onRowClick(row) : undefined}
                   onMouseEnter={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = colors.bg.hover; }}
-                  onMouseLeave={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = idx % 2 === 1 ? colors.bg.surface : "transparent"; }}
+                  onMouseLeave={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = idx % 2 === 1 ? colors.bg.surface : colors.bg.root; }}
                 >
                   {columns.map((col, colIdx) => {
                     const val = row[col];
                     const isNum = typeof val === "number";
                     const isStatus = isStatusField(col) && typeof val === "string";
                     const isDirection = isDirectionField(col) && typeof val === "string";
+                    const cellValue = isStatus
+                      ? <StatusCell value={statusOverrides[rowId] ?? val as string} />
+                      : isDirection
+                        ? <DirectionCell value={val as string} />
+                        : formatCell(val);
                     return (
-                      <td key={col} style={{ ...styles.tableCell, ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 11, fontWeight: 600 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <td
+                        key={col}
+                        style={{
+                          ...styles.tableCell,
+                          padding: "11px 12px",
+                          textAlign: isNum ? "right" : isStatus || isDirection ? "center" : "left",
+                          fontFamily: isNum ? fonts.mono : fonts.sans,
+                          fontSize: isNum ? 11 : 12,
+                          fontWeight: isNum ? 700 : (col === "name" || col === "id" ? 500 : 400),
+                          color: isNum ? colors.text.primary : colors.text.secondary,
+                          maxWidth: 250,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          background: "transparent",
+                        } as CSSProperties}
+                      >
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: isNum ? "flex-end" : isStatus || isDirection ? "center" : "flex-start",
+                            gap: 6,
+                            minWidth: 0,
+                          }}
+                        >
                           {isClickable && colIdx === 0 && (
                             <span style={{ fontSize: 10, color: colors.text.faint, transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block", flexShrink: 0 }}>▶</span>
                           )}
                           {expandedLoading && isExpanded && colIdx === 0 && (
                             <span className="skeleton" style={{ width: 12, height: 12, borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
                           )}
-                          {isStatus ? <StatusCell value={statusOverrides[rowId] ?? val as string} /> : isDirection ? <DirectionCell value={val as string} /> : formatCell(val)}
+                          {typeof cellValue === "string" ? (
+                            <span
+                              title={cellValue}
+                              style={{
+                                display: "block",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                width: "100%",
+                                minWidth: 0,
+                              }}
+                            >
+                              {cellValue}
+                            </span>
+                          ) : cellValue}
                         </span>
                       </td>
                     );
