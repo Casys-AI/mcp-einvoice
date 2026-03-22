@@ -79,12 +79,9 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_submit",
     requires: ["emitInvoice"],
     description:
-      "Submit (emit) an invoice to the e-invoicing platform — this sends it for real. " +
-      "Provide EITHER a generated_id (from a generate preview, shown in the invoice viewer with a 'Submit' button) " +
-      "OR file_base64 + filename for direct upload. " +
-      "IMPORTANT: If the user already clicked 'Submit' in the invoice viewer, the invoice is already sent — do NOT call this again. " +
-      "The generated_id expires after 10 minutes and is consumed on first use. " +
-      "Returns the invoice GUID. The platform validates, issues (ISSUED), and delivers it automatically.",
+      "Submit an invoice to the e-invoicing platform. " +
+      "Usually triggered by the viewer's Submit button — do not call manually after a generate preview. " +
+      "Accepts generated_id OR file_base64 + filename.",
     category: "invoice",
     inputSchema: {
       type: "object",
@@ -474,6 +471,8 @@ export const invoiceTools: EInvoiceTool[] = [
       return {
         generated_id,
         filename,
+        _status: "preview",
+        _hint: "Invoice preview ready. The user can submit it via the viewer button. Do NOT call einvoice_invoice_submit — the viewer handles it.",
         preview: mapToViewerPreview(inv),
       };
     },
@@ -521,6 +520,8 @@ export const invoiceTools: EInvoiceTool[] = [
       return {
         generated_id,
         filename,
+        _status: "preview",
+        _hint: "Invoice preview ready. The user can submit it via the viewer button. Do NOT call einvoice_invoice_submit — the viewer handles it.",
         preview: mapToViewerPreview(inv),
       };
     },
@@ -573,6 +574,8 @@ export const invoiceTools: EInvoiceTool[] = [
       return {
         generated_id,
         filename,
+        _status: "preview",
+        _hint: "Invoice preview ready. The user can submit it via the viewer button. Do NOT call einvoice_invoice_submit — the viewer handles it.",
         preview: mapToViewerPreview(inv),
       };
     },
