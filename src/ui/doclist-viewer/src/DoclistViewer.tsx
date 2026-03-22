@@ -50,29 +50,19 @@ import { MATERIAL_ICON_PATHS } from "~/shared/material-icons";
 
 function StatusCell({ value }: { value: string }) {
   const s = getStatus(value);
-  const path = MATERIAL_ICON_PATHS[s.icon];
   return (
     <span
       title={s.label}
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 26,
-        height: 26,
-        borderRadius: 6,
-        background: s.bg,
+        display: "inline-block",
+        width: 3,
+        height: 20,
+        borderRadius: 3,
+        background: s.color,
+        opacity: 0.85,
         cursor: "default",
       }}
-    >
-      {path ? (
-        <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 -960 960 960" fill={s.color}>
-          <path d={path} />
-        </svg>
-      ) : (
-        <span style={{ fontSize: 12, color: s.color, fontWeight: 700 }}>{s.icon.charAt(0).toUpperCase()}</span>
-      )}
-    </span>
+    />
   );
 }
 
@@ -723,10 +713,14 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                 return (
                 <Fragment key={idx}>
                 <tr
-                  style={{ transition: "background 0.1s", cursor: isClickable ? "pointer" : "default", background: isExpanded ? colors.bg.hover : undefined }}
+                  style={{
+                    transition: "background 0.1s",
+                    cursor: isClickable ? "pointer" : "default",
+                    background: isExpanded ? colors.bg.hover : idx % 2 === 1 ? colors.bg.surface : undefined,
+                  }}
                   onClick={isClickable ? () => void onRowClick(row) : undefined}
                   onMouseEnter={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = colors.bg.hover; }}
-                  onMouseLeave={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                  onMouseLeave={(e) => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = idx % 2 === 1 ? colors.bg.surface : "transparent"; }}
                 >
                   {columns.map((col, colIdx) => {
                     const val = row[col];
@@ -734,7 +728,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                     const isStatus = isStatusField(col) && typeof val === "string";
                     const isDirection = isDirectionField(col) && typeof val === "string";
                     return (
-                      <td key={col} style={{ ...styles.tableCell, ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 12 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
+                      <td key={col} style={{ ...styles.tableCell, borderBottom: "none", ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 12 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                           {isClickable && colIdx === 0 && (
                             <span style={{ fontSize: 10, color: colors.text.faint, transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block", flexShrink: 0 }}>▶</span>
