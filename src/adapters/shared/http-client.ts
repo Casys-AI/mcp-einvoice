@@ -40,7 +40,7 @@ export abstract class BaseHttpClient {
     path: string,
     options?: {
       body?: unknown;
-      query?: Record<string, string | number | boolean | undefined>;
+      query?: Record<string, string | number | boolean | string[] | undefined>;
       headers?: Record<string, string>;
       contentType?: string;
     },
@@ -49,7 +49,10 @@ export abstract class BaseHttpClient {
 
     if (options?.query) {
       for (const [key, value] of Object.entries(options.query)) {
-        if (value !== undefined) {
+        if (value === undefined) continue;
+        if (Array.isArray(value)) {
+          for (const v of value) url.searchParams.append(key, v);
+        } else {
           url.searchParams.set(key, String(value));
         }
       }
@@ -111,7 +114,7 @@ export abstract class BaseHttpClient {
 
   async get<T = unknown>(
     path: string,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, string | number | boolean | string[] | undefined>,
   ): Promise<T> {
     return this.request<T>("GET", path, { query });
   }

@@ -72,10 +72,14 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
-    const direction = (filters.q === "in" || filters.q === "out") ? filters.q : undefined;
-    // expand[] embedded in path (BaseHttpClient.get query only supports single values per key)
+    // Map normalized direction to SuperPDP API format ("in"/"out")
+    const direction = filters.direction === "received" ? "in"
+      : filters.direction === "sent" ? "out"
+      // Legacy: also accept raw "in"/"out" in q for backwards compat
+      : (filters.q === "in" || filters.q === "out") ? filters.q : undefined;
     // deno-lint-ignore no-explicit-any
-    const raw = await this.client.get("/invoices?expand[]=en_invoice&expand[]=events", {
+    const raw = await this.client.get("/invoices", {
+      "expand[]": ["en_invoice", "events"],
       ...(direction ? { direction } : {}),
       ...(filters.limit ? { limit: filters.limit } : {}),
       ...(filters.offset ? { starting_after_id: String(filters.offset) } : {}),

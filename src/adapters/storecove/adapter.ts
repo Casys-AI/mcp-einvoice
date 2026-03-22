@@ -11,7 +11,6 @@
  */
 
 import type {
-  EInvoiceAdapter,
   AdapterMethodName,
   InvoiceDetail,
   SearchInvoicesResult,
@@ -19,32 +18,24 @@ import type {
   ListBusinessEntitiesResult,
   StatusHistoryResult,
   DownloadResult,
-  PaginatedRequest,
   EmitInvoiceRequest,
   InvoiceSearchFilters,
   DirectoryFrSearchFilters,
-  DirectoryIntSearchFilters,
   SendStatusRequest,
-  GenerateInvoiceRequest,
-  GenerateFacturXRequest,
-  CreateWebhookRequest,
-  UpdateWebhookRequest,
 } from "../../adapter.ts";
+import { BaseAdapter } from "../base-adapter.ts";
 import { StorecoveClient } from "./client.ts";
-import { NotSupportedError } from "../shared/errors.ts";
 import { requireEnv } from "../shared/env.ts";
 import { uint8ToBase64 } from "../shared/encoding.ts";
 import { env } from "../../runtime.ts";
 
-// NotSupportedError and requireEnv imported from shared
-
 /**
  * Storecove adapter for the EInvoice interface.
  *
- * Maps each EInvoiceAdapter method to the corresponding Storecove REST endpoint.
- * Unsupported methods throw NotSupportedError with an explanation.
+ * Extends BaseAdapter — only overrides methods with real Storecove API mappings.
+ * Unimplemented methods inherit NotSupportedError from BaseAdapter.
  */
-export class StorecoveAdapter implements EInvoiceAdapter {
+export class StorecoveAdapter extends BaseAdapter {
   readonly name = "storecove";
 
   /** Only methods with real Storecove API mappings. */

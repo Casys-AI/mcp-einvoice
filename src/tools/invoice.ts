@@ -187,29 +187,22 @@ export const invoiceTools: EInvoiceTool[] = [
       let q = input.q as string | undefined;
       if (q != null && /^\s*\*?\s*$/.test(q)) q = undefined;
 
-      // Adapter returns normalized SearchInvoicesResult (with status enrichment done internally)
+      // Pass direction/status to adapter for server-side filtering when supported.
+      // Adapters that can't filter server-side should filter internally or return all.
+      const dirFilter = input.direction as "sent" | "received" | undefined;
+      const statusFilter = input.status as string | undefined;
+
       const { rows, count } = await ctx.adapter.searchInvoices({
         q,
+        direction: dirFilter,
+        status: statusFilter,
         offset: input.offset as number | undefined,
         limit: input.limit as number | undefined,
       });
 
-      // Direction filter
-      const dirFilter = input.direction as string | undefined;
-      let filtered = rows;
-      if (dirFilter) {
-        filtered = filtered.filter((r) => r.direction === dirFilter);
-      }
-
-      // Status filter
-      const statusFilter = input.status as string | undefined;
-      if (statusFilter) {
-        filtered = filtered.filter((r) => r.status === statusFilter);
-      }
-
       // Priority columns — fits ~500px without horizontal scroll
       // Direction as normalized value for icon rendering in doclist-viewer
-      const data = filtered.map((r) => {
+      const data = rows.map((r) => {
         const shortDate = r.date
           ? new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
           : "";
@@ -232,7 +225,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
       return {
         data,
-        count: filtered.length,
+        count: rows.length,
         _title: titleParts.join(" "),
         _rowAction: {
           toolName: "einvoice_invoice_get",

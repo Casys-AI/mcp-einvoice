@@ -81,12 +81,17 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   }
 
   override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+    // Map direction to Iopole API parameter
+    const directionParam = filters.direction === "received" ? "RECEIVED"
+      : filters.direction === "sent" ? "SENT" : undefined;
+
     // deno-lint-ignore no-explicit-any
     const raw = await this.client.getV11("/invoice/search", {
       q: filters.q,
       expand: filters.expand ?? "businessData",
       offset: filters.offset ?? 0,
       limit: filters.limit ?? 50,
+      ...(directionParam ? { direction: directionParam } : {}),
     }) as any;
 
     const data = (raw.data ?? []) as Array<Record<string, unknown>>;

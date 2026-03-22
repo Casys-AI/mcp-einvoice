@@ -16,6 +16,7 @@ import {
 } from "./tools/mod.ts";
 import type { EInvoiceTool, EInvoiceToolCategory, JSONSchema, MCPToolWireFormat } from "./tools/types.ts";
 import type { EInvoiceAdapter } from "./adapter.ts";
+import { withErrorHandler } from "./tools/error-handler.ts";
 
 // Re-export from tools
 export {
@@ -88,8 +89,9 @@ export class EInvoiceToolsClient {
   ): Map<string, (args: Record<string, unknown>) => Promise<unknown>> {
     const handlers = new Map<string, (args: Record<string, unknown>) => Promise<unknown>>();
     for (const tool of this.supportedTools(adapter)) {
+      const wrapped = withErrorHandler(tool.name, tool.handler);
       handlers.set(tool.name, async (args: Record<string, unknown>) => {
-        return await tool.handler(args, { adapter });
+        return await wrapped(args, { adapter });
       });
     }
     return handlers;

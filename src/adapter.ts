@@ -30,7 +30,13 @@ export interface EmitInvoiceRequest {
 }
 
 export interface InvoiceSearchFilters extends PaginatedRequest {
+  /** Free-text query (adapter-dependent: Iopole supports Lucene, others may ignore). */
   q?: string;
+  /** Direction filter (normalized: "sent" | "received"). */
+  direction?: "sent" | "received";
+  /** Status filter (normalized lifecycle key, e.g. "approved", "delivered"). */
+  status?: string;
+  /** Expand nested data (adapter-specific). */
   expand?: string;
 }
 
