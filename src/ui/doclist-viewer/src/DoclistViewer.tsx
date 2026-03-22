@@ -894,9 +894,6 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                             minWidth: 0,
                           }}
                         >
-                          {isClickable && colIdx === 0 && (
-                            <span style={{ fontSize: 10, color: colors.text.faint, transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block", flexShrink: 0 }}>▶</span>
-                          )}
                           {expandedLoading && isExpanded && colIdx === 0 && (
                             <span className="skeleton" style={{ width: 12, height: 12, borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
                           )}

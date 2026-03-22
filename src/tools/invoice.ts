@@ -215,13 +215,15 @@ export const invoiceTools: EInvoiceTool[] = [
         const shortDate = r.date
           ? new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
           : "";
+        // "Tiers" = the other party (sender if received, receiver if sent)
+        const tiers = r.direction === "sent" ? r.receiverName : r.senderName;
         return {
           _id: r.id,
           _direction: r.direction,
           "Direction": r.direction === "received" ? "Entrante" : r.direction === "sent" ? "Sortante" : "—",
           "N°": r.invoiceNumber ?? "—",
           "Statut": r.status ?? "—",
-          "Émetteur": r.senderName ?? "—",
+          "Tiers": tiers ?? "—",
           "Date": shortDate || "—",
           "Montant": r.amount != null ? `${Number(r.amount).toLocaleString("fr-FR")} ${r.currency ?? "EUR"}` : "—",
         };
