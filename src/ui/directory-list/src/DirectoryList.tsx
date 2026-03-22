@@ -320,7 +320,7 @@ export function DirectoryList() {
     );
   }
 
-  if (!data || entries.length === 0) {
+  if (!data) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <BrandHeader />
@@ -366,7 +366,12 @@ export function DirectoryList() {
           />
         </div>
 
-        {/* Cards */}
+        {/* Cards or empty filter message */}
+        {entries.length === 0 && filter && (
+          <div style={{ textAlign: "center", padding: "32px 16px", color: colors.text.muted, fontSize: 13 }}>
+            {t("no_results")}
+          </div>
+        )}
         {entries.map((row, idx) => {
           const entry = (row._detail ?? row) as DirectoryEntry;
           const id = String(row._id ?? idx);
