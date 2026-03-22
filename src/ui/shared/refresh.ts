@@ -5,6 +5,7 @@ export interface UiRefreshRequestData {
 
 export interface ToolResultPayload {
   content?: Array<{ type: string; text?: string }>;
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 }
 
@@ -45,6 +46,15 @@ export function normalizeUiRefreshFailureMessage(cause: unknown): string {
   return "Refresh failed";
 }
 
+/**
+ * Extract tool result data. Prefers structuredContent (SDK 1.27) over content text.
+ * Returns the JSON string for parsing by viewers.
+ */
 export function extractToolResultText(result: ToolResultPayload): string | null {
+  // structuredContent: viewer data separated from LLM summary (SDK 1.27)
+  if (result.structuredContent) {
+    return JSON.stringify(result.structuredContent);
+  }
+  // Fallback: legacy content text (pre-structuredContent tools)
   return result.content?.find((entry) => entry.type === "text")?.text ?? null;
 }
