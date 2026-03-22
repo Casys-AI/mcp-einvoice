@@ -131,7 +131,7 @@ async function main() {
   server.registerViewers({
     prefix: "mcp-einvoice",
     moduleUrl: import.meta.url,
-    viewers: ["invoice-viewer", "doclist-viewer", "status-timeline", "directory-card", "action-result"],
+    viewers: ["invoice-viewer", "doclist-viewer", "status-timeline", "directory-card", "directory-list", "action-result"],
     exists: statSync,
     readFile: readTextFile,
   });

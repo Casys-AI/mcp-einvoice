@@ -19,7 +19,7 @@ export const directoryTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_directory_fr_search",
-    _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/directory-list" } },
     requires: ["searchDirectoryFr"],
     description:
       "Search the French PPF directory (Portail Public de Facturation). " +
@@ -88,7 +88,7 @@ export const directoryTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_directory_int_search",
-    _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/directory-list" } },
     requires: ["searchDirectoryInt"],
     description:
       "Search the international Peppol directory. " +

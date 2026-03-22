@@ -128,14 +128,14 @@ Deno.test("einvoice_directory_peppol_check - throws without scheme or value", as
   );
 });
 
-Deno.test("einvoice_directory_fr_search has doclist-viewer UI", () => {
+Deno.test("einvoice_directory_fr_search has directory-list UI", () => {
   const tool = findTool("einvoice_directory_fr_search");
-  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/directory-list");
 });
 
-Deno.test("einvoice_directory_int_search has doclist-viewer UI", () => {
+Deno.test("einvoice_directory_int_search has directory-list UI", () => {
   const tool = findTool("einvoice_directory_int_search");
-  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/directory-list");
 });
 
 Deno.test("einvoice_directory_peppol_check has no UI viewer", () => {
