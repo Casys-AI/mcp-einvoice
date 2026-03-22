@@ -110,7 +110,8 @@ export class EInvoiceToolsClient {
           `Available: ${this.tools.map((t) => t.name).join(", ")}`,
       );
     }
-    return await tool.handler(args, { adapter });
+    const wrapped = withErrorHandler(tool.name, tool.handler);
+    return await wrapped(args, { adapter });
   }
 
   /** Get tool count */

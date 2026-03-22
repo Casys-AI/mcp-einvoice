@@ -7,7 +7,7 @@
  * @module lib/einvoice/src/client_test
  */
 
-import { assertEquals, assertRejects } from "jsr:@std/assert";
+import { assert, assertEquals, assertRejects } from "jsr:@std/assert";
 import { EInvoiceToolsClient } from "./client.ts";
 import { createMockAdapter } from "./testing/helpers.ts";
 
@@ -135,6 +135,22 @@ Deno.test("EInvoiceToolsClient.execute() - calls correct adapter method", async 
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "searchInvoices");
+});
+
+Deno.test("EInvoiceToolsClient.execute() - normalizes errors instead of throwing", async () => {
+  // Create an adapter whose searchInvoices throws a validation error
+  const { adapter } = createMockAdapter();
+  // Override searchInvoices to throw
+  adapter.searchInvoices = () => { throw new Error("'q' is required"); };
+
+  const client = new EInvoiceToolsClient();
+  // execute() should NOT throw — it should return a normalized error object
+  const result = await client.execute("einvoice_invoice_search", {}, adapter) as Record<string, unknown>;
+
+  assertEquals(result.error, true);
+  assertEquals(result.code, "VALIDATION");
+  assert(typeof result.message === "string");
+  assert((result.message as string).includes("is required"));
 });
 
 Deno.test("EInvoiceToolsClient.execute() - throws on unknown tool", async () => {
