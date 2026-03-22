@@ -118,16 +118,17 @@ function isDirectionField(key: string): boolean {
 function DirectionCell({ value }: { value: string }) {
   const isReceived = value === "Entrante" || value === "received";
   const isSent = value === "Sortante" || value === "sent";
-  const icon = isReceived ? "call_received" : isSent ? "call_made" : null;
   const label = isReceived ? t("received") : isSent ? t("sent") : value;
-  const color = isReceived ? colors.info : isSent ? colors.accent : colors.text.muted;
-  const path = icon ? MATERIAL_ICON_PATHS[icon] : null;
+  const color = isReceived ? "#60a5fa" : isSent ? "#fb923c" : colors.text.muted;
+  // Stitch-style: simple ↓↑ arrows
   return (
-    <span title={label} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 6, cursor: "default" }}>
-      {path ? (
-        <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 -960 960 960" fill={color}><path d={path} /></svg>
+    <span title={label} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, cursor: "default" }}>
+      {isReceived ? (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M7 12l-3-3M7 12l3-3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      ) : isSent ? (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 12V2M7 2L4 5M7 2l3 3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
       ) : (
-        <span style={{ fontSize: 12, color }}>{label}</span>
+        <span style={{ fontSize: 11, color }}>—</span>
       )}
     </span>
   );
@@ -576,19 +577,14 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
 
   const columns = useMemo(() => {
     if (rows.length === 0) return [];
+    // Preserve insertion order from tool response (first row defines column order)
     const allKeys = new Set<string>();
     for (const row of rows) {
       for (const key of Object.keys(row)) {
         if (!HIDDEN_FIELDS.has(key) && !key.startsWith("_")) allKeys.add(key);
       }
     }
-    return Array.from(allKeys).sort((a, b) => {
-      if (a === "name" || a === "id") return -1;
-      if (b === "name" || b === "id") return 1;
-      if (isStatusField(a)) return -1;
-      if (isStatusField(b)) return 1;
-      return a.localeCompare(b);
-    });
+    return Array.from(allKeys);
   }, [rows]);
 
   const filtered = useMemo(() => {
