@@ -10,7 +10,7 @@
  * @module lib/einvoice/src/adapters/iopole
  */
 
-import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
+import { BaseAdapter } from "../base-adapter.ts";
 import type {
   AdapterMethodName,
   InvoiceDetail,
@@ -50,7 +50,7 @@ const IOPOLE_DEFAULT_AUTH_URL =
  * Maps each EInvoiceAdapter method to the corresponding Iopole REST endpoint.
  * No hidden heuristics — direct pass-through to the Iopole API.
  */
-export class IopoleAdapter extends AfnorBaseAdapter {
+export class IopoleAdapter extends BaseAdapter {
   readonly name = "iopole";
   readonly capabilities: Set<AdapterMethodName> = new Set<AdapterMethodName>([
     "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
@@ -70,7 +70,7 @@ export class IopoleAdapter extends AfnorBaseAdapter {
   private client: IopoleClient;
 
   constructor(client: IopoleClient) {
-    super(null); // no AFNOR client — pure passe-plat to native API
+    super();
     this.client = client;
   }
 
