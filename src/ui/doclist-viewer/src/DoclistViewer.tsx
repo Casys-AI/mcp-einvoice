@@ -689,13 +689,13 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
         </div>
       )}
 
-      <div style={{ border: `1px solid ${colors.border}`, borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ background: colors.bg.surface, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: Math.max(600, columns.length * 120) }}>
             <thead>
               <tr>
                 {columns.map((col) => (
-                  <th key={col} onClick={() => handleSort(col)} style={{ ...styles.tableHeader, background: colors.bg.surface, color: sortKey === col ? colors.accent : colors.text.muted }}>
+                  <th key={col} onClick={() => handleSort(col)} style={{ ...styles.tableHeader, background: colors.bg.elevated, color: sortKey === col ? colors.accent : colors.text.faint }}>
                     {col.replace(/_/g, " ")}
                     <span style={{ marginLeft: 4, opacity: sortKey === col ? 1 : 0.3, fontSize: 10 }}>
                       {sortKey === col ? (sortDir === "asc" ? "\u25B2" : "\u25BC") : "\u21C5"}
@@ -728,7 +728,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                     const isStatus = isStatusField(col) && typeof val === "string";
                     const isDirection = isDirectionField(col) && typeof val === "string";
                     return (
-                      <td key={col} style={{ ...styles.tableCell, borderBottom: "none", ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 12 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
+                      <td key={col} style={{ ...styles.tableCell, ...(isNum ? { textAlign: "right", fontFamily: fonts.mono, fontSize: 11, fontWeight: 600 } : {}), ...(col === "name" || col === "id" ? { fontWeight: 500 } : {}), maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as CSSProperties}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                           {isClickable && colIdx === 0 && (
                             <span style={{ fontSize: 10, color: colors.text.faint, transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block", flexShrink: 0 }}>▶</span>

@@ -97,14 +97,14 @@ export const styles = {
   } as CSSProperties,
 
   tableHeader: {
-    padding: "8px 12px",
+    padding: "6px 10px",
     textAlign: "left" as const,
-    fontSize: "11px",
-    fontWeight: 600,
-    color: colors.text.muted,
+    fontSize: "10px",
+    fontWeight: 700,
+    color: colors.text.faint,
     textTransform: "uppercase" as const,
-    letterSpacing: "0.05em",
-    borderBottom: `1px solid ${colors.border}`,
+    letterSpacing: "0.1em",
+    borderBottom: `1px solid ${colors.borderSubtle}`,
     cursor: "pointer",
     userSelect: "none" as const,
     whiteSpace: "nowrap" as const,
@@ -112,9 +112,9 @@ export const styles = {
   } as CSSProperties,
 
   tableCell: {
-    padding: "8px 12px",
-    fontSize: "13px",
-    borderBottom: `1px solid ${colors.borderSubtle}`,
+    padding: "7px 10px",
+    fontSize: "12px",
+    borderBottom: "none",
     color: colors.text.primary,
   } as CSSProperties,
 
