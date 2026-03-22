@@ -38,6 +38,16 @@ export interface EInvoiceToolContext {
  * A single E-Invoice MCP tool.
  * Each tool maps to a business operation via the adapter interface.
  */
+/** Behavioural hints for the model/host (MCP SDK 1.27). */
+export interface ToolAnnotations {
+  /** Short title for UI display */
+  title?: string;
+  /** True if the tool has no side effects (safe to call speculatively) */
+  readOnlyHint?: boolean;
+  /** True if the tool may produce irreversible effects */
+  destructiveHint?: boolean;
+}
+
 export interface EInvoiceTool {
   /** Unique tool name, snake_case, prefixed with einvoice_ */
   name: string;
@@ -49,6 +59,8 @@ export interface EInvoiceTool {
   inputSchema: JSONSchema;
   /** MCP Apps UI metadata (optional) */
   _meta?: { ui: { resourceUri: string } };
+  /** Behavioural hints for model/host */
+  annotations?: ToolAnnotations;
   /** Adapter method names this tool requires. Tool is hidden when the
    *  active adapter doesn't support all listed methods. */
   requires?: readonly AdapterMethodName[];
@@ -64,6 +76,7 @@ export interface MCPToolWireFormat {
   name: string;
   description: string;
   inputSchema: JSONSchema;
+  annotations?: ToolAnnotations;
   _meta?: { ui: { resourceUri: string } };
 }
 

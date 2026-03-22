@@ -37,6 +37,7 @@
  */
 
 import { ConcurrentMCPServer, launchInspector } from "@casys/mcp-server";
+import { einvoiceErrorMapper } from "./src/tools/error-mapper.ts";
 import { EInvoiceToolsClient } from "./src/client.ts";
 import type { EInvoiceAdapter } from "./src/adapter.ts";
 import { createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
@@ -117,6 +118,7 @@ async function main() {
     maxConcurrent: 10,
     backpressureStrategy: "queue",
     validateSchema: true,
+    toolErrorMapper: einvoiceErrorMapper,
     logger: (msg: string) => console.error(`${LOG_PREFIX} ${msg}`),
   });
 

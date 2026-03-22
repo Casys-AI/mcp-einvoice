@@ -77,6 +77,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_submit",
+    annotations: { destructiveHint: true },
     requires: ["emitInvoice"],
     description:
       "Submit an invoice to the e-invoicing platform. " +
@@ -148,6 +149,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_search",
+    annotations: { readOnlyHint: true },
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
     requires: ["searchInvoices"],
     description:
@@ -247,6 +249,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_get",
+    annotations: { readOnlyHint: true },
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     requires: ["getInvoice"],
     description:

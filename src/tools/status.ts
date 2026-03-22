@@ -14,6 +14,7 @@ export const statusTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_status_send",
+    annotations: { destructiveHint: true },
     requires: ["sendStatus"],
     description:
       "Send a lifecycle status update for an invoice. " +
@@ -73,6 +74,7 @@ export const statusTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_status_history",
+    annotations: { readOnlyHint: true },
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/status-timeline" } },
     requires: ["getStatusHistory"],
     description:

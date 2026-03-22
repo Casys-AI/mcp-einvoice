@@ -137,20 +137,17 @@ Deno.test("EInvoiceToolsClient.execute() - calls correct adapter method", async 
   assertEquals(calls[0].method, "searchInvoices");
 });
 
-Deno.test("EInvoiceToolsClient.execute() - normalizes errors instead of throwing", async () => {
-  // Create an adapter whose searchInvoices throws a validation error
+Deno.test("EInvoiceToolsClient.execute() - throws on handler error (framework catches via toolErrorMapper)", async () => {
   const { adapter } = createMockAdapter();
-  // Override searchInvoices to throw
   adapter.searchInvoices = () => { throw new Error("'q' is required"); };
 
   const client = new EInvoiceToolsClient();
-  // execute() should NOT throw — it should return a normalized error object
-  const result = await client.execute("einvoice_invoice_search", {}, adapter) as Record<string, unknown>;
-
-  assertEquals(result.error, true);
-  assertEquals(result.code, "VALIDATION");
-  assert(typeof result.message === "string");
-  assert((result.message as string).includes("is required"));
+  // execute() now throws — the framework's toolErrorMapper handles it at the MCP layer
+  await assertRejects(
+    () => client.execute("einvoice_invoice_search", {}, adapter),
+    Error,
+    "is required",
+  );
 });
 
 Deno.test("EInvoiceToolsClient.execute() - throws on unknown tool", async () => {
