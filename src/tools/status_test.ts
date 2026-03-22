@@ -6,7 +6,7 @@
 
 import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { statusTools } from "./status.ts";
-import { createMockAdapter } from "../testing/helpers.ts";
+import { createMockAdapter, unwrapStructured } from "../testing/helpers.ts";
 
 function findTool(name: string) {
   const tool = statusTools.find((t) => t.name === name);
@@ -66,7 +66,7 @@ Deno.test("einvoice_status_history - passes through adapter StatusHistoryResult"
   const { adapter } = createMockAdapter(mockResponse);
   const tool = findTool("einvoice_status_history");
 
-  const result = (await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
   assertEquals(Array.isArray(result.entries), true);
   assertEquals((result.entries as unknown[]).length, 1);
 });
@@ -76,7 +76,7 @@ Deno.test("einvoice_status_history - returns empty entries when adapter has none
   const { adapter } = createMockAdapter(mockResponse);
   const tool = findTool("einvoice_status_history");
 
-  const result = (await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
   assertEquals(result.entries, []);
 });
 

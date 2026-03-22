@@ -232,7 +232,7 @@ export const invoiceTools: EInvoiceTool[] = [
       const statusLabel = statusFilter ?? "";
       const titleParts = ["Factures", dirLabel, statusLabel ? `(${statusLabel})` : ""].filter(Boolean);
 
-      return {
+      const viewerData = {
         data,
         count: count ?? rows.length,
         _title: titleParts.join(" "),
@@ -241,6 +241,10 @@ export const invoiceTools: EInvoiceTool[] = [
           idField: "_id",
           argName: "id",
         },
+      };
+      return {
+        content: `${rows.length} ${titleParts.join(" ")} trouvées`,
+        structuredContent: viewerData,
       };
     },
   },
@@ -274,7 +278,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
       // Map to viewer format (snake_case for invoice-viewer compatibility)
       const isTerminal = ["REFUSED", "COMPLETED", "CANCELLED", "PAYMENT_RECEIVED", "UNKNOWN"].includes(inv.status ?? "");
-      return {
+      const viewerData = {
         id: inv.id,
         invoice_number: inv.invoiceNumber,
         status: inv.status,
@@ -307,6 +311,8 @@ export const invoiceTools: EInvoiceTool[] = [
           ? { refreshRequest: { toolName: "einvoice_invoice_get", arguments: { id } } }
           : {}),
       };
+      const summary = `Invoice ${inv.invoiceNumber ?? inv.id} — ${inv.status ?? "unknown"}, ${inv.direction ?? ""}, ${inv.totalTtc != null ? inv.totalTtc + " " + (inv.currency ?? "EUR") : "no amount"}`;
+      return { content: summary, structuredContent: viewerData };
     },
   },
 
@@ -331,7 +337,10 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_download] 'id' is required");
       }
       const { data, contentType } = await ctx.adapter.downloadInvoice(input.id as string);
-      return { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length };
+      return {
+        content: `Downloaded invoice source (${contentType}, ${data.length} bytes)`,
+        structuredContent: { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length },
+      };
     },
   },
 
@@ -355,7 +364,10 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_download_readable] 'id' is required");
       }
       const { data, contentType } = await ctx.adapter.downloadReadable(input.id as string);
-      return { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length };
+      return {
+        content: `Downloaded readable PDF (${data.length} bytes)`,
+        structuredContent: { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length },
+      };
     },
   },
 
@@ -423,7 +435,10 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_download_file] 'file_id' is required");
       }
       const { data, contentType } = await ctx.adapter.downloadFile(input.file_id as string);
-      return { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length };
+      return {
+        content: `Downloaded file (${contentType}, ${data.length} bytes)`,
+        structuredContent: { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length },
+      };
     },
   },
 
@@ -472,11 +487,12 @@ export const invoiceTools: EInvoiceTool[] = [
       const filename = `${inv.invoiceId ?? "invoice"}.xml`;
       const generated_id = storeGenerated(bytes, filename);
       return {
-        generated_id,
-        filename,
-        _status: "preview",
-        _hint: "Invoice preview ready. The user can submit it via the viewer button. Do NOT call einvoice_invoice_submit — the viewer handles it.",
-        preview: mapToViewerPreview(inv),
+        content: `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
+        structuredContent: {
+          generated_id,
+          filename,
+          preview: mapToViewerPreview(inv),
+        },
       };
     },
   },
@@ -521,11 +537,12 @@ export const invoiceTools: EInvoiceTool[] = [
       const filename = `${inv.invoiceId ?? "invoice"}.xml`;
       const generated_id = storeGenerated(bytes, filename);
       return {
-        generated_id,
-        filename,
-        _status: "preview",
-        _hint: "Invoice preview ready. The user can submit it via the viewer button. Do NOT call einvoice_invoice_submit — the viewer handles it.",
-        preview: mapToViewerPreview(inv),
+        content: `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
+        structuredContent: {
+          generated_id,
+          filename,
+          preview: mapToViewerPreview(inv),
+        },
       };
     },
   },
@@ -575,11 +592,12 @@ export const invoiceTools: EInvoiceTool[] = [
       const filename = `${inv.invoiceId ?? "invoice"}.pdf`;
       const generated_id = storeGenerated(bytes, filename);
       return {
-        generated_id,
-        filename,
-        _status: "preview",
-        _hint: "Invoice preview ready. The user can submit it via the viewer button. Do NOT call einvoice_invoice_submit — the viewer handles it.",
-        preview: mapToViewerPreview(inv),
+        content: `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
+        structuredContent: {
+          generated_id,
+          filename,
+          preview: mapToViewerPreview(inv),
+        },
       };
     },
   },

@@ -9,7 +9,7 @@
 
 import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { invoiceTools } from "./invoice.ts";
-import { createMockAdapter } from "../testing/helpers.ts";
+import { createMockAdapter, unwrapStructured } from "../testing/helpers.ts";
 import {
   storeGenerated,
   getGenerated,
@@ -146,7 +146,7 @@ Deno.test("einvoice_invoice_download - returns base64-encoded result", async () 
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_download");
 
-  const result = (await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
 
   assertEquals(result.content_type, "application/xml");
   assertEquals(typeof result.data_base64, "string");
@@ -159,7 +159,7 @@ Deno.test("einvoice_invoice_download_readable - returns base64 PDF", async () =>
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_download_readable");
 
-  const result = (await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
 
   assertEquals(result.content_type, "application/pdf");
   assertEquals(result.size_bytes, 3);
@@ -183,7 +183,7 @@ Deno.test("einvoice_invoice_download_file - returns base64-encoded result", asyn
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_download_file");
 
-  const result = (await tool.handler({ file_id: "file-abc" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ file_id: "file-abc" }, { adapter })) as Record<string, unknown>;
 
   assertEquals(result.content_type, "application/octet-stream");
   assertEquals(typeof result.data_base64, "string");
@@ -210,7 +210,7 @@ Deno.test("einvoice_invoice_generate_cii - returns generated_id, no auto-emit", 
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_cii");
 
-  const result = (await tool.handler(
+  const result = unwrapStructured(await tool.handler(
     { invoice: { invoiceId: "F-001" }, flavor: "EN16931" },
     { adapter },
   )) as Record<string, unknown>;
@@ -239,7 +239,7 @@ Deno.test("einvoice_invoice_generate_ubl - returns generated_id, no auto-emit", 
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_ubl");
 
-  const result = (await tool.handler(
+  const result = unwrapStructured(await tool.handler(
     { invoice: { invoiceId: "U-001" }, flavor: "MINIMUM" },
     { adapter },
   )) as Record<string, unknown>;
@@ -255,7 +255,7 @@ Deno.test("einvoice_invoice_generate_facturx - returns generated_id, no auto-emi
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_facturx");
 
-  const result = (await tool.handler(
+  const result = unwrapStructured(await tool.handler(
     { invoice: { invoiceId: "FX-001" }, flavor: "EN16931", language: "FRENCH" },
     { adapter },
   )) as Record<string, unknown>;
@@ -341,7 +341,7 @@ Deno.test("einvoice_invoice_get - passes through normalized direction from adapt
   const tool = findTool("einvoice_invoice_get");
 
   // Mock adapter returns InvoiceDetail with direction already normalized
-  const result = (await tool.handler({ id: "inv-1" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ id: "inv-1" }, { adapter })) as Record<string, unknown>;
   assertEquals(result.direction, "received"); // from mock default
 });
 
@@ -354,7 +354,7 @@ Deno.test("einvoice_invoice_generate_cii - stores generated XML and returns gene
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_cii");
 
-  const result = (await tool.handler(
+  const result = unwrapStructured(await tool.handler(
     { invoice: { invoiceId: "ACCENT-01" }, flavor: "EN16931" },
     { adapter },
   )) as Record<string, unknown>;
@@ -379,7 +379,7 @@ Deno.test("einvoice_invoice_search - _rowAction.idField is '_id' (matches format
   });
   const tool = findTool("einvoice_invoice_search");
 
-  const result = (await tool.handler({ q: "test" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ q: "test" }, { adapter })) as Record<string, unknown>;
   const rowAction = result._rowAction as Record<string, string>;
   assertEquals(rowAction.idField, "_id");
 

@@ -6,7 +6,7 @@
 
 import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { directoryTools } from "./directory.ts";
-import { createMockAdapter } from "../testing/helpers.ts";
+import { createMockAdapter, unwrapStructured } from "../testing/helpers.ts";
 
 function findTool(name: string) {
   const tool = directoryTools.find((t) => t.name === name);
@@ -58,7 +58,7 @@ Deno.test("einvoice_directory_fr_search - formats rows with French columns", asy
   });
   const tool = findTool("einvoice_directory_fr_search");
 
-  const result = await tool.handler({ q: "Casys AI" }, { adapter }) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ q: "Casys AI" }, { adapter })) as Record<string, unknown>;
 
   assertEquals(result.count, 1);
   const data = result.data as Record<string, unknown>[];
@@ -77,7 +77,7 @@ Deno.test("einvoice_directory_fr_search - handles OFFICE type", async () => {
   });
   const tool = findTool("einvoice_directory_fr_search");
 
-  const result = await tool.handler({ q: "Bureau" }, { adapter }) as Record<string, unknown>;
+  const result = unwrapStructured(await tool.handler({ q: "Bureau" }, { adapter })) as Record<string, unknown>;
   const data = result.data as Record<string, unknown>[];
   // Priority columns — Type not shown in table (drill-down only)
   assertEquals(data[0]["SIRET"], "43446637100029");

@@ -208,3 +208,16 @@ export function createMockAdapter(
 
   return { adapter, calls };
 }
+
+/**
+ * Unwrap a StructuredToolResult: if the result has { content, structuredContent },
+ * return structuredContent. Otherwise return the result as-is.
+ * Useful in tests to access viewer data regardless of whether the tool uses structuredContent.
+ */
+export function unwrapStructured(result: unknown): Record<string, unknown> {
+  const r = result as Record<string, unknown>;
+  if (r && typeof r.content === "string" && r.structuredContent && typeof r.structuredContent === "object") {
+    return r.structuredContent as Record<string, unknown>;
+  }
+  return r;
+}

@@ -52,7 +52,7 @@ export const directoryTools: EInvoiceTool[] = [
         limit: input.limit as number | undefined,
       });
 
-      return {
+      const viewerData = {
         data: rows.map((r) => {
           const typeLabel = r.type ? (ENTITY_TYPE_LABELS[r.type] ?? r.type) : undefined;
           return {
@@ -76,6 +76,10 @@ export const directoryTools: EInvoiceTool[] = [
         }),
         count,
         _title: "Annuaire français",
+      };
+      return {
+        content: `${rows.length} entities found for "${input.q}"`,
+        structuredContent: viewerData,
       };
     },
   },

@@ -93,7 +93,11 @@ export const statusTools: EInvoiceTool[] = [
         throw new Error("[einvoice_status_history] 'invoice_id' is required");
       }
       // Adapter returns normalized StatusHistoryResult { entries: StatusEntry[] }
-      return await ctx.adapter.getStatusHistory(input.invoice_id as string);
+      const result = await ctx.adapter.getStatusHistory(input.invoice_id as string);
+      return {
+        content: `${result.entries.length} status entries for invoice ${input.invoice_id}`,
+        structuredContent: result,
+      };
     },
   },
 
