@@ -79,9 +79,12 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_submit",
     requires: ["emitInvoice"],
     description:
-      "Submit an invoice to the e-invoicing platform. " +
-      "Provide EITHER a generated_id (from a generate preview) OR file_base64 + filename. " +
-      "Returns a GUID. The platform then validates, issues (ISSUED), and delivers it automatically.",
+      "Submit (emit) an invoice to the e-invoicing platform — this sends it for real. " +
+      "Provide EITHER a generated_id (from a generate preview, shown in the invoice viewer with a 'Submit' button) " +
+      "OR file_base64 + filename for direct upload. " +
+      "IMPORTANT: If the user already clicked 'Submit' in the invoice viewer, the invoice is already sent — do NOT call this again. " +
+      "The generated_id expires after 10 minutes and is consumed on first use. " +
+      "Returns the invoice GUID. The platform validates, issues (ISSUED), and delivers it automatically.",
     category: "invoice",
     inputSchema: {
       type: "object",
@@ -192,13 +195,20 @@ export const invoiceTools: EInvoiceTool[] = [
       const dirFilter = input.direction as "sent" | "received" | undefined;
       const statusFilter = input.status as string | undefined;
 
-      const { rows, count } = await ctx.adapter.searchInvoices({
+      const { rows: rawRows, count } = await ctx.adapter.searchInvoices({
         q,
         direction: dirFilter,
         status: statusFilter,
         offset: input.offset as number | undefined,
         limit: input.limit as number | undefined,
       });
+
+      // Post-query filtering: adapters that support server-side filtering
+      // will already return filtered results. For those that don't (e.g. Iopole
+      // ignores the direction param), we filter here as a safety net.
+      let rows = rawRows;
+      if (dirFilter) rows = rows.filter((r) => r.direction === dirFilter);
+      if (statusFilter) rows = rows.filter((r) => r.status === statusFilter);
 
       // Priority columns — fits ~500px without horizontal scroll
       // Direction as normalized value for icon rendering in doclist-viewer
