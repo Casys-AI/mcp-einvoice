@@ -40,8 +40,8 @@ export abstract class BaseAdapter implements EInvoiceAdapter {
   abstract readonly name: string;
   abstract readonly capabilities: Set<AdapterMethodName>;
 
-  protected notSupported(method: string, reason = "Not implemented by this adapter."): never {
-    throw new NotSupportedError(this.name, method, reason);
+  protected notSupported(method: string, reason = "Not implemented by this adapter."): Promise<never> {
+    return Promise.reject(new NotSupportedError(this.name, method, reason));
   }
 
   // ─── Invoice ───────────────────────────────────────────
