@@ -540,7 +540,6 @@ function autoWrapDirectoryQuery(q: string): string {
   return trimmed;
 }
 
-// normalizeDirection imported from shared/direction.ts
 
 /** Normalize Iopole status history response (array, {data}, {entries}, {history}) into StatusHistoryResult. */
 function normalizeStatusHistory(raw: unknown): StatusHistoryResult {

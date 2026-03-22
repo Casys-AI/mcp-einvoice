@@ -26,7 +26,7 @@ import type {
 import { BaseAdapter } from "../base-adapter.ts";
 import { StorecoveClient } from "./client.ts";
 import { requireEnv } from "../shared/env.ts";
-import { uint8ToBase64 } from "../shared/encoding.ts";
+import { uint8ToBase64, encodePathSegment } from "../shared/encoding.ts";
 import { env } from "../../runtime.ts";
 
 /**
@@ -96,7 +96,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   async getInvoice(id: string): Promise<InvoiceDetail> {
     // deno-lint-ignore no-explicit-any
-    const doc = await this.client.get(`/received_documents/${id}/json`) as any;
+    const doc = await this.client.get(`/received_documents/${encodePathSegment(id)}/json`) as any;
     return {
       id,
       invoiceNumber: doc.invoiceNumber ?? doc.document?.invoiceNumber,
@@ -112,7 +112,7 @@ export class StorecoveAdapter extends BaseAdapter {
   }
 
   async downloadInvoice(id: string): Promise<DownloadResult> {
-    return await this.client.download(`/received_documents/${id}/original`);
+    return await this.client.download(`/received_documents/${encodePathSegment(id)}/original`);
   }
 
   async downloadReadable(_id: string): Promise<DownloadResult> {
@@ -230,7 +230,7 @@ export class StorecoveAdapter extends BaseAdapter {
     // Map to document submission evidence (proof of delivery)
     // deno-lint-ignore no-explicit-any
     const raw = await this.client.get(
-      `/document_submissions/${invoiceId}/evidence/delivery`,
+      `/document_submissions/${encodePathSegment(invoiceId)}/evidence/delivery`,
     ) as any;
     return {
       entries: raw ? [{
@@ -327,7 +327,7 @@ export class StorecoveAdapter extends BaseAdapter {
   }
 
   async getBusinessEntity(id: string): Promise<unknown> {
-    return await this.client.get(`/legal_entities/${id}`);
+    return await this.client.get(`/legal_entities/${encodePathSegment(id)}`);
   }
 
   async createLegalUnit(_data: Record<string, unknown>): Promise<unknown> {
@@ -345,7 +345,7 @@ export class StorecoveAdapter extends BaseAdapter {
   }
 
   async deleteBusinessEntity(id: string): Promise<unknown> {
-    return await this.client.delete(`/legal_entities/${id}`);
+    return await this.client.delete(`/legal_entities/${encodePathSegment(id)}`);
   }
 
   async configureBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
@@ -383,7 +383,7 @@ export class StorecoveAdapter extends BaseAdapter {
       throw new Error("[StorecoveAdapter] enrollInternational requires legalEntityId");
     }
     return await this.client.post(
-      `/legal_entities/${legalEntityId}/peppol_identifiers`,
+      `/legal_entities/${encodePathSegment(legalEntityId)}/peppol_identifiers`,
       {
         superscheme: data.superscheme ?? "iso6523-actorid-upis",
         scheme: data.scheme,
@@ -417,7 +417,7 @@ export class StorecoveAdapter extends BaseAdapter {
     }
     const [legalEntityId, ...rest] = parts;
     return await this.client.delete(
-      `/legal_entities/${legalEntityId}/peppol_identifiers/${rest.join("/")}`,
+      `/legal_entities/${encodePathSegment(legalEntityId)}/peppol_identifiers/${rest.map(encodePathSegment).join("/")}`,
     );
   }
 
@@ -428,7 +428,7 @@ export class StorecoveAdapter extends BaseAdapter {
     if (data.scheme && String(data.scheme).startsWith("0")) {
       // Peppol scheme (ISO 6523)
       return await this.client.post(
-        `/legal_entities/${entityId}/peppol_identifiers`,
+        `/legal_entities/${encodePathSegment(entityId)}/peppol_identifiers`,
         {
           superscheme: data.superscheme ?? "iso6523-actorid-upis",
           scheme: data.scheme,
@@ -438,7 +438,7 @@ export class StorecoveAdapter extends BaseAdapter {
     }
     // Tax identifier
     return await this.client.post(
-      `/legal_entities/${entityId}/additional_tax_identifiers`,
+      `/legal_entities/${encodePathSegment(entityId)}/additional_tax_identifiers`,
       data,
     );
   }
@@ -458,8 +458,9 @@ export class StorecoveAdapter extends BaseAdapter {
     // identifierId could be a Peppol path or a tax identifier ID
     // If it contains '/', treat as Peppol identifier path
     if (identifierId.includes("/")) {
+      const segments = identifierId.split("/").map(encodePathSegment).join("/");
       return await this.client.delete(
-        `/legal_entities/${identifierId}`,
+        `/legal_entities/${segments}`,
       );
     }
     // Otherwise treat as additional tax identifier — need entity ID

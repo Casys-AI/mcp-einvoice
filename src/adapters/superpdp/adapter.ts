@@ -28,6 +28,7 @@ import type {
 import { SuperPDPClient } from "./client.ts";
 import { normalizeForSuperPDP } from "./normalize.ts";
 import { normalizeDirection } from "../shared/direction.ts";
+import { encodePathSegment } from "../shared/encoding.ts";
 import { createOAuth2TokenProvider } from "../shared/oauth2.ts";
 import { requireEnv } from "../shared/env.ts";
 import { env } from "../../runtime.ts";
@@ -102,7 +103,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   override async getInvoice(id: string): Promise<InvoiceDetail> {
     // deno-lint-ignore no-explicit-any
-    const inv = await this.client.get(`/invoices/${id}`) as any;
+    const inv = await this.client.get(`/invoices/${encodePathSegment(id)}`) as any;
     const en = inv.en_invoice;
     return {
       id: String(inv.id ?? id),
@@ -120,7 +121,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async downloadInvoice(id: string): Promise<DownloadResult> {
-    return await this.client.download(`/invoices/${id}/download`);
+    return await this.client.download(`/invoices/${encodePathSegment(id)}/download`);
   }
 
   // ─── Format Conversion (native) ───────────────────────
@@ -233,7 +234,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async unregisterNetwork(directoryId: string): Promise<unknown> {
-    return await this.client.delete(`/directory_entries/${directoryId}`);
+    return await this.client.delete(`/directory_entries/${encodePathSegment(directoryId)}`);
   }
 
   // ─── Identifier Management (native via directory) ─────
@@ -254,7 +255,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async deleteIdentifier(identifierId: string): Promise<unknown> {
-    return await this.client.delete(`/directory_entries/${identifierId}`);
+    return await this.client.delete(`/directory_entries/${encodePathSegment(identifierId)}`);
   }
 
   // ─── Stubs (21 methods — inherited from AfnorBaseAdapter) ─
@@ -275,7 +276,6 @@ function lastEventCode(events: any[] | undefined): string | undefined {
   return events[events.length - 1].status_code;
 }
 
-// mapDirection replaced by shared normalizeDirection
 
 /** Map adapter network names to SuperPDP directory values. */
 function mapNetworkToDirectory(network: string): "ppf" | "peppol" {
