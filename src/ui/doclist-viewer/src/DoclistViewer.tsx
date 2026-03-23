@@ -107,11 +107,7 @@ const DIRECTION_FIELDS = new Set(["direction", "Direction"]);
 const HIDDEN_FIELDS = new Set(["doctype", "owner", "modified_by", "creation", "modified", "idx", "_rowAction"]);
 const FILTERABLE_COLUMNS = new Set(["Direction", "Statut", "Type", "Scope", "Pays", "status", "direction", "type"]);
 
-// Statuts pertinents selon la direction (lifecycle PPF/CDAR)
-// Reçue (acheteur): on reçoit, on accepte/refuse, on paie
-const RECEIVED_STATUSES = new Set(["delivered", "in_hand", "approved", "partially_approved", "refused", "disputed", "suspended", "payment_sent", "completed"]);
-// Envoyée (vendeur): on émet, c'est livré, l'acheteur traite, on reçoit le paiement
-const SENT_STATUSES = new Set(["submitted", "issued", "delivered", "approved", "partially_approved", "refused", "disputed", "payment_received", "completed", "rejected"]);
+// Status chips are derived from actual data — no hardcoded lists per direction.
 
 function isStatusField(key: string): boolean {
   return STATUS_FIELDS.has(key.toLowerCase());
@@ -573,36 +569,29 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
   const rows = data.data ?? [];
 
   // Auto-detect filterable columns: columns with 2-8 distinct values
-  // Status values are filtered by active direction chip
-  const activeDirection = chipFilters["Direction"];
+  // Chips are derived from data filtered by OTHER active chips (direction narrows status automatically)
   const filterableColumns = useMemo(() => {
     if (rows.length < 2) return [];
     const candidates: { col: string; values: string[] }[] = [];
     for (const col of Object.keys(rows[0] ?? {})) {
       if (!FILTERABLE_COLUMNS.has(col)) continue;
+      // Filter rows by all active chips EXCEPT this column
+      let subset = rows;
+      for (const [filterCol, filterVal] of Object.entries(chipFilters)) {
+        if (filterVal && filterCol !== col) subset = subset.filter((row) => row[filterCol] === filterVal);
+      }
       const distinct = new Set<string>();
-      for (const row of rows) {
+      for (const row of subset) {
         const v = row[col];
         if (v != null && typeof v === "string") distinct.add(v);
         if (distinct.size > 8) break;
       }
       if (distinct.size >= 2 && distinct.size <= 8) {
-        let values = Array.from(distinct).sort();
-        // Filter status chips by direction when a direction filter is active
-        if (isStatusField(col) && activeDirection) {
-          const relevantStatuses = activeDirection === "Entrante" ? RECEIVED_STATUSES
-            : activeDirection === "Sortante" ? SENT_STATUSES : null;
-          if (relevantStatuses) {
-            values = values.filter((v) => relevantStatuses.has(v.toLowerCase()));
-          }
-        }
-        if (values.length >= 2) {
-          candidates.push({ col, values });
-        }
+        candidates.push({ col, values: Array.from(distinct).sort() });
       }
     }
     return candidates;
-  }, [rows, activeDirection]);
+  }, [rows, chipFilters]);
 
   const columns = useMemo(() => {
     if (rows.length === 0) return [];
