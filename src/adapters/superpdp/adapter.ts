@@ -83,7 +83,8 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
       "expand[]": ["en_invoice", "events"],
       ...(direction ? { direction } : {}),
       ...(filters.limit ? { limit: filters.limit } : {}),
-      ...(filters.offset ? { starting_after_id: String(filters.offset) } : {}),
+      // Note: SuperPDP uses cursor-based pagination (starting_after_id),
+      // not offset-based. Offset is ignored — use last row ID for next page.
     }) as any;
     const data = Array.isArray(raw) ? raw : (raw?.data ?? []);
     // deno-lint-ignore no-explicit-any
