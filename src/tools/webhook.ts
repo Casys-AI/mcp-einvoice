@@ -24,7 +24,25 @@ export const webhookTools: EInvoiceTool[] = [
       properties: {},
     },
     handler: async (_input, ctx) => {
-      return await ctx.adapter.listWebhooks();
+      // deno-lint-ignore no-explicit-any
+      const raw = await ctx.adapter.listWebhooks() as any;
+      const webhooks = Array.isArray(raw) ? raw : (raw?.data ?? [raw]);
+      // deno-lint-ignore no-explicit-any
+      const data = webhooks.map((w: any) => ({
+        _id: w.id ?? w.webhookId,
+        "Nom": w.name ?? "—",
+        "URL": w.url ?? "—",
+        "Actif": w.active !== false ? "Oui" : "Non",
+        "Événements": Array.isArray(w.events) ? (w.events as string[]).join(", ") : "—",
+      }));
+      return {
+        content: `${data.length} webhook(s) configuré(s)`,
+        structuredContent: {
+          data,
+          count: data.length,
+          _title: "Webhooks",
+        },
+      };
     },
   },
 
