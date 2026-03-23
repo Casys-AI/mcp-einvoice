@@ -10,17 +10,17 @@ Serveur MCP pour la facturation électronique — agnostique plateforme via le p
 
 ## Pourquoi
 
-La réforme de la facturation électronique en France (sept. 2026) impose l'utilisation de Plateformes Agréées (PA). Il en existe 106+, chacune avec sa propre API. Ce serveur MCP expose **une interface unique** pour toutes, avec 39 tools et 5 viewers interactifs.
+La réforme de la facturation électronique en France (sept. 2026) impose l'utilisation de Plateformes Agréées (PA). Il en existe 106+, chacune avec sa propre API. Ce serveur MCP expose **une interface unique** pour toutes, avec 39 tools et 6 viewers interactifs.
 
 ## Adapters
 
 | | Adapter | Scope | Tools | Base |
 |---|---|---|---|---|
-| <img src="docs/logos/iopole.svg" height="16"> | **Iopole** | PA française, B2B | 39/39 | AfnorBaseAdapter |
-| <img src="docs/logos/storecove.png" height="16"> | **Storecove** | Peppol AP, 40+ pays | 21/39 | EInvoiceAdapter |
-| <img src="docs/logos/superpdp.svg" height="16"> | **Super PDP** | PA française, B2B | 22/39 | AfnorBaseAdapter |
+| <img src="docs/logos/iopole.svg" height="16"> | **Iopole** | PA française, B2B | 39/39 | BaseAdapter |
+| <img src="docs/logos/storecove.png" height="16"> | **Storecove** | Peppol AP, 40+ pays | 19/39 | BaseAdapter |
+| <img src="docs/logos/superpdp.svg" height="16"> | **Super PDP** | PA française, B2B | 20/39 | AfnorBaseAdapter |
 
-Les PA françaises héritent d'`AfnorBaseAdapter` (socle [AFNOR XP Z12-013](https://norminfo.afnor.org/norme/pr-xp-a00-002/standardisation-api-odpdp/211970)). Les plateformes non-françaises implémentent `EInvoiceAdapter` directement.
+`BaseAdapter` fournit des stubs `NotSupportedError` pour les 45 méthodes de l'interface `EInvoiceAdapter`. Les PA françaises avec AFNOR héritent d'`AfnorBaseAdapter` (socle [AFNOR XP Z12-013](https://norminfo.afnor.org/norme/pr-xp-a00-002/standardisation-api-odpdp/211970)) qui ajoute les opérations flow. Les autres étendent `BaseAdapter` directement.
 
 Le filtrage par `capabilities` assure que le LLM ne voit que les tools supportés par l'adapter actif.
 
@@ -59,6 +59,7 @@ Remplacer `EINVOICE_ADAPTER` par `storecove` ou `superpdp` avec les variables co
 ```
 --http                   Mode HTTP (default: stdio)
 --port=3015              Port HTTP
+--hostname=localhost     Bind address (default: localhost)
 --adapter=iopole         Override adapter (default: env EINVOICE_ADAPTER)
 --categories=invoice     Filtrer les catégories de tools
 ```
@@ -71,19 +72,21 @@ Remplacer `EINVOICE_ADAPTER` par `storecove` ou `superpdp` avec les variables co
 │  invoice · directory · status · reporting     │
 │  webhook · config                             │
 ├───────────────────────────────────────────────┤
-│  5 MCP Apps (viewers React)                   │
-│  invoice · doclist · timeline · card · action │
+│  6 MCP Apps (viewers React)                   │
+│  invoice · doclist · timeline · card ·        │
+│  directory-list · action                      │
 ├───────────────────────────────────────────────┤
-│  EInvoiceAdapter (interface)                  │
+│  EInvoiceAdapter (interface, 45 methods)      │
 │  + capabilities → filtrage tools dynamique    │
-├───────────────┬───────────────────────────────┤
-│ AfnorBase     │ Direct                        │
-│ (PA France)   │ (Peppol / autres)             │
-│ ┌───────────┐ │ ┌───────────┐                 │
-│ │ Iopole    │ │ │ Storecove │                 │
-│ │ Super PDP │ │ └───────────┘                 │
-│ └───────────┘ │                               │
-└───────────────┴───────────────────────────────┘
+├──────────┬────────────────────────────────────┤
+│ BaseAdapter (abstract, NotSupported stubs)    │
+├──────────┼────────────────────────────────────┤
+│ AfnorBase│ Direct                             │
+│ (AFNOR)  │                                    │
+│ ┌──────┐ │ ┌─────────┐  ┌───────────┐        │
+│ │ SPDP │ │ │ Iopole  │  │ Storecove │        │
+│ └──────┘ │ └─────────┘  └───────────┘        │
+└──────────┴────────────────────────────────────┘
 ```
 
 ## Tools
@@ -110,9 +113,10 @@ Tous préfixés `einvoice_<category>_`. Chaque tool déclare ses `requires` — 
 | Viewer | Usage |
 |--------|-------|
 | **invoice-viewer** | Facture détaillée + actions (accepter, rejeter, déposer) |
-| **doclist-viewer** | Table avec drill-down, recherche, pagination |
+| **doclist-viewer** | Table avec drill-down, recherche, filtres direction/statut |
 | **status-timeline** | Timeline verticale des changements de statut |
 | **directory-card** | Fiche entreprise (SIREN/SIRET, réseaux) |
+| **directory-list** | Résultats annuaire — cartes avec expand, recherche client |
 | **action-result** | Feedback visuel d'action (enroll, register) |
 
 ```bash
@@ -121,15 +125,17 @@ cd src/ui && node build-all.mjs   # Rebuild après modification TSX
 
 ## Ajouter un adapter
 
-**PA française** → `extends AfnorBaseAdapter` (socle AFNOR gratuit, override le natif) :
+**PA française avec AFNOR** → `extends AfnorBaseAdapter` (socle AFNOR gratuit, override le natif) :
 
 ```typescript
 export class MyPAAdapter extends AfnorBaseAdapter {
   readonly name = "my-pa";
   readonly capabilities = new Set(["emitInvoice", "searchInvoices", ...]);
+  private client: MyPAClient;
 
-  constructor(client: MyPAClient, afnor: AfnorClient) {
+  constructor(client: MyPAClient, afnor: AfnorClient | null) {
     super(afnor);  // ou super(null) si pas encore d'AFNOR
+    this.client = client;
   }
 
   override async generateCII(req) { return this.client.convert(req); }
@@ -137,7 +143,9 @@ export class MyPAAdapter extends AfnorBaseAdapter {
 }
 ```
 
-**Plateforme non-française** → `implements EInvoiceAdapter` directement.
+**PA française sans AFNOR** → `extends BaseAdapter` (override toutes les méthodes avec l'API native, comme Iopole).
+
+**Plateforme non-française** → `extends BaseAdapter` directement (comme Storecove).
 
 Guide complet : `src/adapters/README.md`.
 
@@ -146,16 +154,17 @@ Guide complet : `src/adapters/README.md`.
 ```
 server.ts                    # MCP server (stdio + HTTP)
 src/
-├── adapter.ts               # EInvoiceAdapter (43 methods + capabilities)
+├── adapter.ts               # EInvoiceAdapter (45 methods + capabilities)
 ├── client.ts                # Tools registry + capability filtering
 ├── adapters/
+│   ├── base-adapter.ts      # BaseAdapter (abstract, NotSupported stubs)
 │   ├── afnor/               # Socle AFNOR XP Z12-013 (shared)
-│   │   ├── base-adapter.ts  # AfnorBaseAdapter (abstract)
+│   │   ├── base-adapter.ts  # AfnorBaseAdapter (extends BaseAdapter)
 │   │   └── client.ts        # AfnorClient (3 flow endpoints)
 │   ├── shared/oauth2.ts     # OAuth2 token provider (shared)
-│   ├── iopole/              # PA française — extends AfnorBaseAdapter
-│   ├── storecove/           # Peppol AP — implements EInvoiceAdapter
+│   ├── iopole/              # PA française — extends BaseAdapter
+│   ├── storecove/           # Peppol AP — extends BaseAdapter
 │   └── superpdp/            # PA française — extends AfnorBaseAdapter
 ├── tools/                   # 39 tools (6 catégories)
-└── ui/                      # 5 viewers React (single-file HTML)
+└── ui/                      # 6 viewers React (single-file HTML)
 ```
