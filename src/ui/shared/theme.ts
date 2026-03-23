@@ -5,7 +5,7 @@
  * which automatically switch between light and dark mode.
  */
 
-import { CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { dateLocale } from "./i18n";
 
 function cssVar(name: string): string {

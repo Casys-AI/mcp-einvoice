@@ -6,7 +6,7 @@
  */
 
 import {
-  CSSProperties,
+  type CSSProperties,
   Fragment,
   useCallback,
   useEffect,
@@ -66,8 +66,6 @@ interface DoclistData {
 }
 
 type SortDir = "asc" | "desc";
-
-import { MATERIAL_ICON_PATHS } from "~/shared/material-icons";
 
 function StatusCell({ value }: { value: string }) {
   const s = getStatus(value);
@@ -422,10 +420,10 @@ export function DoclistViewer() {
         void requestRefresh({ ignoreInterval: true });
       }
     };
-    window.addEventListener("focus", handleFocus);
+    globalThis.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      window.removeEventListener("focus", handleFocus);
+      globalThis.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
@@ -845,7 +843,7 @@ function InlineDetailPanel({ data, loading, onClose, onAction }: {
                     text: `Montre-moi les détails de la facture ${inv.id}`,
                   }],
                 });
-              } catch {}
+              } catch { /* ignore CSV export errors */ }
             }}
           />
         )}

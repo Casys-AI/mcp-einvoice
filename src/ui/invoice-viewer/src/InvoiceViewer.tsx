@@ -25,7 +25,6 @@ import {
   getStatus,
 } from "~/shared/status";
 import { ActionButton } from "~/shared/ActionButton";
-import { InfoCard } from "~/shared/InfoCard";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -293,18 +292,18 @@ export function InvoiceViewer() {
         void requestRefresh({ ignoreInterval: true });
       }
     };
-    window.addEventListener("focus", handleFocus);
+    globalThis.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
 
     // Auto-refresh interval (same pattern as erpnext kanban)
-    const intervalId = window.setInterval(() => {
+    const intervalId = globalThis.setInterval(() => {
       void requestRefresh();
     }, REFRESH_INTERVAL_MS);
 
     return () => {
-      window.removeEventListener("focus", handleFocus);
+      globalThis.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
-      window.clearInterval(intervalId);
+      globalThis.clearInterval(intervalId);
     };
   }, []);
 
@@ -978,36 +977,6 @@ export function InvoiceViewer() {
 // ============================================================================
 // Sub-components
 // ============================================================================
-
-function InfoCard(
-  { label, value, sub }: { label: string; value?: string; sub?: string },
-) {
-  return (
-    <div style={styles.card}>
-      <div
-        style={{
-          fontSize: 11,
-          color: colors.text.muted,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{ fontSize: 14, fontWeight: 500, color: colors.text.primary }}
-      >
-        {value ?? "—"}
-      </div>
-      {sub && (
-        <div style={{ fontSize: 11, color: colors.text.faint, marginTop: 2 }}>
-          {sub}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function TotalRow(
   { label, value, bold }: { label: string; value: string; bold?: boolean },

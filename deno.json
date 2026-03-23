@@ -29,6 +29,19 @@
       "**/*.bench.ts"
     ]
   },
+  "lint": {
+    "rules": {
+      "exclude": [
+        "require-await",
+        "no-explicit-any",
+        "no-unversioned-import",
+        "no-import-prefix",
+        "jsx-button-has-type",
+        "ban-unused-ignore"
+      ]
+    },
+    "exclude": ["src/ui/dist/", "src/ui/node_modules/", ".cov/"]
+  },
   "imports": {
     "@casys/mcp-server": "jsr:@casys/mcp-server@^0.12.0"
   }

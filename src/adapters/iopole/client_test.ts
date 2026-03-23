@@ -282,7 +282,7 @@ Deno.test("createOAuth2TokenProvider - fetches and caches token", async () => {
   let fetchCount = 0;
   const original = globalThis.fetch;
 
-  globalThis.fetch = async (url: string | URL | Request): Promise<Response> => {
+  globalThis.fetch = async (_url: string | URL | Request): Promise<Response> => {
     fetchCount++;
     return new Response(
       JSON.stringify({

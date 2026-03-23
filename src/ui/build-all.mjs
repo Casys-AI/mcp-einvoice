@@ -9,6 +9,7 @@ import { execSync } from "node:child_process";
 import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import process from "node:process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -41,7 +42,7 @@ for (const ui of uis) {
       env: { ...process.env, UI_NAME: ui },
     });
     console.log(`${ui} built successfully\n`);
-  } catch (error) {
+  } catch (_error) {
     console.error(`Failed to build ${ui}\n`);
     process.exit(1);
   }

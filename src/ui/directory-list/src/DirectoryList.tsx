@@ -544,10 +544,10 @@ export function DirectoryList() {
         void requestRefresh({ ignoreInterval: true });
       }
     };
-    window.addEventListener("focus", handleFocus);
+    globalThis.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      window.removeEventListener("focus", handleFocus);
+      globalThis.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);

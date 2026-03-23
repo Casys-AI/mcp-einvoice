@@ -12,6 +12,7 @@ import react from "@vitejs/plugin-react";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import process from "node:process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const uiName = process.env.UI_NAME;

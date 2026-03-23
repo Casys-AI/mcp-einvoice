@@ -6,7 +6,7 @@
  * Light: purple text on light surface. Dark: warm orange text on dark surface.
  */
 
-import { CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { colors, fonts } from "./theme";
 import { t } from "./i18n";
 

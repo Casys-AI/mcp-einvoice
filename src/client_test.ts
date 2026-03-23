@@ -7,7 +7,7 @@
  * @module lib/einvoice/src/client_test
  */
 
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert";
+import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { EInvoiceToolsClient } from "./client.ts";
 import { createMockAdapter } from "./testing/helpers.ts";
 

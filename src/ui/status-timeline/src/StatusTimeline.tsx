@@ -8,7 +8,7 @@
  * Most recent status at top. Latest dot is larger with a pulse animation.
  */
 
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { dateLocale, t } from "~/shared/i18n";
@@ -224,10 +224,10 @@ export function StatusTimeline() {
         void requestRefresh({ ignoreInterval: true });
       }
     };
-    window.addEventListener("focus", handleFocus);
+    globalThis.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      window.removeEventListener("focus", handleFocus);
+      globalThis.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);

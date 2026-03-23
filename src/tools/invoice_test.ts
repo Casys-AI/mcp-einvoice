@@ -398,7 +398,7 @@ Deno.test("einvoice_invoice_generate_cii - stores generated XML and returns gene
 
 Deno.test("einvoice_invoice_search - _rowAction.idField is '_id' (matches formatted rows)", async () => {
   // Mock adapter returns normalized SearchInvoicesResult
-  const { adapter, calls } = createMockAdapter();
+  const { adapter } = createMockAdapter();
   // Override searchInvoices to return test data
   adapter.searchInvoices = async () => ({
     rows: [{
