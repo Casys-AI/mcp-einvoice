@@ -28,10 +28,19 @@ const REFRESH_THROTTLE_MS = 15_000;
 
 // ── Types ────────────────────────────────────────────────
 
+interface NetworkRegistration {
+  directoryAddress?: string;
+  networkIdentifier?: string;
+  directoryId?: string;
+}
+
 interface DirectoryNetwork {
   scheme: string;
   value: string;
+  type?: string;
   status?: string;
+  businessEntityIdentifierId?: string;
+  networkRegistered?: NetworkRegistration[];
 }
 
 interface DirectoryEntry {
@@ -67,26 +76,53 @@ function InfoField({ label, value }: { label: string; value?: string }) {
   );
 }
 
+const NETWORK_LABELS: Record<string, string> = {
+  DOMESTIC_FR: "PPF France",
+  PEPPOL_INTERNATIONAL: "Peppol",
+};
+
 function NetworkRow({ network }: { network: DirectoryNetwork }) {
   const isActive = !network.status || network.status.toLowerCase() === "active";
+  const registrations = network.networkRegistered ?? [];
   return (
     <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      padding: "6px 10px",
       borderLeft: `2px solid ${colors.accent}`,
       background: colors.bg.root,
       borderRadius: "0 6px 6px 0",
       marginBottom: 4,
+      padding: "8px 10px",
     }}>
-      <span style={{ fontWeight: 700, color: colors.accent, fontSize: 11, minWidth: 45 }}>{network.scheme}</span>
-      <span style={{ color: colors.text.secondary, fontFamily: fonts.mono, fontSize: 11, flex: 1 }}>{network.value}</span>
-      {isActive && (
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="6" stroke={colors.success} strokeWidth="1.5" />
-          <path d="M4 7l2 2 4-4" stroke={colors.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontWeight: 700, color: colors.accent, fontSize: 11, minWidth: 45 }}>{network.scheme}</span>
+        <span style={{ color: colors.text.secondary, fontFamily: fonts.mono, fontSize: 11, flex: 1 }}>{network.value}</span>
+        {isActive && (
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke={colors.success} strokeWidth="1.5" />
+            <path d="M4 7l2 2 4-4" stroke={colors.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+      {registrations.length > 0 && (
+        <div style={{ marginTop: 6, paddingLeft: 53 }}>
+          {registrations.map((reg, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              {reg.networkIdentifier && (
+                <span style={{
+                  fontSize: 9, fontWeight: 600, color: colors.text.muted,
+                  background: colors.bg.elevated, borderRadius: 4, padding: "1px 5px",
+                  textTransform: "uppercase", letterSpacing: "0.03em",
+                }}>
+                  {NETWORK_LABELS[reg.networkIdentifier] ?? reg.networkIdentifier}
+                </span>
+              )}
+              {reg.directoryAddress && (
+                <span style={{ fontSize: 10, color: colors.text.faint, fontFamily: fonts.mono }}>
+                  {reg.directoryAddress}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
