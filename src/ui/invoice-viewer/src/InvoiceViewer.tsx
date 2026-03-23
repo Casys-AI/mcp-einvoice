@@ -820,6 +820,7 @@ export function InvoiceViewer() {
               <ActionButton
                 label={t("accept")}
                 variant="success"
+                confirm
                 loading={actionLoading === AK.ACCEPT}
                 onClick={() =>
                   callAction(AK.ACCEPT, "einvoice_status_send", {
@@ -856,6 +857,7 @@ export function InvoiceViewer() {
             <ActionButton
               label={t("payment_sent")}
               variant="success"
+              confirm
               loading={actionLoading === AK.PAYMENT_SENT}
               onClick={() =>
                 callAction(AK.PAYMENT_SENT, "einvoice_status_send", {
@@ -869,6 +871,7 @@ export function InvoiceViewer() {
             <ActionButton
               label={t("payment_received")}
               variant="success"
+              confirm
               loading={actionLoading === AK.PAYMENT_RECEIVED}
               onClick={() =>
                 callAction(AK.PAYMENT_RECEIVED, "einvoice_status_send", {
@@ -938,7 +941,7 @@ export function InvoiceViewer() {
                     content: [{
                       type: "text",
                       text:
-                        `Montre-moi l'historique des statuts de la facture ${data.id}`,
+                        `${t("nav_status_history")} ${data.id}`,
                     }],
                   });
                 } catch { /* host may not support sendMessage */ }
@@ -958,7 +961,7 @@ export function InvoiceViewer() {
                       content: [{
                         type: "text",
                         text:
-                          `Recherche l'entité avec le SIRET ${data.sender_id} dans l'annuaire français`,
+                          t("nav_directory_sender").replace("{siret}", data.sender_id),
                       }],
                     });
                   } catch { /* host may not support sendMessage */ }

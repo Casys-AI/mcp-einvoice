@@ -77,6 +77,8 @@ function formatDate(iso: string): { date: string; time: string } {
 
 const DEST_TYPE_KEYS: Record<string, string> = {
   PLATFORM: "platform",
+  OPERATOR: "operator",
+  PPF: "platform",
   BUYER: "buyer",
   SELLER: "seller_label",
   TAX_AUTHORITY: "tax_authority",

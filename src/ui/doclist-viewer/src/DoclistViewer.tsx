@@ -840,7 +840,7 @@ function InlineDetailPanel({ data, loading, onClose, onAction }: {
                   role: "user",
                   content: [{
                     type: "text",
-                    text: `Montre-moi les détails de la facture ${inv.id}`,
+                    text: `${t("nav_invoice_detail")} ${inv.id}`,
                   }],
                 });
               } catch { /* ignore CSV export errors */ }

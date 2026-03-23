@@ -82,9 +82,14 @@ const translations: Record<Locale, Record<string, string>> = {
     // ── Status timeline ─────────────────────────
     "status_history_title": "Historique des statuts",
     "platform": "Plateforme",
+    "operator": "Opérateur",
     "buyer": "Acheteur",
     "seller_label": "Vendeur",
     "tax_authority": "Administration fiscale",
+    // ── Navigation prompts (sendMessage) ────────
+    "nav_status_history": "Montre-moi l'historique des statuts de la facture",
+    "nav_directory_sender": "Recherche l'entité avec le SIRET {siret} dans l'annuaire français",
+    "nav_invoice_detail": "Montre-moi les détails de la facture",
     // ── Directory card ──────────────────────────
     "vat_intra": "TVA intracommunautaire",
     "address": "Adresse",
@@ -167,7 +172,11 @@ const translations: Record<Locale, Record<string, string>> = {
     "download_cancelled": "Download cancelled",
     "download_error": "Download error",
     "status_history_title": "Status history",
+    "nav_status_history": "Show me the status history of invoice",
+    "nav_directory_sender": "Search for the entity with SIRET {siret} in the French directory",
+    "nav_invoice_detail": "Show me the details of invoice",
     "platform": "Platform",
+    "operator": "Operator",
     "buyer": "Buyer",
     "seller_label": "Seller",
     "tax_authority": "Tax authority",
