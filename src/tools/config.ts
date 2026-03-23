@@ -23,8 +23,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_customer_id",
     requires: ["getCustomerId"],
-    description:
-      "Get the current operator customer ID. " +
+    description: "Get the current operator customer ID. " +
       "This is your unique operator identifier on the e-invoicing platform.",
     category: "config",
     inputSchema: {
@@ -136,7 +135,9 @@ export const configTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.siren) {
-        throw new Error("[einvoice_config_entity_create_legal] 'siren' is required");
+        throw new Error(
+          "[einvoice_config_entity_create_legal] 'siren' is required",
+        );
       }
       return await ctx.adapter.createLegalUnit({
         identifierScheme: "0002",
@@ -184,7 +185,9 @@ export const configTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.siret || !input.legalUnitId) {
-        throw new Error("[einvoice_config_entity_create_office] 'siret' and 'legalUnitId' are required");
+        throw new Error(
+          "[einvoice_config_entity_create_office] 'siret' and 'legalUnitId' are required",
+        );
       }
       return await ctx.adapter.createOffice({
         identifierScheme: "0009",
@@ -218,7 +221,8 @@ export const configTools: EInvoiceTool[] = [
         },
         siren: {
           type: "string",
-          description: "SIREN (9 digits, first 9 digits of SIRET). If omitted, extracted from SIRET automatically.",
+          description:
+            "SIREN (9 digits, first 9 digits of SIRET). If omitted, extracted from SIRET automatically.",
         },
       },
       required: ["siret"],
@@ -259,7 +263,9 @@ export const configTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.scheme || !input.value) {
-        throw new Error("[einvoice_config_entity_claim] 'scheme' and 'value' are required");
+        throw new Error(
+          "[einvoice_config_entity_claim] 'scheme' and 'value' are required",
+        );
       }
       return await ctx.adapter.claimBusinessEntityByIdentifier(
         input.scheme as string,
@@ -274,8 +280,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_entity_delete",
     requires: ["deleteBusinessEntity"],
-    description:
-      "Remove a business entity from your operator account. " +
+    description: "Remove a business entity from your operator account. " +
       "This does not delete the entity from the national directory, " +
       "only removes it from your management.",
     category: "config",
@@ -311,11 +316,13 @@ export const configTools: EInvoiceTool[] = [
       properties: {
         identifier_id: {
           type: "string",
-          description: "Business entity identifier ID (UUID, from the identifiers array in entity details)",
+          description:
+            "Business entity identifier ID (UUID, from the identifiers array in entity details)",
         },
         network: {
           type: "string",
-          description: "Network to register on: DOMESTIC_FR (French PPF) or PEPPOL_INTERNATIONAL",
+          description:
+            "Network to register on: DOMESTIC_FR (French PPF) or PEPPOL_INTERNATIONAL",
           enum: ["DOMESTIC_FR", "PEPPOL_INTERNATIONAL"],
         },
       },
@@ -323,7 +330,9 @@ export const configTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.identifier_id || !input.network) {
-        throw new Error("[einvoice_config_network_register] 'identifier_id' and 'network' are required");
+        throw new Error(
+          "[einvoice_config_network_register] 'identifier_id' and 'network' are required",
+        );
       }
       return await ctx.adapter.registerNetwork(
         input.identifier_id as string,
@@ -349,7 +358,8 @@ export const configTools: EInvoiceTool[] = [
       properties: {
         scheme: {
           type: "string",
-          description: "Identifier scheme: '0009' for SIRET, '0002' for SIREN, '0225' for SIREN_SIRET",
+          description:
+            "Identifier scheme: '0009' for SIRET, '0002' for SIREN, '0225' for SIREN_SIRET",
         },
         value: {
           type: "string",
@@ -365,7 +375,9 @@ export const configTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.scheme || !input.value || !input.network) {
-        throw new Error("[einvoice_config_network_register_by_id] 'scheme', 'value', and 'network' are required");
+        throw new Error(
+          "[einvoice_config_network_register_by_id] 'scheme', 'value', and 'network' are required",
+        );
       }
       return await ctx.adapter.registerNetworkByScheme(
         input.scheme as string,
@@ -381,8 +393,7 @@ export const configTools: EInvoiceTool[] = [
     name: "einvoice_config_identifier_create",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     requires: ["createIdentifier"],
-    description:
-      "Add a new identifier to a business entity. " +
+    description: "Add a new identifier to a business entity. " +
       "Identifiers are how entities are found in the directory and how invoices are routed. " +
       "Common schemes: '0009' (SIRET), '0002' (SIREN), '0225' (SIREN_SIRET). " +
       "After creating, register the identifier on a network (DOMESTIC_FR) for invoice routing.",
@@ -390,12 +401,19 @@ export const configTools: EInvoiceTool[] = [
     inputSchema: {
       type: "object",
       properties: {
-        entity_id: { type: "string", description: "Business entity ID to add the identifier to" },
+        entity_id: {
+          type: "string",
+          description: "Business entity ID to add the identifier to",
+        },
         scheme: {
           type: "string",
-          description: "Identifier scheme: '0009' (SIRET), '0002' (SIREN), '0225' (SIREN_SIRET)",
+          description:
+            "Identifier scheme: '0009' (SIRET), '0002' (SIREN), '0225' (SIREN_SIRET)",
         },
-        value: { type: "string", description: "Identifier value (e.g. SIRET number)" },
+        value: {
+          type: "string",
+          description: "Identifier value (e.g. SIRET number)",
+        },
         type: {
           type: "string",
           description: "Identifier type",
@@ -406,7 +424,9 @@ export const configTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.entity_id || !input.scheme || !input.value || !input.type) {
-        throw new Error("[einvoice_config_identifier_create] 'entity_id', 'scheme', 'value', and 'type' are required");
+        throw new Error(
+          "[einvoice_config_identifier_create] 'entity_id', 'scheme', 'value', and 'type' are required",
+        );
       }
       return await ctx.adapter.createIdentifier(input.entity_id as string, {
         scheme: input.scheme as string,
@@ -429,21 +449,41 @@ export const configTools: EInvoiceTool[] = [
     inputSchema: {
       type: "object",
       properties: {
-        lookup_scheme: { type: "string", description: "Scheme to find the entity (e.g. '0009' for SIRET)" },
-        lookup_value: { type: "string", description: "Value to find the entity (e.g. SIRET number)" },
-        new_scheme: { type: "string", description: "Scheme of the new identifier to add" },
-        new_value: { type: "string", description: "Value of the new identifier to add" },
+        lookup_scheme: {
+          type: "string",
+          description: "Scheme to find the entity (e.g. '0009' for SIRET)",
+        },
+        lookup_value: {
+          type: "string",
+          description: "Value to find the entity (e.g. SIRET number)",
+        },
+        new_scheme: {
+          type: "string",
+          description: "Scheme of the new identifier to add",
+        },
+        new_value: {
+          type: "string",
+          description: "Value of the new identifier to add",
+        },
       },
       required: ["lookup_scheme", "lookup_value", "new_scheme", "new_value"],
     },
     handler: async (input, ctx) => {
-      if (!input.lookup_scheme || !input.lookup_value || !input.new_scheme || !input.new_value) {
-        throw new Error("[einvoice_config_identifier_create_by_scheme] all fields are required");
+      if (
+        !input.lookup_scheme || !input.lookup_value || !input.new_scheme ||
+        !input.new_value
+      ) {
+        throw new Error(
+          "[einvoice_config_identifier_create_by_scheme] all fields are required",
+        );
       }
       return await ctx.adapter.createIdentifierByScheme(
         input.lookup_scheme as string,
         input.lookup_value as string,
-        { scheme: input.new_scheme as string, value: input.new_value as string },
+        {
+          scheme: input.new_scheme as string,
+          value: input.new_value as string,
+        },
       );
     },
   },
@@ -453,21 +493,25 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_identifier_delete",
     requires: ["deleteIdentifier"],
-    description:
-      "Remove an identifier from a business entity. " +
+    description: "Remove an identifier from a business entity. " +
       "WARNING: if the identifier is registered on a network, unregister it first. " +
       "Use the identifier UUID from the entity's identifiers array (einvoice_config_entity_get).",
     category: "config",
     inputSchema: {
       type: "object",
       properties: {
-        identifier_id: { type: "string", description: "Identifier UUID to delete" },
+        identifier_id: {
+          type: "string",
+          description: "Identifier UUID to delete",
+        },
       },
       required: ["identifier_id"],
     },
     handler: async (input, ctx) => {
       if (!input.identifier_id) {
-        throw new Error("[einvoice_config_identifier_delete] 'identifier_id' is required");
+        throw new Error(
+          "[einvoice_config_identifier_delete] 'identifier_id' is required",
+        );
       }
       return await ctx.adapter.deleteIdentifier(input.identifier_id as string);
     },
@@ -479,8 +523,7 @@ export const configTools: EInvoiceTool[] = [
     name: "einvoice_config_entity_configure",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     requires: ["configureBusinessEntity"],
-    description:
-      "Configure a business entity's settings (e.g. VAT regime). " +
+    description: "Configure a business entity's settings (e.g. VAT regime). " +
       "Use einvoice_config_entity_get to see current configuration first.",
     category: "config",
     inputSchema: {
@@ -489,19 +532,30 @@ export const configTools: EInvoiceTool[] = [
         entity_id: { type: "string", description: "Business entity ID" },
         vat_regime: {
           type: "string",
-          description: "VAT regime: REAL_MONTHLY_TAX_REGIME, REAL_QUARTERLY_TAX_REGIME, SIMPLIFIED_TAX_REGIME, or VAT_EXEMPTION_REGIME",
-          enum: ["REAL_MONTHLY_TAX_REGIME", "REAL_QUARTERLY_TAX_REGIME", "SIMPLIFIED_TAX_REGIME", "VAT_EXEMPTION_REGIME"],
+          description:
+            "VAT regime: REAL_MONTHLY_TAX_REGIME, REAL_QUARTERLY_TAX_REGIME, SIMPLIFIED_TAX_REGIME, or VAT_EXEMPTION_REGIME",
+          enum: [
+            "REAL_MONTHLY_TAX_REGIME",
+            "REAL_QUARTERLY_TAX_REGIME",
+            "SIMPLIFIED_TAX_REGIME",
+            "VAT_EXEMPTION_REGIME",
+          ],
         },
       },
       required: ["entity_id"],
     },
     handler: async (input, ctx) => {
       if (!input.entity_id) {
-        throw new Error("[einvoice_config_entity_configure] 'entity_id' is required");
+        throw new Error(
+          "[einvoice_config_entity_configure] 'entity_id' is required",
+        );
       }
       const config: Record<string, unknown> = {};
       if (input.vat_regime) config.vatRegime = input.vat_regime;
-      return await ctx.adapter.configureBusinessEntity(input.entity_id as string, config);
+      return await ctx.adapter.configureBusinessEntity(
+        input.entity_id as string,
+        config,
+      );
     },
   },
 
@@ -510,8 +564,7 @@ export const configTools: EInvoiceTool[] = [
   {
     name: "einvoice_config_claim_delete",
     requires: ["deleteClaim"],
-    description:
-      "Remove your operator's claim on a business entity. " +
+    description: "Remove your operator's claim on a business entity. " +
       "The entity remains in the national directory but is no longer managed by your operator. " +
       "WARNING: after removing the claim, you lose management of this entity. " +
       "Use einvoice_config_entity_claim to reclaim it later if needed.",
@@ -519,13 +572,18 @@ export const configTools: EInvoiceTool[] = [
     inputSchema: {
       type: "object",
       properties: {
-        entity_id: { type: "string", description: "Business entity ID to unclaim" },
+        entity_id: {
+          type: "string",
+          description: "Business entity ID to unclaim",
+        },
       },
       required: ["entity_id"],
     },
     handler: async (input, ctx) => {
       if (!input.entity_id) {
-        throw new Error("[einvoice_config_claim_delete] 'entity_id' is required");
+        throw new Error(
+          "[einvoice_config_claim_delete] 'entity_id' is required",
+        );
       }
       return await ctx.adapter.deleteClaim(input.entity_id as string);
     },
@@ -546,14 +604,17 @@ export const configTools: EInvoiceTool[] = [
       properties: {
         directory_id: {
           type: "string",
-          description: "Directory entry ID (UUID from the networksRegistered array in entity identifiers)",
+          description:
+            "Directory entry ID (UUID from the networksRegistered array in entity identifiers)",
         },
       },
       required: ["directory_id"],
     },
     handler: async (input, ctx) => {
       if (!input.directory_id) {
-        throw new Error("[einvoice_config_network_unregister] 'directory_id' is required");
+        throw new Error(
+          "[einvoice_config_network_unregister] 'directory_id' is required",
+        );
       }
       return await ctx.adapter.unregisterNetwork(input.directory_id as string);
     },

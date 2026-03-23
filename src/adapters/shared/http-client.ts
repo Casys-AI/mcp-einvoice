@@ -94,7 +94,9 @@ export abstract class BaseHttpClient {
         const body = await response.text();
         throw new AdapterAPIError(
           this.adapterName,
-          `[${this.adapterName}] ${method} ${path} → ${response.status}: ${body.slice(0, 500)}`,
+          `[${this.adapterName}] ${method} ${path} → ${response.status}: ${
+            body.slice(0, 500)
+          }`,
           response.status,
           body,
         );
@@ -138,7 +140,9 @@ export abstract class BaseHttpClient {
   /**
    * Download a binary resource. Returns raw bytes + content type.
    */
-  async download(path: string): Promise<{ data: Uint8Array; contentType: string }> {
+  async download(
+    path: string,
+  ): Promise<{ data: Uint8Array; contentType: string }> {
     const url = `${this.config.baseUrl}${path}`;
     const authHeaders = await this.getAuthHeaders();
     const controller = new AbortController();
@@ -165,7 +169,8 @@ export abstract class BaseHttpClient {
       }
 
       const data = new Uint8Array(await response.arrayBuffer());
-      const contentType = response.headers.get("content-type") ?? "application/octet-stream";
+      const contentType = response.headers.get("content-type") ??
+        "application/octet-stream";
       return { data, contentType };
     } finally {
       clearTimeout(timeout);

@@ -15,9 +15,9 @@ interface TimelineData {
 }
 
 interface StatusEntry {
-  date: string;       // ISO 8601 timestamp
-  code: string;       // DEPOSITED, DELIVERED, APPROVED, etc.
-  message?: string;   // optional comment
+  date: string; // ISO 8601 timestamp
+  code: string; // DEPOSITED, DELIVERED, APPROVED, etc.
+  message?: string; // optional comment
 }
 ```
 

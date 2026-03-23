@@ -58,7 +58,11 @@ function makeAdapterNullAfnor() {
 Deno.test("AfnorBaseAdapter (null) - emitInvoice throws NotSupportedError", async () => {
   const adapter = makeAdapterNullAfnor();
   await assertRejects(
-    () => adapter.emitInvoice({ file: new Uint8Array([0]), filename: "invoice.xml" }),
+    () =>
+      adapter.emitInvoice({
+        file: new Uint8Array([0]),
+        filename: "invoice.xml",
+      }),
     NotSupportedError,
   );
 });
@@ -122,7 +126,10 @@ Deno.test("AfnorBaseAdapter (null) - reportTransaction throws NotSupportedError"
 Deno.test("AfnorBaseAdapter (null) - error message mentions AFNOR not configured", async () => {
   const adapter = makeAdapterNullAfnor();
   try {
-    await adapter.emitInvoice({ file: new Uint8Array([0]), filename: "invoice.xml" });
+    await adapter.emitInvoice({
+      file: new Uint8Array([0]),
+      filename: "invoice.xml",
+    });
   } catch (e) {
     const err = e as NotSupportedError;
     assertEquals(err.message.toLowerCase().includes("afnor"), true);
@@ -198,7 +205,10 @@ Deno.test("AfnorBaseAdapter.emitInvoice() - sets processingRule B2B and correct 
 
   try {
     const adapter = makeAdapterWithClient();
-    await adapter.emitInvoice({ file: new Uint8Array([0]), filename: "facture.xml" });
+    await adapter.emitInvoice({
+      file: new Uint8Array([0]),
+      filename: "facture.xml",
+    });
 
     const body = captured[0].body as Record<string, string>;
     const flowInfo = JSON.parse(body["flowInfo"]);
@@ -216,7 +226,10 @@ Deno.test("AfnorBaseAdapter.emitInvoice() - POSTs to /v1/flows", async () => {
 
   try {
     const adapter = makeAdapterWithClient();
-    await adapter.emitInvoice({ file: new Uint8Array([0]), filename: "invoice.xml" });
+    await adapter.emitInvoice({
+      file: new Uint8Array([0]),
+      filename: "invoice.xml",
+    });
 
     assertEquals(captured[0].method, "POST");
     assertEquals(new URL(captured[0].url).pathname, "/afnor/v1/flows");
@@ -301,7 +314,12 @@ Deno.test("AfnorBaseAdapter.searchInvoices() - normalizes direction 'In' → 're
       status: 200,
       body: {
         results: [
-          { flowId: "fl-A", ackStatus: "Ok", flowDirection: "In", updatedAt: "2026-01-01T00:00:00Z" },
+          {
+            flowId: "fl-A",
+            ackStatus: "Ok",
+            flowDirection: "In",
+            updatedAt: "2026-01-01T00:00:00Z",
+          },
         ],
       },
     },
@@ -323,7 +341,12 @@ Deno.test("AfnorBaseAdapter.searchInvoices() - normalizes direction 'Out' → 's
       status: 200,
       body: {
         results: [
-          { flowId: "fl-B", ackStatus: "Ok", flowDirection: "Out", updatedAt: "2026-01-01T00:00:00Z" },
+          {
+            flowId: "fl-B",
+            ackStatus: "Ok",
+            flowDirection: "Out",
+            updatedAt: "2026-01-01T00:00:00Z",
+          },
         ],
       },
     },
@@ -345,8 +368,18 @@ Deno.test("AfnorBaseAdapter.searchInvoices() - maps flowId, ackStatus, dates", a
       status: 200,
       body: {
         results: [
-          { flowId: "fl-C", ackStatus: "Pending", flowDirection: "Out", updatedAt: "2026-03-15T10:00:00Z" },
-          { flowId: "fl-D", ackStatus: "Ok", flowDirection: "In", submittedAt: "2026-03-10T08:00:00Z" },
+          {
+            flowId: "fl-C",
+            ackStatus: "Pending",
+            flowDirection: "Out",
+            updatedAt: "2026-03-15T10:00:00Z",
+          },
+          {
+            flowId: "fl-D",
+            ackStatus: "Ok",
+            flowDirection: "In",
+            submittedAt: "2026-03-10T08:00:00Z",
+          },
         ],
       },
     },
@@ -377,7 +410,11 @@ Deno.test("AfnorBaseAdapter.sendStatus() - submits CDAR flow to /v1/flows", asyn
 
   try {
     const adapter = makeAdapterWithClient();
-    await adapter.sendStatus({ invoiceId: "inv-1", code: "fr:205", message: "Approuvée" });
+    await adapter.sendStatus({
+      invoiceId: "inv-1",
+      code: "fr:205",
+      message: "Approuvée",
+    });
 
     assertEquals(captured[0].method, "POST");
     assertEquals(new URL(captured[0].url).pathname, "/afnor/v1/flows");
@@ -428,7 +465,11 @@ Deno.test("AfnorBaseAdapter.sendStatus() - CDAR payload contains invoiceId and s
 
   try {
     const adapter = makeAdapterWithClient();
-    await adapter.sendStatus({ invoiceId: "inv-42", code: "fr:212", message: "Payée" });
+    await adapter.sendStatus({
+      invoiceId: "inv-42",
+      code: "fr:212",
+      message: "Payée",
+    });
 
     // The file field is a Blob containing the JSON payload
     // mockFetch records it as "[Blob: status-inv-42.json, N bytes]"
@@ -470,8 +511,20 @@ Deno.test("AfnorBaseAdapter.getStatusHistory() - maps entries from results", asy
       status: 200,
       body: {
         results: [
-          { flowId: "fl-lc-1", ackStatus: "Ok", flowType: "CustomerInvoiceLC", flowDirection: "In", updatedAt: "2026-03-01T10:00:00Z" },
-          { flowId: "fl-lc-2", ackStatus: "Error", flowType: "SupplierInvoiceLC", flowDirection: "Out", submittedAt: "2026-03-02T11:00:00Z" },
+          {
+            flowId: "fl-lc-1",
+            ackStatus: "Ok",
+            flowType: "CustomerInvoiceLC",
+            flowDirection: "In",
+            updatedAt: "2026-03-01T10:00:00Z",
+          },
+          {
+            flowId: "fl-lc-2",
+            ackStatus: "Error",
+            flowType: "SupplierInvoiceLC",
+            flowDirection: "Out",
+            submittedAt: "2026-03-02T11:00:00Z",
+          },
         ],
       },
     },
@@ -499,7 +552,13 @@ Deno.test("AfnorBaseAdapter.getStatusHistory() - falls back to submittedAt when 
       status: 200,
       body: {
         results: [
-          { flowId: "fl-lc-3", ackStatus: "Pending", flowType: "CustomerInvoiceLC", flowDirection: "In", submittedAt: "2026-01-15T09:00:00Z" },
+          {
+            flowId: "fl-lc-3",
+            ackStatus: "Pending",
+            flowType: "CustomerInvoiceLC",
+            flowDirection: "In",
+            submittedAt: "2026-01-15T09:00:00Z",
+          },
         ],
       },
     },

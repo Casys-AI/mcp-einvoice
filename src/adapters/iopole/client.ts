@@ -122,7 +122,9 @@ export class IopoleClient {
       if (!response.ok) {
         const body = await response.text();
         throw new IopoleAPIError(
-          `[IopoleClient] ${method} ${path} → ${response.status}: ${body.slice(0, 500)}`,
+          `[IopoleClient] ${method} ${path} → ${response.status}: ${
+            body.slice(0, 500)
+          }`,
           response.status,
           body,
         );
@@ -211,7 +213,9 @@ export class IopoleClient {
       if (!response.ok) {
         const body = await response.text();
         throw new IopoleAPIError(
-          `[IopoleClient] POST ${path} (upload) → ${response.status}: ${body.slice(0, 500)}`,
+          `[IopoleClient] POST ${path} (upload) → ${response.status}: ${
+            body.slice(0, 500)
+          }`,
           response.status,
           body,
         );
@@ -256,7 +260,10 @@ export class IopoleClient {
     const token = await this.config.getToken();
     const controller = new AbortController();
     // Longer timeout for binary generation (PDF can take 30-60s)
-    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 60_000);
+    const timeout = setTimeout(
+      () => controller.abort(),
+      this.config.timeoutMs ?? 60_000,
+    );
     try {
       const response = await fetch(url.toString(), {
         method: "POST",
@@ -271,10 +278,17 @@ export class IopoleClient {
       });
       if (!response.ok) {
         const errBody = await response.text();
-        throw new IopoleAPIError(`[IopoleClient] POST ${path} → ${response.status}: ${errBody.slice(0, 500)}`, response.status, errBody);
+        throw new IopoleAPIError(
+          `[IopoleClient] POST ${path} → ${response.status}: ${
+            errBody.slice(0, 500)
+          }`,
+          response.status,
+          errBody,
+        );
       }
       const data = new Uint8Array(await response.arrayBuffer());
-      const contentType = response.headers.get("content-type") ?? "application/octet-stream";
+      const contentType = response.headers.get("content-type") ??
+        "application/octet-stream";
       return { data, contentType };
     } finally {
       clearTimeout(timeout);
@@ -285,7 +299,9 @@ export class IopoleClient {
    * Download a binary resource (invoice PDF, attachment, etc.)
    * Returns the raw Response for streaming.
    */
-  async download(path: string): Promise<{ data: Uint8Array; contentType: string }> {
+  async download(
+    path: string,
+  ): Promise<{ data: Uint8Array; contentType: string }> {
     const url = `${this.config.baseUrl}${path}`;
     const token = await this.config.getToken();
     const controller = new AbortController();
@@ -314,11 +330,11 @@ export class IopoleClient {
       }
 
       const data = new Uint8Array(await response.arrayBuffer());
-      const contentType = response.headers.get("content-type") ?? "application/octet-stream";
+      const contentType = response.headers.get("content-type") ??
+        "application/octet-stream";
       return { data, contentType };
     } finally {
       clearTimeout(timeout);
     }
   }
 }
-

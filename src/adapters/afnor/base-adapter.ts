@@ -17,13 +17,13 @@
  */
 
 import type {
-  InvoiceDetail,
-  SearchInvoicesResult,
-  StatusHistoryResult,
   DownloadResult,
   EmitInvoiceRequest,
+  InvoiceDetail,
   InvoiceSearchFilters,
+  SearchInvoicesResult,
   SendStatusRequest,
+  StatusHistoryResult,
 } from "../../adapter.ts";
 import type { AfnorClient } from "./client.ts";
 import { BaseAdapter } from "../base-adapter.ts";
@@ -52,14 +52,18 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
 
   override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
     const afnor = this.requireAfnor("emitInvoice");
-    const syntax = req.filename.toLowerCase().endsWith(".pdf") ? "Factur-X" : "CII";
+    const syntax = req.filename.toLowerCase().endsWith(".pdf")
+      ? "Factur-X"
+      : "CII";
     return await afnor.submitFlow(
       req.file,
       { flowSyntax: syntax, name: req.filename, processingRule: "B2B" },
     );
   }
 
-  override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+  override async searchInvoices(
+    filters: InvoiceSearchFilters,
+  ): Promise<SearchInvoicesResult> {
     const afnor = this.requireAfnor("searchInvoices");
     const result = await afnor.searchFlows(
       {
@@ -116,11 +120,17 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     });
     return await afnor.submitFlow(
       new TextEncoder().encode(cdarPayload),
-      { flowSyntax: "CDAR", name: `status-${req.invoiceId}.json`, processingRule: "B2B" },
+      {
+        flowSyntax: "CDAR",
+        name: `status-${req.invoiceId}.json`,
+        processingRule: "B2B",
+      },
     );
   }
 
-  override async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
+  override async getStatusHistory(
+    invoiceId: string,
+  ): Promise<StatusHistoryResult> {
     const afnor = this.requireAfnor("getStatusHistory");
     const result = await afnor.searchFlows({
       flowType: ["CustomerInvoiceLC", "SupplierInvoiceLC"],
@@ -138,7 +148,9 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
 
   // ─── Reporting (AFNOR: e-reporting flows) ──────────────
 
-  override async reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportInvoiceTransaction(
+    transaction: Record<string, unknown>,
+  ): Promise<unknown> {
     const afnor = this.requireAfnor("reportInvoiceTransaction");
     const payload = new TextEncoder().encode(JSON.stringify(transaction));
     return await afnor.submitFlow(
@@ -147,9 +159,14 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     );
   }
 
-  override async reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportTransaction(
+    businessEntityId: string,
+    transaction: Record<string, unknown>,
+  ): Promise<unknown> {
     const afnor = this.requireAfnor("reportTransaction");
-    const payload = new TextEncoder().encode(JSON.stringify({ businessEntityId, ...transaction }));
+    const payload = new TextEncoder().encode(
+      JSON.stringify({ businessEntityId, ...transaction }),
+    );
     return await afnor.submitFlow(
       payload,
       { flowSyntax: "FRR", name: "report.json", processingRule: "B2C" },

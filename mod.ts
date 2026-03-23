@@ -19,22 +19,25 @@
 
 // Adapter interface
 export type {
-  EInvoiceAdapter,
-  DownloadResult,
-  PaginatedRequest,
-  EmitInvoiceRequest,
-  InvoiceSearchFilters,
+  CreateWebhookRequest,
   DirectoryFrSearchFilters,
   DirectoryIntSearchFilters,
-  GenerateInvoiceRequest,
+  DownloadResult,
+  EInvoiceAdapter,
+  EmitInvoiceRequest,
   GenerateFacturXRequest,
+  GenerateInvoiceRequest,
+  InvoiceSearchFilters,
+  PaginatedRequest,
   SendStatusRequest,
-  CreateWebhookRequest,
   UpdateWebhookRequest,
 } from "./src/adapter.ts";
 
 // Adapters
-export { IopoleAdapter, createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
+export {
+  createIopoleAdapter,
+  IopoleAdapter,
+} from "./src/adapters/iopole/adapter.ts";
 
 // Tools registry
 export {
@@ -54,9 +57,12 @@ export type {
 
 // Low-level Iopole client (for direct use or DI in tests)
 export {
-  IopoleClient,
-  IopoleAPIError,
   createOAuth2TokenProvider,
+  IopoleAPIError,
+  IopoleClient,
 } from "./src/adapters/iopole/client.ts";
 
-export type { IopoleClientConfig, OAuth2Config } from "./src/adapters/iopole/client.ts";
+export type {
+  IopoleClientConfig,
+  OAuth2Config,
+} from "./src/adapters/iopole/client.ts";

@@ -9,4 +9,6 @@
  * Used by normalizeForIopole() and normalizeForSuperPDP().
  * New adapters should follow this signature for consistency.
  */
-export type NormalizeFn = (input: Record<string, unknown>) => Record<string, unknown>;
+export type NormalizeFn = (
+  input: Record<string, unknown>,
+) => Record<string, unknown>;

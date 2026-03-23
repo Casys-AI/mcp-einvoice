@@ -28,14 +28,21 @@ Deno.test("einvoice_reporting_invoice_transaction - throws without transaction",
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_reporting_invoice_transaction");
 
-  await assertRejects(() => tool.handler({}, { adapter }), Error, "'transaction' is required");
+  await assertRejects(
+    () => tool.handler({}, { adapter }),
+    Error,
+    "'transaction' is required",
+  );
 });
 
 Deno.test("einvoice_reporting_transaction - calls adapter with businessEntityId", async () => {
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_reporting_transaction");
 
-  await tool.handler({ business_entity_id: "be-1", transaction: { type: "b2c" } }, { adapter });
+  await tool.handler({
+    business_entity_id: "be-1",
+    transaction: { type: "b2c" },
+  }, { adapter });
 
   assertEquals(calls[0].method, "reportTransaction");
   assertEquals(calls[0].args[0], "be-1");
@@ -46,6 +53,14 @@ Deno.test("einvoice_reporting_transaction - throws without required fields", asy
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_reporting_transaction");
 
-  await assertRejects(() => tool.handler({}, { adapter }), Error, "'business_entity_id' and 'transaction' are required");
-  await assertRejects(() => tool.handler({ transaction: { type: "b2c" } }, { adapter }), Error, "'business_entity_id' and 'transaction' are required");
+  await assertRejects(
+    () => tool.handler({}, { adapter }),
+    Error,
+    "'business_entity_id' and 'transaction' are required",
+  );
+  await assertRejects(
+    () => tool.handler({ transaction: { type: "b2c" } }, { adapter }),
+    Error,
+    "'business_entity_id' and 'transaction' are required",
+  );
 });

@@ -23,7 +23,9 @@ export function createAdapter(name: string): EInvoiceAdapter {
   const factory = ADAPTER_FACTORIES[name.toLowerCase()];
   if (!factory) {
     throw new Error(
-      `Unknown adapter "${name}". Available: ${Object.keys(ADAPTER_FACTORIES).join(", ")}`,
+      `Unknown adapter "${name}". Available: ${
+        Object.keys(ADAPTER_FACTORIES).join(", ")
+      }`,
     );
   }
   return factory();

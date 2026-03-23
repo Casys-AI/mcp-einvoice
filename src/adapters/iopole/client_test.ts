@@ -7,7 +7,11 @@
  */
 
 import { assertEquals, assertRejects } from "jsr:@std/assert";
-import { IopoleClient, IopoleAPIError, createOAuth2TokenProvider } from "./client.ts";
+import {
+  createOAuth2TokenProvider,
+  IopoleAPIError,
+  IopoleClient,
+} from "./client.ts";
 import { mockFetch } from "../../testing/helpers.ts";
 
 const TEST_CUSTOMER_ID = "test-customer-id";
@@ -105,7 +109,9 @@ Deno.test("IopoleClient.post() - sends JSON body", async () => {
 
   try {
     const client = makeClient();
-    const result = await client.post("/invoice/emit", { invoice: { number: "F-001" } });
+    const result = await client.post("/invoice/emit", {
+      invoice: { number: "F-001" },
+    });
 
     assertEquals(result, { guid: "new-uuid" });
     assertEquals(captured[0].method, "POST");
@@ -182,7 +188,9 @@ Deno.test("IopoleClient.download() - returns Uint8Array and content type", async
 
   try {
     const client = makeClient();
-    const { data, contentType } = await client.download("/invoice/abc/readable");
+    const { data, contentType } = await client.download(
+      "/invoice/abc/readable",
+    );
 
     assertEquals(contentType, "application/pdf");
     assertEquals(data.length, 4);
@@ -259,7 +267,10 @@ Deno.test("IopoleClient - constructs correct URLs", async () => {
     const client = makeClient();
     await client.get("/invoice/abc-def");
 
-    assertEquals(captured[0].url, "https://api.ppd.iopole.fr/v1/invoice/abc-def");
+    assertEquals(
+      captured[0].url,
+      "https://api.ppd.iopole.fr/v1/invoice/abc-def",
+    );
   } finally {
     restore();
   }
@@ -273,18 +284,22 @@ Deno.test("createOAuth2TokenProvider - fetches and caches token", async () => {
 
   globalThis.fetch = async (url: string | URL | Request): Promise<Response> => {
     fetchCount++;
-    return new Response(JSON.stringify({
-      access_token: "oauth-token-abc",
-      expires_in: 600,
-    }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        access_token: "oauth-token-abc",
+        expires_in: 600,
+      }),
+      {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      },
+    );
   };
 
   try {
     const getToken = createOAuth2TokenProvider({
-      authUrl: "https://auth.iopole.com/realms/iopole/protocol/openid-connect/token",
+      authUrl:
+        "https://auth.iopole.com/realms/iopole/protocol/openid-connect/token",
       clientId: "test-client",
       clientSecret: "test-secret",
     });
@@ -306,15 +321,21 @@ Deno.test("createOAuth2TokenProvider - sends correct form data", async () => {
   let capturedBody = "";
   const original = globalThis.fetch;
 
-  globalThis.fetch = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+  globalThis.fetch = async (
+    _url: string | URL | Request,
+    init?: RequestInit,
+  ): Promise<Response> => {
     capturedBody = init?.body as string ?? "";
-    return new Response(JSON.stringify({
-      access_token: "tok",
-      expires_in: 600,
-    }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        access_token: "tok",
+        expires_in: 600,
+      }),
+      {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      },
+    );
   };
 
   try {

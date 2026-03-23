@@ -38,7 +38,17 @@ function stripNulls(obj: any): any {
 }
 
 /** Fields used as source for normalization — removed from output to avoid empty XML elements. */
-const PARTY_SOURCE_FIELDS = ["country", "address", "siret", "siretNumber", "siren", "sirenNumber", "vatNumber", "vat_number", "vatId"];
+const PARTY_SOURCE_FIELDS = [
+  "country",
+  "address",
+  "siret",
+  "siretNumber",
+  "siren",
+  "sirenNumber",
+  "vatNumber",
+  "vat_number",
+  "vatId",
+];
 
 /** Normalize a party (seller or buyer) to SuperPDP EN16931 format. */
 function normalizeParty(party: any, requireElectronicAddress: boolean): any {
@@ -49,10 +59,13 @@ function normalizeParty(party: any, requireElectronicAddress: boolean): any {
   if (!p.postal_address) {
     if (p.address && typeof p.address === "object") {
       p.postal_address = stripNulls({
-        country_code: p.address.country_code ?? p.address.country ?? p.country ?? "FR",
-        address_line1: p.address.street ?? p.address.address_line1 ?? p.address.line1,
+        country_code: p.address.country_code ?? p.address.country ??
+          p.country ?? "FR",
+        address_line1: p.address.street ?? p.address.address_line1 ??
+          p.address.line1,
         city: p.address.city,
-        post_code: p.address.postal_code ?? p.address.post_code ?? p.address.zip,
+        post_code: p.address.postal_code ?? p.address.post_code ??
+          p.address.zip,
       });
     } else if (p.country) {
       p.postal_address = { country_code: p.country };
@@ -90,7 +103,15 @@ function normalizeParty(party: any, requireElectronicAddress: boolean): any {
 }
 
 /** Source fields consumed by normalizeTotals — cleaned up to avoid empty XML elements. */
-const TOTALS_SOURCE_FIELDS = ["line_extension_amount", "lineTotalAmount", "tax_exclusive_amount", "taxBasisTotalAmount", "tax_inclusive_amount", "grandTotalAmount", "payableAmount"];
+const TOTALS_SOURCE_FIELDS = [
+  "line_extension_amount",
+  "lineTotalAmount",
+  "tax_exclusive_amount",
+  "taxBasisTotalAmount",
+  "tax_inclusive_amount",
+  "grandTotalAmount",
+  "payableAmount",
+];
 
 /** Normalize totals field names to SuperPDP EN16931 format. */
 function normalizeTotals(totals: any): any {
@@ -98,13 +119,32 @@ function normalizeTotals(totals: any): any {
   const t = { ...totals };
 
   // Map intuitive names → EN16931 names
-  setIfAbsent(t, "sum_invoice_lines_amount", t.line_extension_amount ?? t.lineTotalAmount);
-  setIfAbsent(t, "total_without_vat", t.tax_exclusive_amount ?? t.taxBasisTotalAmount);
-  setIfAbsent(t, "total_with_vat", t.tax_inclusive_amount ?? t.grandTotalAmount);
+  setIfAbsent(
+    t,
+    "sum_invoice_lines_amount",
+    t.line_extension_amount ?? t.lineTotalAmount,
+  );
+  setIfAbsent(
+    t,
+    "total_without_vat",
+    t.tax_exclusive_amount ?? t.taxBasisTotalAmount,
+  );
+  setIfAbsent(
+    t,
+    "total_with_vat",
+    t.tax_inclusive_amount ?? t.grandTotalAmount,
+  );
   setIfAbsent(t, "amount_due_for_payment", t.payableAmount);
 
   // Convert simple amounts to decimal strings
-  for (const key of ["sum_invoice_lines_amount", "total_without_vat", "total_with_vat", "amount_due_for_payment"]) {
+  for (
+    const key of [
+      "sum_invoice_lines_amount",
+      "total_without_vat",
+      "total_with_vat",
+      "amount_due_for_payment",
+    ]
+  ) {
     if (t[key] != null) t[key] = toDecimal(t[key]);
   }
 
@@ -112,7 +152,10 @@ function normalizeTotals(totals: any): any {
   if (t.total_vat_amount != null && typeof t.total_vat_amount !== "object") {
     t.total_vat_amount = { value: toDecimal(t.total_vat_amount) };
   } else if (t.total_vat_amount?.value != null) {
-    t.total_vat_amount = { ...t.total_vat_amount, value: toDecimal(t.total_vat_amount.value) };
+    t.total_vat_amount = {
+      ...t.total_vat_amount,
+      value: toDecimal(t.total_vat_amount.value),
+    };
   }
 
   for (const f of TOTALS_SOURCE_FIELDS) delete t[f];
@@ -120,7 +163,17 @@ function normalizeTotals(totals: any): any {
 }
 
 /** Source fields consumed by normalizeVatBreakdown — cleaned up to avoid empty XML elements. */
-const VAT_SOURCE_FIELDS = ["category_code", "categoryCode", "rate", "percent", "vat_rate", "taxable_amount", "taxableAmount", "tax_amount", "taxAmount"];
+const VAT_SOURCE_FIELDS = [
+  "category_code",
+  "categoryCode",
+  "rate",
+  "percent",
+  "vat_rate",
+  "taxable_amount",
+  "taxableAmount",
+  "tax_amount",
+  "taxAmount",
+];
 
 /** Normalize a single VAT breakdown entry. */
 function normalizeVatBreakdown(vat: any): any {
@@ -129,20 +182,56 @@ function normalizeVatBreakdown(vat: any): any {
 
   setIfAbsent(v, "vat_category_code", v.category_code ?? v.categoryCode);
   setIfAbsent(v, "vat_category_rate", v.rate ?? v.percent ?? v.vat_rate);
-  setIfAbsent(v, "vat_category_taxable_amount", v.taxable_amount ?? v.taxableAmount);
+  setIfAbsent(
+    v,
+    "vat_category_taxable_amount",
+    v.taxable_amount ?? v.taxableAmount,
+  );
   setIfAbsent(v, "vat_category_tax_amount", v.tax_amount ?? v.taxAmount);
 
   // Decimal strings
-  if (v.vat_category_rate != null) v.vat_category_rate = toDecimal(v.vat_category_rate);
-  if (v.vat_category_taxable_amount != null) v.vat_category_taxable_amount = toDecimal(v.vat_category_taxable_amount);
-  if (v.vat_category_tax_amount != null) v.vat_category_tax_amount = toDecimal(v.vat_category_tax_amount);
+  if (v.vat_category_rate != null) {
+    v.vat_category_rate = toDecimal(v.vat_category_rate);
+  }
+  if (v.vat_category_taxable_amount != null) {
+    v.vat_category_taxable_amount = toDecimal(v.vat_category_taxable_amount);
+  }
+  if (v.vat_category_tax_amount != null) {
+    v.vat_category_tax_amount = toDecimal(v.vat_category_tax_amount);
+  }
 
   for (const f of VAT_SOURCE_FIELDS) delete v[f];
   return v;
 }
 
 /** Source fields consumed by normalizeLine — cleaned up to avoid empty XML elements. */
-const LINE_SOURCE_FIELDS = ["id", "name", "item_name", "description", "quantity", "billed_quantity", "unit_code", "unitCode", "net_price", "price", "unit_price", "unitPrice", "line_amount", "line_total_amount", "line_net_amount", "amount", "totalAmount", "tax_category", "vat_category_code", "line_vat_category_code", "vatCategoryCode", "tax_percent", "vat_rate", "line_vat_rate", "vatRate"];
+const LINE_SOURCE_FIELDS = [
+  "id",
+  "name",
+  "item_name",
+  "description",
+  "quantity",
+  "billed_quantity",
+  "unit_code",
+  "unitCode",
+  "net_price",
+  "price",
+  "unit_price",
+  "unitPrice",
+  "line_amount",
+  "line_total_amount",
+  "line_net_amount",
+  "amount",
+  "totalAmount",
+  "tax_category",
+  "vat_category_code",
+  "line_vat_category_code",
+  "vatCategoryCode",
+  "tax_percent",
+  "vat_rate",
+  "line_vat_rate",
+  "vatRate",
+];
 
 /** Normalize a single invoice line. */
 function normalizeLine(line: any): any {
@@ -160,7 +249,9 @@ function normalizeLine(line: any): any {
 
   // quantity → invoiced_quantity (decimal string)
   setIfAbsent(l, "invoiced_quantity", l.quantity ?? l.billed_quantity);
-  if (l.invoiced_quantity != null) l.invoiced_quantity = toDecimal(l.invoiced_quantity);
+  if (l.invoiced_quantity != null) {
+    l.invoiced_quantity = toDecimal(l.invoiced_quantity);
+  }
 
   // unit_code → invoiced_quantity_code
   setIfAbsent(l, "invoiced_quantity_code", l.unit_code ?? l.unitCode ?? "C62");
@@ -172,12 +263,18 @@ function normalizeLine(line: any): any {
   }
 
   // line_amount / line_total_amount / line_net_amount → net_amount
-  setIfAbsent(l, "net_amount", l.line_amount ?? l.line_total_amount ?? l.line_net_amount ?? l.amount ?? l.totalAmount);
+  setIfAbsent(
+    l,
+    "net_amount",
+    l.line_amount ?? l.line_total_amount ?? l.line_net_amount ?? l.amount ??
+      l.totalAmount,
+  );
   if (l.net_amount != null) l.net_amount = toDecimal(l.net_amount);
 
   // tax_category / vat info → vat_information
   if (!l.vat_information) {
-    const catCode = l.tax_category ?? l.vat_category_code ?? l.line_vat_category_code ?? l.vatCategoryCode;
+    const catCode = l.tax_category ?? l.vat_category_code ??
+      l.line_vat_category_code ?? l.vatCategoryCode;
     const rate = l.tax_percent ?? l.vat_rate ?? l.line_vat_rate ?? l.vatRate;
     if (catCode) {
       l.vat_information = {
@@ -199,7 +296,9 @@ function normalizeLine(line: any): any {
  *
  * Non-destructive: existing correctly-named fields are preserved.
  */
-export const normalizeForSuperPDP: NormalizeFn = (inv: Record<string, unknown>): Record<string, unknown> => {
+export const normalizeForSuperPDP: NormalizeFn = (
+  inv: Record<string, unknown>,
+): Record<string, unknown> => {
   const n: any = { ...inv };
 
   // Auto-add process_control if absent
@@ -245,14 +344,22 @@ export const normalizeForSuperPDP: NormalizeFn = (inv: Record<string, unknown>):
   if (n.payment_instructions) {
     const pi = { ...n.payment_instructions };
     if (pi.credit_transfer && !pi.credit_transfers) {
-      pi.credit_transfers = Array.isArray(pi.credit_transfer) ? pi.credit_transfer : [pi.credit_transfer];
+      pi.credit_transfers = Array.isArray(pi.credit_transfer)
+        ? pi.credit_transfer
+        : [pi.credit_transfer];
       delete pi.credit_transfer;
     }
     // Fix IBAN scheme: SuperPDP expects scheme="" for IBAN accounts
     if (Array.isArray(pi.credit_transfers)) {
       pi.credit_transfers = pi.credit_transfers.map((ct: any) => {
         if (ct?.payment_account_identifier?.scheme?.toUpperCase() === "IBAN") {
-          return { ...ct, payment_account_identifier: { ...ct.payment_account_identifier, scheme: "" } };
+          return {
+            ...ct,
+            payment_account_identifier: {
+              ...ct.payment_account_identifier,
+              scheme: "",
+            },
+          };
         }
         return ct;
       });
@@ -262,28 +369,44 @@ export const normalizeForSuperPDP: NormalizeFn = (inv: Record<string, unknown>):
 
   // PEPPOL-EN16931-R008: avoid empty ApplicableHeaderTradeDelivery
   if (!n.delivery_information) {
-    n.delivery_information = { delivery_date: n.issue_date ?? new Date().toISOString().slice(0, 10) };
+    n.delivery_information = {
+      delivery_date: n.issue_date ?? new Date().toISOString().slice(0, 10),
+    };
   }
 
   // BR-FR-05: French mandatory notes (PMT, PMD, AAB) — auto-add if absent
   if (!n.notes || !Array.isArray(n.notes)) n.notes = [];
   const noteCodes = new Set(n.notes.map((note: any) => note?.subject_code));
   if (!noteCodes.has("PMT")) {
-    n.notes.push({ note: "En cas de retard de paiement, indemnite forfaitaire de 40 euros pour frais de recouvrement (art. L441-10 C.com).", subject_code: "PMT" });
+    n.notes.push({
+      note:
+        "En cas de retard de paiement, indemnite forfaitaire de 40 euros pour frais de recouvrement (art. L441-10 C.com).",
+      subject_code: "PMT",
+    });
   }
   if (!noteCodes.has("PMD")) {
-    n.notes.push({ note: "Penalites de retard : 3 fois le taux d'interet legal (art. L441-10 C.com).", subject_code: "PMD" });
+    n.notes.push({
+      note:
+        "Penalites de retard : 3 fois le taux d'interet legal (art. L441-10 C.com).",
+      subject_code: "PMD",
+    });
   }
   if (!noteCodes.has("AAB")) {
-    n.notes.push({ note: "Pas d'escompte pour paiement anticipe.", subject_code: "AAB" });
+    n.notes.push({
+      note: "Pas d'escompte pour paiement anticipe.",
+      subject_code: "AAB",
+    });
   }
 
   // BR-FR-12: buyer electronic_address (BT-49) is mandatory in France
-  const buyerCountry = n.buyer?.postal_address?.country_code ?? n.buyer?.country;
+  const buyerCountry = n.buyer?.postal_address?.country_code ??
+    n.buyer?.country;
   if (n.buyer && !n.buyer.electronic_address && buyerCountry === "FR") {
     const siret = buyerSiret ?? n.buyer.legal_registration_identifier?.value;
     if (!siret) {
-      throw new Error("BR-FR-12: buyer.electronic_address is required for French buyers. Provide buyer.siret, buyer.electronic_address, or buyer.legal_registration_identifier.");
+      throw new Error(
+        "BR-FR-12: buyer.electronic_address is required for French buyers. Provide buyer.siret, buyer.electronic_address, or buyer.legal_registration_identifier.",
+      );
     }
     n.buyer.electronic_address = { scheme: "0009", value: siret };
   }

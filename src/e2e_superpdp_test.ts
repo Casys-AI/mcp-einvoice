@@ -9,7 +9,7 @@
  * @module lib/einvoice/src/e2e_superpdp_test
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assert, assertEquals } from "jsr:@std/assert";
 import { createSuperPDPAdapter } from "./adapters/superpdp/adapter.ts";
 import { getToolByName } from "./tools/mod.ts";
 import type { EInvoiceAdapter } from "./adapter.ts";
@@ -94,10 +94,12 @@ Deno.test("E2E SuperPDP: getCustomerId returns company info", async () => {
 
 Deno.test("E2E SuperPDP: invoice search (list all)", async () => {
   if (skipIfNoAdapter()) return;
-  const result = unwrapStructured(await tool("einvoice_invoice_search").handler(
-    { limit: 5 },
-    ctx!,
-  ));
+  const result = unwrapStructured(
+    await tool("einvoice_invoice_search").handler(
+      { limit: 5 },
+      ctx!,
+    ),
+  );
 
   assert(result != null, "result should not be null");
   const rowAction = result._rowAction as Record<string, string>;
@@ -112,16 +114,20 @@ Deno.test("E2E SuperPDP: invoice search (list all)", async () => {
     const first = data[0];
     assert(first._id != null, "first row should have _id");
     // Verify en_invoice mapping worked: should have invoice number or status
-    console.log(`  ✓ First invoice: id=${first._id}, status=${first["Statut"] ?? "n/a"}`);
+    console.log(
+      `  ✓ First invoice: id=${first._id}, status=${first["Statut"] ?? "n/a"}`,
+    );
   }
 });
 
 Deno.test("E2E SuperPDP: invoice search by direction 'out'", async () => {
   if (skipIfNoAdapter()) return;
-  const result = unwrapStructured(await tool("einvoice_invoice_search").handler(
-    { q: "out", limit: 3 },
-    ctx!,
-  ));
+  const result = unwrapStructured(
+    await tool("einvoice_invoice_search").handler(
+      { q: "out", limit: 3 },
+      ctx!,
+    ),
+  );
 
   assert(result != null);
   const data = result.data as Record<string, unknown>[];
@@ -129,7 +135,11 @@ Deno.test("E2E SuperPDP: invoice search by direction 'out'", async () => {
   // All results should be "sent" direction
   for (const row of data) {
     if (row["Direction"]) {
-      assertEquals(row["Direction"], "sent", "direction filter 'out' should return 'sent' invoices");
+      assertEquals(
+        row["Direction"],
+        "sent",
+        "direction filter 'out' should return 'sent' invoices",
+      );
     }
   }
   console.log(`  ✓ Found ${data.length} outgoing invoices`);
@@ -139,10 +149,12 @@ Deno.test("E2E SuperPDP: invoice search by direction 'out'", async () => {
 
 Deno.test("E2E SuperPDP: invoice get by ID (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
-    { limit: 1 },
-    ctx!,
-  ));
+  const searchResult = unwrapStructured(
+    await tool("einvoice_invoice_search").handler(
+      { limit: 1 },
+      ctx!,
+    ),
+  );
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -153,10 +165,12 @@ Deno.test("E2E SuperPDP: invoice get by ID (from search)", async () => {
   const invoiceId = data[0]._id as string;
   assert(invoiceId, "first invoice should have _id");
 
-  const invoice = unwrapStructured(await tool("einvoice_invoice_get").handler(
-    { id: invoiceId },
-    ctx!,
-  ));
+  const invoice = unwrapStructured(
+    await tool("einvoice_invoice_get").handler(
+      { id: invoiceId },
+      ctx!,
+    ),
+  );
 
   assert(invoice != null, "invoice should not be null");
   assertEquals(String(invoice.id), String(invoiceId));
@@ -182,10 +196,12 @@ Deno.test("E2E SuperPDP: invoice get by ID (from search)", async () => {
 
 Deno.test("E2E SuperPDP: status history (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
-    { limit: 1 },
-    ctx!,
-  ));
+  const searchResult = unwrapStructured(
+    await tool("einvoice_invoice_search").handler(
+      { limit: 1 },
+      ctx!,
+    ),
+  );
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -194,10 +210,12 @@ Deno.test("E2E SuperPDP: status history (from search)", async () => {
   }
 
   const invoiceId = data[0]._id as string;
-  const history = unwrapStructured(await tool("einvoice_status_history").handler(
-    { invoice_id: invoiceId },
-    ctx!,
-  ));
+  const history = unwrapStructured(
+    await tool("einvoice_status_history").handler(
+      { invoice_id: invoiceId },
+      ctx!,
+    ),
+  );
 
   assert(history != null, "history should not be null");
   assert(Array.isArray(history.entries), "history.entries should be array");
@@ -207,7 +225,11 @@ Deno.test("E2E SuperPDP: status history (from search)", async () => {
     const first = (history.entries as any[])[0];
     assert(typeof first.code === "string", "event should have code");
     assert(typeof first.date === "string", "event should have date");
-    console.log(`  ✓ ${(history.entries as unknown[]).length} events, first: ${first.code} @ ${first.date}`);
+    console.log(
+      `  ✓ ${
+        (history.entries as unknown[]).length
+      } events, first: ${first.code} @ ${first.date}`,
+    );
   }
 });
 
@@ -215,10 +237,12 @@ Deno.test("E2E SuperPDP: status history (from search)", async () => {
 
 Deno.test("E2E SuperPDP: directory entries (searchDirectoryFr)", async () => {
   if (skipIfNoAdapter()) return;
-  const result = unwrapStructured(await tool("einvoice_directory_fr_search").handler(
-    { q: "Burger Queen" },
-    ctx!,
-  ));
+  const result = unwrapStructured(
+    await tool("einvoice_directory_fr_search").handler(
+      { q: "Burger Queen" },
+      ctx!,
+    ),
+  );
 
   assert(result != null);
   const data = result.data as Record<string, unknown>[];
@@ -227,7 +251,9 @@ Deno.test("E2E SuperPDP: directory entries (searchDirectoryFr)", async () => {
   if (data.length > 0) {
     const first = data[0];
     assert(first._id != null, "entry should have _id");
-    console.log(`  ✓ First: name=${first["Nom"]}, identifier=${first["SIRET"]}`);
+    console.log(
+      `  ✓ First: name=${first["Nom"]}, identifier=${first["SIRET"]}`,
+    );
   }
 });
 
@@ -258,10 +284,12 @@ Deno.test("E2E SuperPDP: generate CII from EN16931 JSON", async () => {
   };
 
   try {
-    const result = unwrapStructured(await tool("einvoice_invoice_generate_cii").handler(
-      { invoice, flavor: "EN16931" },
-      ctx!,
-    ));
+    const result = unwrapStructured(
+      await tool("einvoice_invoice_generate_cii").handler(
+        { invoice, flavor: "EN16931" },
+        ctx!,
+      ),
+    );
 
     assert(result != null, "generate CII should return a result");
     assert(typeof result.generated_id === "string", "should have generated_id");
@@ -290,10 +318,12 @@ Deno.test("E2E SuperPDP: generate UBL from EN16931 JSON", async () => {
   };
 
   try {
-    const result = unwrapStructured(await tool("einvoice_invoice_generate_ubl").handler(
-      { invoice, flavor: "EN16931" },
-      ctx!,
-    ));
+    const result = unwrapStructured(
+      await tool("einvoice_invoice_generate_ubl").handler(
+        { invoice, flavor: "EN16931" },
+        ctx!,
+      ),
+    );
 
     assert(result != null, "generate UBL should return a result");
     assert(typeof result.generated_id === "string", "should have generated_id");

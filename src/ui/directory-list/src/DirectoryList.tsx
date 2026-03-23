@@ -8,11 +8,11 @@
  * Design: Stitch "Amber Ledger" (.stitch/designs/directory-cards.html)
  */
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
-import { BrandHeader, BrandFooter } from "~/shared/Brand";
+import { BrandFooter, BrandHeader } from "~/shared/Brand";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -55,11 +55,18 @@ interface DirectoryEntry {
   createdAt?: string;
   identifiers?: DirectoryNetwork[];
   vatNumber?: string;
-  address?: { street?: string; city?: string; postalCode?: string; country?: string };
+  address?: {
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+  };
 }
 
 interface DirectoryListData {
-  data: Array<{ _id?: string; _detail?: DirectoryEntry; [key: string]: unknown }>;
+  data: Array<
+    { _id?: string; _detail?: DirectoryEntry; [key: string]: unknown }
+  >;
   count?: number;
   _title?: string;
   refreshRequest?: UiRefreshRequestData;
@@ -70,8 +77,27 @@ interface DirectoryListData {
 function InfoField({ label, value }: { label: string; value?: string }) {
   return (
     <div style={{ padding: "4px 0" }}>
-      <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 500, color: colors.text.primary, fontFamily: fonts.mono }}>{value ?? "—"}</div>
+      <div
+        style={{
+          fontSize: 10,
+          color: colors.text.muted,
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          marginBottom: 2,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 500,
+          color: colors.text.primary,
+          fontFamily: fonts.mono,
+        }}
+      >
+        {value ?? "—"}
+      </div>
     </div>
   );
 }
@@ -85,38 +111,92 @@ function NetworkRow({ network }: { network: DirectoryNetwork }) {
   const isActive = !network.status || network.status.toLowerCase() === "active";
   const registrations = network.networkRegistered ?? [];
   return (
-    <div style={{
-      borderLeft: `2px solid ${colors.accent}`,
-      background: colors.bg.root,
-      borderRadius: "0 6px 6px 0",
-      marginBottom: 4,
-      padding: "8px 10px",
-    }}>
+    <div
+      style={{
+        borderLeft: `2px solid ${colors.accent}`,
+        background: colors.bg.root,
+        borderRadius: "0 6px 6px 0",
+        marginBottom: 4,
+        padding: "8px 10px",
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontWeight: 700, color: colors.accent, fontSize: 11, minWidth: 45 }}>{network.scheme}</span>
-        <span style={{ color: colors.text.secondary, fontFamily: fonts.mono, fontSize: 11, flex: 1 }}>{network.value}</span>
+        <span
+          style={{
+            fontWeight: 700,
+            color: colors.accent,
+            fontSize: 11,
+            minWidth: 45,
+          }}
+        >
+          {network.scheme}
+        </span>
+        <span
+          style={{
+            color: colors.text.secondary,
+            fontFamily: fonts.mono,
+            fontSize: 11,
+            flex: 1,
+          }}
+        >
+          {network.value}
+        </span>
         {isActive && (
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="6" stroke={colors.success} strokeWidth="1.5" />
-            <path d="M4 7l2 2 4-4" stroke={colors.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle
+              cx="7"
+              cy="7"
+              r="6"
+              stroke={colors.success}
+              strokeWidth="1.5"
+            />
+            <path
+              d="M4 7l2 2 4-4"
+              stroke={colors.success}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         )}
       </div>
       {registrations.length > 0 && (
         <div style={{ marginTop: 6, paddingLeft: 53 }}>
           {registrations.map((reg, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 2,
+              }}
+            >
               {reg.networkIdentifier && (
-                <span style={{
-                  fontSize: 9, fontWeight: 600, color: colors.text.muted,
-                  background: colors.bg.elevated, borderRadius: 4, padding: "1px 5px",
-                  textTransform: "uppercase", letterSpacing: "0.03em",
-                }}>
-                  {NETWORK_LABELS[reg.networkIdentifier] ?? reg.networkIdentifier}
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 600,
+                    color: colors.text.muted,
+                    background: colors.bg.elevated,
+                    borderRadius: 4,
+                    padding: "1px 5px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.03em",
+                  }}
+                >
+                  {NETWORK_LABELS[reg.networkIdentifier] ??
+                    reg.networkIdentifier}
                 </span>
               )}
               {reg.directoryAddress && (
-                <span style={{ fontSize: 10, color: colors.text.faint, fontFamily: fonts.mono }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: colors.text.faint,
+                    fontFamily: fonts.mono,
+                  }}
+                >
                   {reg.directoryAddress}
                 </span>
               )}
@@ -128,10 +208,19 @@ function NetworkRow({ network }: { network: DirectoryNetwork }) {
   );
 }
 
-function formatAddress(addr: { street?: string; city?: string; postalCode?: string; country?: string }): string {
+function formatAddress(
+  addr: {
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+  },
+): string {
   const parts: string[] = [];
   if (addr.street) parts.push(addr.street);
-  if (addr.postalCode || addr.city) parts.push([addr.postalCode, addr.city].filter(Boolean).join(" "));
+  if (addr.postalCode || addr.city) {
+    parts.push([addr.postalCode, addr.city].filter(Boolean).join(" "));
+  }
   if (addr.country) parts.push(addr.country);
   return parts.join(", ") || "—";
 }
@@ -145,7 +234,8 @@ function DirectoryEntryCard({ entry, expanded, onToggle }: {
 }) {
   const companyName = entry.name || entry.corporateName || "—";
   const networks = entry.identifiers ?? [];
-  const hasAddress = entry.address && (entry.address.street || entry.address.city);
+  const hasAddress = entry.address &&
+    (entry.address.street || entry.address.city);
 
   return (
     <div
@@ -158,60 +248,158 @@ function DirectoryEntryCard({ entry, expanded, onToggle }: {
         marginBottom: 8,
       }}
       onClick={onToggle}
-      onMouseEnter={(e) => { if (!expanded) (e.currentTarget as HTMLElement).style.background = colors.bg.hover; }}
-      onMouseLeave={(e) => { if (!expanded) (e.currentTarget as HTMLElement).style.background = colors.bg.surface; }}
+      onMouseEnter={(e) => {
+        if (!expanded) {(e.currentTarget as HTMLElement).style.background =
+            colors.bg.hover;}
+      }}
+      onMouseLeave={(e) => {
+        if (!expanded) {
+          (e.currentTarget as HTMLElement).style.background = colors.bg.surface;
+        }
+      }}
     >
       {/* Collapsed header */}
-      <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          padding: "12px 14px",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 4,
+            }}
+          >
             {entry.type && (
-              <span style={{
-                ...styles.badge(colors.accent, colors.accentDim),
-                fontSize: 9,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}>
+              <span
+                style={{
+                  ...styles.badge(colors.accent, colors.accentDim),
+                  fontSize: 9,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 {entry.type}
               </span>
             )}
             {entry.country && (
-              <span style={{ fontSize: 10, color: colors.text.faint, opacity: 0.6 }}>{entry.country}</span>
+              <span
+                style={{ fontSize: 10, color: colors.text.faint, opacity: 0.6 }}
+              >
+                {entry.country}
+              </span>
             )}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: colors.text.primary, marginBottom: 2 }}>{companyName}</div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: colors.text.primary,
+              marginBottom: 2,
+            }}
+          >
+            {companyName}
+          </div>
           {entry.siret && (
-            <div style={{ fontSize: 11, fontFamily: fonts.mono, color: colors.text.secondary }}>SIRET {entry.siret}</div>
+            <div
+              style={{
+                fontSize: 11,
+                fontFamily: fonts.mono,
+                color: colors.text.secondary,
+              }}
+            >
+              SIRET {entry.siret}
+            </div>
           )}
         </div>
         <svg
-          width="10" height="10" viewBox="0 0 10 10" fill="none"
-          style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s", flexShrink: 0, opacity: 0.4 }}
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          style={{
+            transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 0.15s",
+            flexShrink: 0,
+            opacity: 0.4,
+          }}
         >
-          <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M3 1l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
 
       {/* Expanded detail */}
       {expanded && (
-        <div style={{ padding: "0 14px 14px", borderTop: `2px solid ${colors.accent}` }} onClick={(e) => e.stopPropagation()}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12, marginBottom: 12 }}>
+        <div
+          style={{
+            padding: "0 14px 14px",
+            borderTop: `2px solid ${colors.accent}`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+              marginTop: 12,
+              marginBottom: 12,
+            }}
+          >
             {entry.siren && <InfoField label="SIREN" value={entry.siren} />}
-            {entry.vatNumber && <InfoField label={t("vat_intra")} value={entry.vatNumber} />}
-            {entry.directory && <InfoField label="Directory" value={entry.directory} />}
+            {entry.vatNumber && (
+              <InfoField label={t("vat_intra")} value={entry.vatNumber} />
+            )}
+            {entry.directory && (
+              <InfoField label="Directory" value={entry.directory} />
+            )}
             {entry.status && <InfoField label="Status" value={entry.status} />}
           </div>
 
           {hasAddress && (
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>{t("address")}</div>
-              <div style={{ fontSize: 12, color: colors.text.secondary }}>{formatAddress(entry.address!)}</div>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: colors.text.muted,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  marginBottom: 4,
+                }}
+              >
+                {t("address")}
+              </div>
+              <div style={{ fontSize: 12, color: colors.text.secondary }}>
+                {formatAddress(entry.address!)}
+              </div>
             </div>
           )}
 
           {networks.length > 0 && (
             <div>
-              <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>{t("networks")}</div>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: colors.text.muted,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  marginBottom: 6,
+                }}
+              >
+                {t("networks")}
+              </div>
               {networks.map((net, i) => <NetworkRow key={i} network={net} />)}
             </div>
           )}
@@ -227,9 +415,23 @@ function LoadingSkeleton() {
   return (
     <div style={{ padding: 16 }}>
       {[1, 2, 3].map((i) => (
-        <div key={i} style={{ background: colors.bg.surface, borderRadius: 12, padding: 14, marginBottom: 8 }}>
-          <div className="skeleton" style={{ width: 80, height: 14, marginBottom: 8 }} />
-          <div className="skeleton" style={{ width: `${50 + i * 10}%`, height: 18, marginBottom: 6 }} />
+        <div
+          key={i}
+          style={{
+            background: colors.bg.surface,
+            borderRadius: 12,
+            padding: 14,
+            marginBottom: 8,
+          }}
+        >
+          <div
+            className="skeleton"
+            style={{ width: 80, height: 14, marginBottom: 8 }}
+          />
+          <div
+            className="skeleton"
+            style={{ width: `${50 + i * 10}%`, height: 18, marginBottom: 6 }}
+          />
           <div className="skeleton" style={{ width: 140, height: 12 }} />
         </div>
       ))}
@@ -261,7 +463,10 @@ export function DirectoryList() {
 
   function hydrateData(next: DirectoryListData) {
     dataRef.current = next;
-    refreshRequestRef.current = resolveUiRefreshRequest(next, refreshRequestRef.current);
+    refreshRequestRef.current = resolveUiRefreshRequest(
+      next,
+      refreshRequestRef.current,
+    );
     setData(next);
   }
 
@@ -287,21 +492,31 @@ export function DirectoryList() {
   }
 
   async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
-    const request = resolveUiRefreshRequest(dataRef.current, refreshRequestRef.current);
-    if (!canRequestUiRefresh({
-      request,
-      visibilityState: typeof document === "undefined" ? "visible" : document.visibilityState,
-      refreshInFlight: refreshInFlightRef.current,
-      now: Date.now(),
-      lastRefreshStartedAt: lastRefreshStartedAtRef.current,
-      minIntervalMs: REFRESH_THROTTLE_MS,
-    }, options)) return;
+    const request = resolveUiRefreshRequest(
+      dataRef.current,
+      refreshRequestRef.current,
+    );
+    if (
+      !canRequestUiRefresh({
+        request,
+        visibilityState: typeof document === "undefined"
+          ? "visible"
+          : document.visibilityState,
+        refreshInFlight: refreshInFlightRef.current,
+        now: Date.now(),
+        lastRefreshStartedAt: lastRefreshStartedAtRef.current,
+        minIntervalMs: REFRESH_THROTTLE_MS,
+      }, options)
+    ) return;
     if (!request || !app.getHostCapabilities()?.serverTools) return;
     refreshInFlightRef.current = true;
     lastRefreshStartedAtRef.current = Date.now();
     setRefreshing(true);
     try {
-      const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
+      const result = await app.callServerTool({
+        name: request.toolName,
+        arguments: request.arguments,
+      }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (!result.isError) consumeToolResult(result);
       else setError(t("error_refresh"));
     } catch (cause) {
@@ -314,16 +529,27 @@ export function DirectoryList() {
 
   useEffect(() => {
     app.connect().catch(() => {});
-    app.ontoolresult = (result: ToolResultPayload) => { consumeToolResult(result); };
-    app.ontoolinputpartial = () => { if (!dataRef.current) setLoading(true); };
+    app.ontoolresult = (result: ToolResultPayload) => {
+      consumeToolResult(result);
+    };
+    app.ontoolinputpartial = () => {
+      if (!dataRef.current) setLoading(true);
+    };
   }, []);
 
   useEffect(() => {
     const handleFocus = () => void requestRefresh({ ignoreInterval: true });
-    const handleVisibility = () => { if (document.visibilityState === "visible") void requestRefresh({ ignoreInterval: true }); };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void requestRefresh({ ignoreInterval: true });
+      }
+    };
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => { window.removeEventListener("focus", handleFocus); document.removeEventListener("visibilitychange", handleVisibility); };
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   // ── Filtered entries ────────────────────────────────────
@@ -348,7 +574,9 @@ export function DirectoryList() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
         <BrandHeader />
         <LoadingSkeleton />
         <BrandFooter />
@@ -358,13 +586,51 @@ export function DirectoryList() {
 
   if (!data) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
         <BrandHeader />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 16, flex: 1 }}>
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ opacity: 0.35 }}>
-            <rect x="8" y="8" width="40" height="40" rx="8" stroke="currentColor" strokeWidth="2" />
-            <circle cx="28" cy="22" r="6" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M16 42c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 24px",
+            color: colors.text.muted,
+            gap: 16,
+            flex: 1,
+          }}
+        >
+          <svg
+            width="56"
+            height="56"
+            viewBox="0 0 56 56"
+            fill="none"
+            style={{ opacity: 0.35 }}
+          >
+            <rect
+              x="8"
+              y="8"
+              width="40"
+              height="40"
+              rx="8"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <circle
+              cx="28"
+              cy="22"
+              r="6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M16 42c0-6.627 5.373-12 12-12s12 5.373 12 12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
           <div style={{ fontSize: 13 }}>{error ?? t("no_company")}</div>
         </div>
@@ -374,22 +640,49 @@ export function DirectoryList() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+    >
       <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 12,
+          }}
+        >
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>{data._title ?? t("details")}</div>
-            <div style={{ fontSize: 12, color: colors.text.muted }}>{entries.length} {t("results")}</div>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: colors.text.primary,
+              }}
+            >
+              {data._title ?? t("details")}
+            </div>
+            <div style={{ fontSize: 12, color: colors.text.muted }}>
+              {entries.length} {t("results")}
+            </div>
           </div>
-          <button onClick={() => void requestRefresh({ ignoreInterval: true })} disabled={refreshing} style={styles.button}>
+          <button
+            onClick={() => void requestRefresh({ ignoreInterval: true })}
+            disabled={refreshing}
+            style={styles.button}
+          >
             {refreshing ? "…" : t("refresh")}
           </button>
         </div>
 
         {/* Error */}
-        {error && <div style={{ fontSize: 12, color: colors.error, marginBottom: 8 }}>{error}</div>}
+        {error && (
+          <div style={{ fontSize: 12, color: colors.error, marginBottom: 8 }}>
+            {error}
+          </div>
+        )}
 
         {/* Search */}
         <div style={{ marginBottom: 12 }}>
@@ -398,13 +691,28 @@ export function DirectoryList() {
             placeholder={t("search")}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            style={{ ...styles.input, background: colors.bg.elevated, border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 13, width: "100%" }}
+            style={{
+              ...styles.input,
+              background: colors.bg.elevated,
+              border: "none",
+              borderRadius: 10,
+              padding: "8px 12px",
+              fontSize: 13,
+              width: "100%",
+            }}
           />
         </div>
 
         {/* Cards or empty filter message */}
         {entries.length === 0 && filter && (
-          <div style={{ textAlign: "center", padding: "32px 16px", color: colors.text.muted, fontSize: 13 }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "32px 16px",
+              color: colors.text.muted,
+              fontSize: 13,
+            }}
+          >
             {t("no_results")}
           </div>
         )}

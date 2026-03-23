@@ -28,7 +28,10 @@ export class StorecoveClient extends BaseHttpClient {
   private apiKey: string;
 
   constructor(config: StorecoveClientConfig) {
-    super("Storecove", { baseUrl: config.baseUrl, timeoutMs: config.timeoutMs });
+    super("Storecove", {
+      baseUrl: config.baseUrl,
+      timeoutMs: config.timeoutMs,
+    });
     this.apiKey = config.apiKey;
   }
 

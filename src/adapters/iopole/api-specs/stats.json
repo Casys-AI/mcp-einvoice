@@ -1,1 +1,510 @@
-{"openapi":"3.0.1","info":{"title":"Stats operator Iopole API","description":"## Iopole API\n\nTo use the Iopole APIs, you must have a **`clientId`** and a **`clientSecret`**.\n\nYou can obtain these credentials by one of the following methods:\n- 📧 Contact the Iopole team at **support@iopole.com**\n- 🧪 Connect to **[Iopole Labs](https://labs.iopole.io)** to create your own sandbox environment\n\n### 📚 API Documentation\n- 🧪 **Preproduction**: [https://docs.ppd.iopole.fr/](https://docs.ppd.iopole.fr/)\n- 🚀 **Production**: [https://docs.iopole.com/](https://docs.iopole.com/)\n\n### 🛠️ Support & Monitoring (production only)\n- 📈 **System status**: [https://uptime.iopole.com](https://uptime.iopole.com)\n  - View real-time platform availability\n  - Subscribe to incident notifications\n  - Receive alerts for planned maintenance periods\n- 📝 **Release notes**: [https://release.iopole.com](https://release.iopole.com)\n","version":"1.0.0","contact":{"name":"Iopole","email":"support@iopole.com"}},"security":[{"oauth2ClientCredentials":[]}],"components":{"securitySchemes":{"oauth2ClientCredentials":{"type":"oauth2","flows":{"clientCredentials":{"tokenUrl":"https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token","scopes":{}}}}}},"paths":{"/v1/stats/{network}/lastErrors":{"get":{"description":"Retrieve the last errors for a given network","summary":"Retrieve the last errors for a given network","tags":["Statistic"],"security":[{"oauth2ClientCredentials":[]}],"parameters":[{"in":"header","name":"customer-id","description":"The unique identifier for the customer.","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"network","in":"path","required":true,"schema":{"type":"string","enum":["EDI","INVOICE"]}}],"responses":{"200":{"description":"List of errors","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"from_user":{"type":"string"},"to_user":{"type":"string"},"message_state":{"type":"string"},"create_date":{"type":"string"}},"required":["id","from_user","to_user","message_state","create_date"]},"description":"List of errors"}}}},"401":{"description":"Unauthorized - Authentication is required and has failed or has not yet been provided."},"403":{"description":"Forbidden - The server understood the request, but it refuses to authorize it."}}}},"/v1/stats/{network}/summary/{interval}":{"get":{"description":"Retrieve a summary on a given interval","summary":"Retrieve a summary on a given interval","tags":["Statistic"],"security":[{"oauth2ClientCredentials":[]}],"parameters":[{"in":"header","name":"customer-id","description":"The unique identifier for the customer.","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"network","in":"path","required":true,"schema":{"type":"string","enum":["EDI","INVOICE"]}},{"name":"interval","in":"path","required":true,"schema":{"type":"string","enum":["week","month","threeMonths","year","hour","day","today","all_time"]}}],"responses":{"200":{"description":"List of errors","content":{"application/json":{"schema":{"type":"object","properties":{"total":{"type":"number"},"input":{"type":"number"},"output":{"type":"number"},"errors":{"type":"number"},"processing":{"type":"number"}},"required":["total","input","output","errors","processing"],"description":"Summary"}}}},"401":{"description":"Unauthorized - Authentication is required and has failed or has not yet been provided."},"403":{"description":"Forbidden - The server understood the request, but it refuses to authorize it."}}}},"/v1/stats/{network}/messagesReceived/{interval}":{"get":{"description":"Retrieve a summary on a given interval","summary":"Retrieve a summary on a given interval","tags":["Statistic"],"security":[{"oauth2ClientCredentials":[]}],"parameters":[{"in":"header","name":"customer-id","description":"The unique identifier for the customer.","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"network","in":"path","required":true,"schema":{"type":"string","enum":["EDI","INVOICE"]}},{"name":"interval","in":"path","required":true,"schema":{"type":"string","enum":["week","month","threeMonths","year","hour","day","today","all_time"]}}],"responses":{"200":{"description":"List of errors","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"messages_count":{"type":"number","minimum":0},"timestamp":{"type":"string"}},"required":["messages_count","timestamp"]},"description":"List of messages received"}}}},"401":{"description":"Unauthorized - Authentication is required and has failed or has not yet been provided."},"403":{"description":"Forbidden - The server understood the request, but it refuses to authorize it."}}}},"/v1/stats/{network}/messagesSent/{interval}":{"get":{"description":"Get the count of messages sent on a given interval","summary":"Get the count of messages sent on a given interval","tags":["Statistic"],"security":[{"oauth2ClientCredentials":[]}],"parameters":[{"in":"header","name":"customer-id","description":"The unique identifier for the customer.","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"network","in":"path","required":true,"schema":{"type":"string","enum":["EDI","INVOICE"]}},{"name":"interval","in":"path","required":true,"schema":{"type":"string","enum":["week","month","threeMonths","year","hour","day","today","all_time"]}}],"responses":{"200":{"description":"List of errors","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"messages_count":{"type":"number","minimum":0},"timestamp":{"type":"string"}},"required":["messages_count","timestamp"]},"description":"List of messages sent"}}}},"401":{"description":"Unauthorized - Authentication is required and has failed or has not yet been provided."},"403":{"description":"Forbidden - The server understood the request, but it refuses to authorize it."}}}},"/v1/stats/{network}/messagesError/{interval}":{"get":{"description":"Get the count of messages with errors on a given interval","summary":"Get the count of messages with errors on a given interval","tags":["Statistic"],"security":[{"oauth2ClientCredentials":[]}],"parameters":[{"in":"header","name":"customer-id","description":"The unique identifier for the customer.","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"network","in":"path","required":true,"schema":{"type":"string","enum":["EDI","INVOICE"]}},{"name":"interval","in":"path","required":true,"schema":{"type":"string","enum":["week","month","threeMonths","year","hour","day","today","all_time"]}}],"responses":{"200":{"description":"List of errors","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"messages_count":{"type":"number","minimum":0},"timestamp":{"type":"string"}},"required":["messages_count","timestamp"]},"description":"List of messages with errors"}}}},"401":{"description":"Unauthorized - Authentication is required and has failed or has not yet been provided."},"403":{"description":"Forbidden - The server understood the request, but it refuses to authorize it."}}}},"/v1/stats/{network}/tagsDistribution/{interval}":{"get":{"description":"Get the distribution of tags on a given interval","summary":"Get the distribution of tags on a given interval","tags":["Statistic"],"security":[{"oauth2ClientCredentials":[]}],"parameters":[{"in":"header","name":"customer-id","description":"The unique identifier for the customer.","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"network","in":"path","required":true,"schema":{"type":"string","enum":["EDI","INVOICE"]}},{"name":"interval","in":"path","required":true,"schema":{"type":"string","enum":["week","month","threeMonths","year","hour","day","today","all_time"]}}],"responses":{"200":{"description":"Distribution of status","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"count":{"type":"integer"},"value":{"type":"string"}},"required":["count","value"]},"description":"Distribution of status or types depending on the network"}}}},"401":{"description":"Unauthorized - Authentication is required and has failed or has not yet been provided."},"403":{"description":"Forbidden - The server understood the request, but it refuses to authorize it."}}}},"/v1/stats/{network}/successErrors/{interval}":{"get":{"description":"Compare the count of successful and errored messages on a given interval","summary":"Compare the count of successful and errored messages on a given interval","tags":["Statistic"],"security":[{"oauth2ClientCredentials":[]}],"parameters":[{"in":"header","name":"customer-id","description":"The unique identifier for the customer.","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"network","in":"path","required":true,"schema":{"type":"string","enum":["EDI","INVOICE"]}},{"name":"interval","in":"path","required":true,"schema":{"type":"string","enum":["week","month","threeMonths","year","hour","day","today","all_time"]}}],"responses":{"200":{"description":"List of errors","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"error_count":{"type":"number","minimum":0,"description":"Number of errored messages"},"success_count":{"type":"number","minimum":0,"description":"Number of successful messages"},"timestamp":{"type":"string","description":"Timestamp"}},"required":["error_count","success_count","timestamp"]},"description":"List of successful and errored messages"}}}},"401":{"description":"Unauthorized - Authentication is required and has failed or has not yet been provided."},"403":{"description":"Forbidden - The server understood the request, but it refuses to authorize it."}}}}}}
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Stats operator Iopole API",
+    "description": "## Iopole API\n\nTo use the Iopole APIs, you must have a **`clientId`** and a **`clientSecret`**.\n\nYou can obtain these credentials by one of the following methods:\n- 📧 Contact the Iopole team at **support@iopole.com**\n- 🧪 Connect to **[Iopole Labs](https://labs.iopole.io)** to create your own sandbox environment\n\n### 📚 API Documentation\n- 🧪 **Preproduction**: [https://docs.ppd.iopole.fr/](https://docs.ppd.iopole.fr/)\n- 🚀 **Production**: [https://docs.iopole.com/](https://docs.iopole.com/)\n\n### 🛠️ Support & Monitoring (production only)\n- 📈 **System status**: [https://uptime.iopole.com](https://uptime.iopole.com)\n  - View real-time platform availability\n  - Subscribe to incident notifications\n  - Receive alerts for planned maintenance periods\n- 📝 **Release notes**: [https://release.iopole.com](https://release.iopole.com)\n",
+    "version": "1.0.0",
+    "contact": { "name": "Iopole", "email": "support@iopole.com" }
+  },
+  "security": [{ "oauth2ClientCredentials": [] }],
+  "components": {
+    "securitySchemes": {
+      "oauth2ClientCredentials": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/v1/stats/{network}/lastErrors": {
+      "get": {
+        "description": "Retrieve the last errors for a given network",
+        "summary": "Retrieve the last errors for a given network",
+        "tags": ["Statistic"],
+        "security": [{ "oauth2ClientCredentials": [] }],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "customer-id",
+            "description": "The unique identifier for the customer.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["EDI", "INVOICE"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "from_user": { "type": "string" },
+                      "to_user": { "type": "string" },
+                      "message_state": { "type": "string" },
+                      "create_date": { "type": "string" }
+                    },
+                    "required": [
+                      "id",
+                      "from_user",
+                      "to_user",
+                      "message_state",
+                      "create_date"
+                    ]
+                  },
+                  "description": "List of errors"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+          },
+          "403": {
+            "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+          }
+        }
+      }
+    },
+    "/v1/stats/{network}/summary/{interval}": {
+      "get": {
+        "description": "Retrieve a summary on a given interval",
+        "summary": "Retrieve a summary on a given interval",
+        "tags": ["Statistic"],
+        "security": [{ "oauth2ClientCredentials": [] }],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "customer-id",
+            "description": "The unique identifier for the customer.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["EDI", "INVOICE"] }
+          },
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "threeMonths",
+                "year",
+                "hour",
+                "day",
+                "today",
+                "all_time"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "number" },
+                    "input": { "type": "number" },
+                    "output": { "type": "number" },
+                    "errors": { "type": "number" },
+                    "processing": { "type": "number" }
+                  },
+                  "required": [
+                    "total",
+                    "input",
+                    "output",
+                    "errors",
+                    "processing"
+                  ],
+                  "description": "Summary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+          },
+          "403": {
+            "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+          }
+        }
+      }
+    },
+    "/v1/stats/{network}/messagesReceived/{interval}": {
+      "get": {
+        "description": "Retrieve a summary on a given interval",
+        "summary": "Retrieve a summary on a given interval",
+        "tags": ["Statistic"],
+        "security": [{ "oauth2ClientCredentials": [] }],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "customer-id",
+            "description": "The unique identifier for the customer.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["EDI", "INVOICE"] }
+          },
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "threeMonths",
+                "year",
+                "hour",
+                "day",
+                "today",
+                "all_time"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "messages_count": { "type": "number", "minimum": 0 },
+                      "timestamp": { "type": "string" }
+                    },
+                    "required": ["messages_count", "timestamp"]
+                  },
+                  "description": "List of messages received"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+          },
+          "403": {
+            "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+          }
+        }
+      }
+    },
+    "/v1/stats/{network}/messagesSent/{interval}": {
+      "get": {
+        "description": "Get the count of messages sent on a given interval",
+        "summary": "Get the count of messages sent on a given interval",
+        "tags": ["Statistic"],
+        "security": [{ "oauth2ClientCredentials": [] }],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "customer-id",
+            "description": "The unique identifier for the customer.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["EDI", "INVOICE"] }
+          },
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "threeMonths",
+                "year",
+                "hour",
+                "day",
+                "today",
+                "all_time"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "messages_count": { "type": "number", "minimum": 0 },
+                      "timestamp": { "type": "string" }
+                    },
+                    "required": ["messages_count", "timestamp"]
+                  },
+                  "description": "List of messages sent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+          },
+          "403": {
+            "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+          }
+        }
+      }
+    },
+    "/v1/stats/{network}/messagesError/{interval}": {
+      "get": {
+        "description": "Get the count of messages with errors on a given interval",
+        "summary": "Get the count of messages with errors on a given interval",
+        "tags": ["Statistic"],
+        "security": [{ "oauth2ClientCredentials": [] }],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "customer-id",
+            "description": "The unique identifier for the customer.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["EDI", "INVOICE"] }
+          },
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "threeMonths",
+                "year",
+                "hour",
+                "day",
+                "today",
+                "all_time"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "messages_count": { "type": "number", "minimum": 0 },
+                      "timestamp": { "type": "string" }
+                    },
+                    "required": ["messages_count", "timestamp"]
+                  },
+                  "description": "List of messages with errors"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+          },
+          "403": {
+            "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+          }
+        }
+      }
+    },
+    "/v1/stats/{network}/tagsDistribution/{interval}": {
+      "get": {
+        "description": "Get the distribution of tags on a given interval",
+        "summary": "Get the distribution of tags on a given interval",
+        "tags": ["Statistic"],
+        "security": [{ "oauth2ClientCredentials": [] }],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "customer-id",
+            "description": "The unique identifier for the customer.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["EDI", "INVOICE"] }
+          },
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "threeMonths",
+                "year",
+                "hour",
+                "day",
+                "today",
+                "all_time"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Distribution of status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "count": { "type": "integer" },
+                      "value": { "type": "string" }
+                    },
+                    "required": ["count", "value"]
+                  },
+                  "description": "Distribution of status or types depending on the network"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+          },
+          "403": {
+            "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+          }
+        }
+      }
+    },
+    "/v1/stats/{network}/successErrors/{interval}": {
+      "get": {
+        "description": "Compare the count of successful and errored messages on a given interval",
+        "summary": "Compare the count of successful and errored messages on a given interval",
+        "tags": ["Statistic"],
+        "security": [{ "oauth2ClientCredentials": [] }],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "customer-id",
+            "description": "The unique identifier for the customer.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "enum": ["EDI", "INVOICE"] }
+          },
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "threeMonths",
+                "year",
+                "hour",
+                "day",
+                "today",
+                "all_time"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "error_count": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Number of errored messages"
+                      },
+                      "success_count": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Number of successful messages"
+                      },
+                      "timestamp": {
+                        "type": "string",
+                        "description": "Timestamp"
+                      }
+                    },
+                    "required": ["error_count", "success_count", "timestamp"]
+                  },
+                  "description": "List of successful and errored messages"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication is required and has failed or has not yet been provided."
+          },
+          "403": {
+            "description": "Forbidden - The server understood the request, but it refuses to authorize it."
+          }
+        }
+      }
+    }
+  }
+}

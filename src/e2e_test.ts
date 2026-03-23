@@ -9,7 +9,7 @@
  * @module lib/einvoice/src/e2e_test
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assert, assertEquals } from "jsr:@std/assert";
 import { createIopoleAdapter } from "./adapters/iopole/adapter.ts";
 import { allTools, getToolByName } from "./tools/mod.ts";
 import type { EInvoiceAdapter } from "./adapter.ts";
@@ -120,10 +120,12 @@ Deno.test("E2E: invoice search (list all)", async () => {
 
 Deno.test("E2E: invoice get by ID (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
-    { limit: 1 },
-    ctx!,
-  ));
+  const searchResult = unwrapStructured(
+    await tool("einvoice_invoice_search").handler(
+      { limit: 1 },
+      ctx!,
+    ),
+  );
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -134,10 +136,12 @@ Deno.test("E2E: invoice get by ID (from search)", async () => {
   const invoiceId = data[0]._id as string;
   assert(invoiceId, "first invoice should have _id");
 
-  const invoice = unwrapStructured(await tool("einvoice_invoice_get").handler(
-    { id: invoiceId },
-    ctx!,
-  ));
+  const invoice = unwrapStructured(
+    await tool("einvoice_invoice_get").handler(
+      { id: invoiceId },
+      ctx!,
+    ),
+  );
 
   assert(invoice != null, "invoice should not be null");
   assertEquals(invoice.id, invoiceId);
@@ -154,10 +158,12 @@ Deno.test("E2E: invoice get by ID (from search)", async () => {
 
 Deno.test("E2E: status history (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
-    { limit: 1 },
-    ctx!,
-  ));
+  const searchResult = unwrapStructured(
+    await tool("einvoice_invoice_search").handler(
+      { limit: 1 },
+      ctx!,
+    ),
+  );
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -166,10 +172,12 @@ Deno.test("E2E: status history (from search)", async () => {
   }
 
   const invoiceId = data[0]._id as string;
-  const history = unwrapStructured(await tool("einvoice_status_history").handler(
-    { invoice_id: invoiceId },
-    ctx!,
-  ));
+  const history = unwrapStructured(
+    await tool("einvoice_status_history").handler(
+      { invoice_id: invoiceId },
+      ctx!,
+    ),
+  );
 
   assert(history != null, "history should not be null");
   assert(Array.isArray(history.entries), "history.entries should be array");
@@ -216,14 +224,23 @@ Deno.test("E2E: generate CII (minimal invoice)", async () => {
       taxBasisTotalAmount: { amount: 100 },
     },
     taxDetails: [
-      { percent: 20, taxType: "VAT", categoryCode: "S", taxableAmount: { amount: 100 }, taxAmount: { amount: 20 } },
+      {
+        percent: 20,
+        taxType: "VAT",
+        categoryCode: "S",
+        taxableAmount: { amount: 100 },
+        taxAmount: { amount: 20 },
+      },
     ],
     lines: [
       {
         id: "1",
         item: { name: "E2E Test Service" },
         billedQuantity: { quantity: 1, unitCode: "C62" },
-        price: { netAmount: { amount: 100 }, baseQuantity: { quantity: 1, unitCode: "C62" } },
+        price: {
+          netAmount: { amount: 100 },
+          baseQuantity: { quantity: 1, unitCode: "C62" },
+        },
         totalAmount: { amount: 100 },
         taxDetail: { percent: 20, taxType: "VAT", categoryCode: "S" },
       },

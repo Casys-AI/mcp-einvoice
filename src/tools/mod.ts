@@ -16,12 +16,12 @@ import { configTools } from "./config.ts";
 import type { EInvoiceTool, EInvoiceToolCategory } from "./types.ts";
 
 export {
-  invoiceTools,
-  directoryTools,
-  statusTools,
-  reportingTools,
-  webhookTools,
   configTools,
+  directoryTools,
+  invoiceTools,
+  reportingTools,
+  statusTools,
+  webhookTools,
 };
 export type { EInvoiceTool, EInvoiceToolCategory };
 

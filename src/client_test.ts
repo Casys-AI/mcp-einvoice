@@ -89,10 +89,16 @@ Deno.test("EInvoiceToolsClient.toMCPFormat() - preserves _meta.ui", () => {
   const wire = client.toMCPFormat(adapter);
 
   const searchTool = wire.find((t) => t.name === "einvoice_invoice_search");
-  assertEquals(searchTool?._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
+  assertEquals(
+    searchTool?._meta?.ui?.resourceUri,
+    "ui://mcp-einvoice/doclist-viewer",
+  );
 
   const getTool = wire.find((t) => t.name === "einvoice_invoice_get");
-  assertEquals(getTool?._meta?.ui?.resourceUri, "ui://mcp-einvoice/invoice-viewer");
+  assertEquals(
+    getTool?._meta?.ui?.resourceUri,
+    "ui://mcp-einvoice/invoice-viewer",
+  );
 });
 
 // ── Handler Map ──────────────────────────────────────────
@@ -106,7 +112,11 @@ Deno.test("EInvoiceToolsClient.buildHandlersMap() - returns Map with all tools",
   assertEquals(handlers.size, client.count);
 
   for (const tool of client.listTools()) {
-    assertEquals(handlers.has(tool.name), true, `Missing handler for ${tool.name}`);
+    assertEquals(
+      handlers.has(tool.name),
+      true,
+      `Missing handler for ${tool.name}`,
+    );
   }
 });
 
@@ -131,7 +141,11 @@ Deno.test("EInvoiceToolsClient.execute() - calls correct adapter method", async 
   const { adapter, calls } = createMockAdapter({ data: [] });
   const client = new EInvoiceToolsClient();
 
-  await client.execute("einvoice_invoice_search", { status: "accepted" }, adapter);
+  await client.execute(
+    "einvoice_invoice_search",
+    { status: "accepted" },
+    adapter,
+  );
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "searchInvoices");
@@ -139,7 +153,9 @@ Deno.test("EInvoiceToolsClient.execute() - calls correct adapter method", async 
 
 Deno.test("EInvoiceToolsClient.execute() - throws on handler error (framework catches via toolErrorMapper)", async () => {
   const { adapter } = createMockAdapter();
-  adapter.searchInvoices = () => { throw new Error("'q' is required"); };
+  adapter.searchInvoices = () => {
+    throw new Error("'q' is required");
+  };
 
   const client = new EInvoiceToolsClient();
   // execute() now throws — the framework's toolErrorMapper handles it at the MCP layer
@@ -166,7 +182,11 @@ Deno.test("EInvoiceToolsClient.execute() - throws on unknown tool", async () => 
 Deno.test("EInvoiceToolsClient - all tools have valid inputSchema", () => {
   const client = new EInvoiceToolsClient();
   for (const tool of client.listTools()) {
-    assertEquals(tool.inputSchema.type, "object", `${tool.name} should have type: object`);
+    assertEquals(
+      tool.inputSchema.type,
+      "object",
+      `${tool.name} should have type: object`,
+    );
     assertEquals(
       typeof tool.inputSchema.properties,
       "object",
@@ -187,7 +207,14 @@ Deno.test("EInvoiceToolsClient - all tools have non-empty descriptions", () => {
 });
 
 Deno.test("EInvoiceToolsClient - all tools have a valid category", () => {
-  const validCategories = new Set(["invoice", "directory", "status", "reporting", "webhook", "config"]);
+  const validCategories = new Set([
+    "invoice",
+    "directory",
+    "status",
+    "reporting",
+    "webhook",
+    "config",
+  ]);
   const client = new EInvoiceToolsClient();
   for (const tool of client.listTools()) {
     assertEquals(

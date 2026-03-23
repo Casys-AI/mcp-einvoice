@@ -21,7 +21,9 @@ Deno.test("einvoice_directory_fr_search - passes raw query to adapter", async ()
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_directory_fr_search");
 
-  await tool.handler({ q: "43446637100011", offset: 0, limit: 20 }, { adapter });
+  await tool.handler({ q: "43446637100011", offset: 0, limit: 20 }, {
+    adapter,
+  });
 
   assertEquals(calls[0].method, "searchDirectoryFr");
   const arg = calls[0].args[0] as Record<string, unknown>;
@@ -58,7 +60,9 @@ Deno.test("einvoice_directory_fr_search - formats rows with French columns", asy
   });
   const tool = findTool("einvoice_directory_fr_search");
 
-  const result = unwrapStructured(await tool.handler({ q: "Casys AI" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ q: "Casys AI" }, { adapter }),
+  ) as Record<string, unknown>;
 
   assertEquals(result.count, 1);
   const data = result.data as Record<string, unknown>[];
@@ -72,12 +76,20 @@ Deno.test("einvoice_directory_fr_search - formats rows with French columns", asy
 Deno.test("einvoice_directory_fr_search - handles OFFICE type", async () => {
   const { adapter } = createMockAdapter();
   adapter.searchDirectoryFr = async () => ({
-    rows: [{ entityId: "be-456", name: "Bureau Paris", type: "OFFICE", siret: "43446637100029", country: "FR" }],
+    rows: [{
+      entityId: "be-456",
+      name: "Bureau Paris",
+      type: "OFFICE",
+      siret: "43446637100029",
+      country: "FR",
+    }],
     count: 1,
   });
   const tool = findTool("einvoice_directory_fr_search");
 
-  const result = unwrapStructured(await tool.handler({ q: "Bureau" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ q: "Bureau" }, { adapter }),
+  ) as Record<string, unknown>;
   const data = result.data as Record<string, unknown>[];
   // Priority columns — Type not shown in table (drill-down only)
   assertEquals(data[0]["SIRET"], "43446637100029");
@@ -110,7 +122,9 @@ Deno.test("einvoice_directory_peppol_check - calls adapter.checkPeppolParticipan
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_directory_peppol_check");
 
-  await tool.handler({ scheme: "iso6523-actorid-upis", value: "0208:FR123" }, { adapter });
+  await tool.handler({ scheme: "iso6523-actorid-upis", value: "0208:FR123" }, {
+    adapter,
+  });
 
   assertEquals(calls[0].method, "checkPeppolParticipant");
   assertEquals(calls[0].args[0], "iso6523-actorid-upis");

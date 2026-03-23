@@ -8,12 +8,12 @@
  * Most recent status at top. Latest dot is larger with a pulse animation.
  */
 
-import { useState, useEffect, useRef, CSSProperties } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
-import { t, dateLocale } from "~/shared/i18n";
-import { BrandHeader, BrandFooter } from "~/shared/Brand";
-import { FeedbackBanner, EmptyTimelineIcon } from "~/shared/Feedback";
+import { dateLocale, t } from "~/shared/i18n";
+import { BrandFooter, BrandHeader } from "~/shared/Brand";
+import { EmptyTimelineIcon, FeedbackBanner } from "~/shared/Feedback";
 import { getStatus } from "~/shared/status";
 import {
   canRequestUiRefresh,
@@ -33,10 +33,10 @@ const REFRESH_THROTTLE_MS = 15_000;
 // ============================================================================
 
 interface StatusEntry {
-  date: string;        // ISO 8601
-  code: string;        // "DELIVERED", "PAYMENT_SENT", "REJECTED", etc.
-  destType?: string;   // "PLATFORM", "OPERATOR", "PPF", etc.
-  message?: string;    // Optional description
+  date: string; // ISO 8601
+  code: string; // "DELIVERED", "PAYMENT_SENT", "REJECTED", etc.
+  destType?: string; // "PLATFORM", "OPERATOR", "PPF", etc.
+  message?: string; // Optional description
 }
 
 interface TimelineData {
@@ -59,7 +59,11 @@ function formatDate(iso: string): { date: string; time: string } {
     const d = new Date(iso);
     const loc = dateLocale();
     return {
-      date: d.toLocaleDateString(loc, { day: "2-digit", month: "short", year: "numeric" }),
+      date: d.toLocaleDateString(loc, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
       time: d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" }),
     };
   } catch {
@@ -117,7 +121,9 @@ export function StatusTimeline() {
   const refreshInFlightRef = useRef(false);
   const lastRefreshStartedAtRef = useRef(0);
 
-  useEffect(() => { injectPulseKeyframes(); }, []);
+  useEffect(() => {
+    injectPulseKeyframes();
+  }, []);
 
   function hydrateData(raw: unknown) {
     // The tool returns a JSON array of StatusEntry directly,
@@ -135,10 +141,15 @@ export function StatusTimeline() {
     }
 
     // Sort most recent first
-    parsed.entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    parsed.entries.sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     dataRef.current = parsed;
-    refreshRequestRef.current = resolveUiRefreshRequest(parsed, refreshRequestRef.current);
+    refreshRequestRef.current = resolveUiRefreshRequest(
+      parsed,
+      refreshRequestRef.current,
+    );
     setEntries(parsed.entries);
   }
 
@@ -158,15 +169,22 @@ export function StatusTimeline() {
   }
 
   async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
-    const request = resolveUiRefreshRequest(dataRef.current, refreshRequestRef.current);
-    if (!canRequestUiRefresh({
-      request,
-      visibilityState: typeof document === "undefined" ? "visible" : document.visibilityState,
-      refreshInFlight: refreshInFlightRef.current,
-      now: Date.now(),
-      lastRefreshStartedAt: lastRefreshStartedAtRef.current,
-      minIntervalMs: REFRESH_THROTTLE_MS,
-    }, options)) return;
+    const request = resolveUiRefreshRequest(
+      dataRef.current,
+      refreshRequestRef.current,
+    );
+    if (
+      !canRequestUiRefresh({
+        request,
+        visibilityState: typeof document === "undefined"
+          ? "visible"
+          : document.visibilityState,
+        refreshInFlight: refreshInFlightRef.current,
+        now: Date.now(),
+        lastRefreshStartedAt: lastRefreshStartedAtRef.current,
+        minIntervalMs: REFRESH_THROTTLE_MS,
+      }, options)
+    ) return;
 
     if (!request || !app.getHostCapabilities()?.serverTools) return;
 
@@ -175,7 +193,10 @@ export function StatusTimeline() {
     setRefreshing(true);
 
     try {
-      const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
+      const result = await app.callServerTool({
+        name: request.toolName,
+        arguments: request.arguments,
+      }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (!result.isError) consumeToolResult(result);
       else setError(t("error_refresh"));
     } catch (cause) {
@@ -188,30 +209,57 @@ export function StatusTimeline() {
 
   useEffect(() => {
     app.connect().catch(() => {});
-    app.ontoolresult = (result: ToolResultPayload) => { consumeToolResult(result); };
-    app.ontoolinputpartial = () => { if (!dataRef.current) setLoading(true); };
+    app.ontoolresult = (result: ToolResultPayload) => {
+      consumeToolResult(result);
+    };
+    app.ontoolinputpartial = () => {
+      if (!dataRef.current) setLoading(true);
+    };
   }, []);
 
   useEffect(() => {
     const handleFocus = () => void requestRefresh({ ignoreInterval: true });
-    const handleVisibility = () => { if (document.visibilityState === "visible") void requestRefresh({ ignoreInterval: true }); };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void requestRefresh({ ignoreInterval: true });
+      }
+    };
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => { window.removeEventListener("focus", handleFocus); document.removeEventListener("visibilitychange", handleVisibility); };
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   // ── Loading skeleton ──────────────────────────────────────────────
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
         <BrandHeader />
         <div style={{ padding: 24 }}>
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} style={{ display: "flex", gap: 16, marginBottom: 20, alignItems: "center" }}>
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                gap: 16,
+                marginBottom: 20,
+                alignItems: "center",
+              }}
+            >
               <div className="skeleton" style={{ width: 80, height: 14 }} />
-              <div className="skeleton" style={{ width: 8, height: 8, borderRadius: "50%" }} />
-              <div className="skeleton" style={{ width: `${30 + i * 12}%`, height: 14 }} />
+              <div
+                className="skeleton"
+                style={{ width: 8, height: 8, borderRadius: "50%" }}
+              />
+              <div
+                className="skeleton"
+                style={{ width: `${30 + i * 12}%`, height: 14 }}
+              />
             </div>
           ))}
         </div>
@@ -224,9 +272,22 @@ export function StatusTimeline() {
 
   if (!entries || entries.length === 0) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
         <BrandHeader />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 12, flex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 24px",
+            color: colors.text.muted,
+            gap: 12,
+            flex: 1,
+          }}
+        >
           <EmptyTimelineIcon />
           <div style={{ fontSize: 13 }}>{t("no_history")}</div>
         </div>
@@ -238,21 +299,46 @@ export function StatusTimeline() {
   // ── Timeline ──────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+    >
       <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: colors.text.primary }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: colors.text.primary,
+            }}
+          >
             {t("status_history_title")}
           </div>
-          <button onClick={() => void requestRefresh({ ignoreInterval: true })} disabled={refreshing} style={styles.button}>
+          <button
+            onClick={() => void requestRefresh({ ignoreInterval: true })}
+            disabled={refreshing}
+            style={styles.button}
+          >
             {refreshing ? "..." : t("refresh")}
           </button>
         </div>
 
         {/* Error */}
-        {error && <FeedbackBanner type="error" message={error} onDismiss={() => setError(null)} />}
+        {error && (
+          <FeedbackBanner
+            type="error"
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        )}
 
         {/* Timeline entries */}
         <div style={{ position: "relative" }}>
@@ -266,65 +352,97 @@ export function StatusTimeline() {
             return (
               <div key={idx} style={{ display: "flex", gap: 0, minHeight: 56 }}>
                 {/* Left — date + time */}
-                <div style={{
-                  width: 90,
-                  flexShrink: 0,
-                  textAlign: "right",
-                  paddingRight: 16,
-                  paddingTop: 2,
-                }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: colors.text.secondary, lineHeight: "1.3" }}>
+                <div
+                  style={{
+                    width: 90,
+                    flexShrink: 0,
+                    textAlign: "right",
+                    paddingRight: 16,
+                    paddingTop: 2,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: colors.text.secondary,
+                      lineHeight: "1.3",
+                    }}
+                  >
                     {date}
                   </div>
-                  <div style={{ fontSize: 11, color: colors.text.faint, fontFamily: fonts.mono }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: colors.text.faint,
+                      fontFamily: fonts.mono,
+                    }}
+                  >
                     {time}
                   </div>
                 </div>
 
                 {/* Center — line + dot */}
-                <div style={{
-                  position: "relative",
-                  width: 20,
-                  flexShrink: 0,
-                  display: "flex",
-                  justifyContent: "center",
-                }}>
+                <div
+                  style={{
+                    position: "relative",
+                    width: 20,
+                    flexShrink: 0,
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
                   {/* Vertical line segment */}
                   {!isLast && (
-                    <div style={{
-                      position: "absolute",
-                      top: dotSize / 2 + 2,
-                      bottom: 0,
-                      left: "50%",
-                      width: 2,
-                      transform: "translateX(-50%)",
-                      background: colors.border,
-                    }} />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: dotSize / 2 + 2,
+                        bottom: 0,
+                        left: "50%",
+                        width: 2,
+                        transform: "translateX(-50%)",
+                        background: colors.border,
+                      }}
+                    />
                   )}
                   {/* Dot */}
-                  <div style={{
-                    position: "relative",
-                    top: 2,
-                    width: dotSize,
-                    height: dotSize,
-                    borderRadius: "50%",
-                    background: scheme.color,
-                    flexShrink: 0,
-                    zIndex: 1,
-                    ...(isFirst ? {
-                      animation: "status-dot-pulse 2s ease-in-out infinite",
-                      // The CSS variable drives the pulse glow color
-                    } : {}),
-                  } as CSSProperties} />
+                  <div
+                    style={{
+                      position: "relative",
+                      top: 2,
+                      width: dotSize,
+                      height: dotSize,
+                      borderRadius: "50%",
+                      background: scheme.color,
+                      flexShrink: 0,
+                      zIndex: 1,
+                      ...(isFirst
+                        ? {
+                          animation: "status-dot-pulse 2s ease-in-out infinite",
+                          // The CSS variable drives the pulse glow color
+                        }
+                        : {}),
+                    } as CSSProperties}
+                  />
                 </div>
 
                 {/* Right — status badge + dest type */}
-                <div style={{
-                  paddingLeft: 12,
-                  paddingBottom: 20,
-                  flex: 1,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    paddingLeft: 12,
+                    paddingBottom: 20,
+                    flex: 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <span style={styles.badge(scheme.color, scheme.bg)}>
                       {scheme.label}
                     </span>

@@ -15,20 +15,34 @@ export function InfoCard({ label, value, sub, bold }: {
 }) {
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>
+      <div
+        style={{
+          fontSize: 10,
+          color: colors.text.muted,
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          marginBottom: 2,
+        }}
+      >
         {label}
       </div>
       {value && (
-        <div style={{
-          fontSize: bold ? 15 : 13,
-          fontWeight: bold ? 600 : 500,
-          color: colors.text.primary,
-          fontFamily: bold ? fonts.mono : fonts.sans,
-        }}>
+        <div
+          style={{
+            fontSize: bold ? 15 : 13,
+            fontWeight: bold ? 600 : 500,
+            color: colors.text.primary,
+            fontFamily: bold ? fonts.mono : fonts.sans,
+          }}
+        >
           {value}
         </div>
       )}
-      {sub && <div style={{ fontSize: 10, color: colors.text.faint, marginTop: 1 }}>{sub}</div>}
+      {sub && (
+        <div style={{ fontSize: 10, color: colors.text.faint, marginTop: 1 }}>
+          {sub}
+        </div>
+      )}
     </div>
   );
 }

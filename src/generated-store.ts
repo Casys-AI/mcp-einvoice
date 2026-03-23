@@ -41,7 +41,9 @@ export function storeGenerated(file: Uint8Array, filename: string): string {
  * Retrieve a stored file by ID.
  * Returns null if the ID is unknown or the file has expired.
  */
-export function getGenerated(id: string): { file: Uint8Array; filename: string } | null {
+export function getGenerated(
+  id: string,
+): { file: Uint8Array; filename: string } | null {
   purgeExpired();
   const entry = store.get(id);
   if (!entry) return null;

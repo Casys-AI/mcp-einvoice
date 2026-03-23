@@ -211,7 +211,10 @@ export interface UpdateWebhookRequest {
  * PA adapters translate these calls to their concrete APIs.
  */
 /** Method names that can appear in capabilities (compile-time safety). */
-export type AdapterMethodName = Exclude<keyof EInvoiceAdapter, "name" | "capabilities">;
+export type AdapterMethodName = Exclude<
+  keyof EInvoiceAdapter,
+  "name" | "capabilities"
+>;
 
 export interface EInvoiceAdapter {
   /** Adapter identifier (e.g. "iopole", "storecove") */
@@ -241,7 +244,9 @@ export interface EInvoiceAdapter {
 
   // ─── Directory ────────────────────────────────────────
 
-  searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult>;
+  searchDirectoryFr(
+    filters: DirectoryFrSearchFilters,
+  ): Promise<SearchDirectoryFrResult>;
   searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown>;
   checkPeppolParticipant(scheme: string, value: string): Promise<unknown>;
 
@@ -254,8 +259,13 @@ export interface EInvoiceAdapter {
 
   // ─── Reporting ────────────────────────────────────────
 
-  reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown>;
-  reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown>;
+  reportInvoiceTransaction(
+    transaction: Record<string, unknown>,
+  ): Promise<unknown>;
+  reportTransaction(
+    businessEntityId: string,
+    transaction: Record<string, unknown>,
+  ): Promise<unknown>;
 
   // ─── Webhooks ─────────────────────────────────────────
 
@@ -273,19 +283,40 @@ export interface EInvoiceAdapter {
   createLegalUnit(data: Record<string, unknown>): Promise<unknown>;
   createOffice(data: Record<string, unknown>): Promise<unknown>;
   deleteBusinessEntity(id: string): Promise<unknown>;
-  configureBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown>;
-  claimBusinessEntity(id: string, data: Record<string, unknown>): Promise<unknown>;
-  claimBusinessEntityByIdentifier(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown>;
+  configureBusinessEntity(
+    id: string,
+    data: Record<string, unknown>,
+  ): Promise<unknown>;
+  claimBusinessEntity(
+    id: string,
+    data: Record<string, unknown>,
+  ): Promise<unknown>;
+  claimBusinessEntityByIdentifier(
+    scheme: string,
+    value: string,
+    data: Record<string, unknown>,
+  ): Promise<unknown>;
   enrollFrench(data: Record<string, unknown>): Promise<unknown>;
   enrollInternational(data: Record<string, unknown>): Promise<unknown>;
   registerNetwork(identifierId: string, network: string): Promise<unknown>;
-  registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown>;
+  registerNetworkByScheme(
+    scheme: string,
+    value: string,
+    network: string,
+  ): Promise<unknown>;
   unregisterNetwork(directoryId: string): Promise<unknown>;
 
   // ─── Identifier Management ──────────────────────────────
 
-  createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown>;
-  createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown>;
+  createIdentifier(
+    entityId: string,
+    data: Record<string, unknown>,
+  ): Promise<unknown>;
+  createIdentifierByScheme(
+    scheme: string,
+    value: string,
+    data: Record<string, unknown>,
+  ): Promise<unknown>;
   deleteIdentifier(identifierId: string): Promise<unknown>;
 
   // ─── Claim Management ──────────────────────────────────

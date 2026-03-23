@@ -27,7 +27,11 @@ Deno.test("einvoice_webhook_get - throws without id", async () => {
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_webhook_get");
 
-  await assertRejects(() => tool.handler({}, { adapter }), Error, "'id' is required");
+  await assertRejects(
+    () => tool.handler({}, { adapter }),
+    Error,
+    "'id' is required",
+  );
 });
 
 Deno.test("einvoice_webhook_create - maps all fields", async () => {
@@ -53,15 +57,23 @@ Deno.test("einvoice_webhook_create - throws without required fields", async () =
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_webhook_create");
 
-  await assertRejects(() => tool.handler({ url: "https://x.com" }, { adapter }), Error);
-  await assertRejects(() => tool.handler({ events: ["x"] }, { adapter }), Error);
+  await assertRejects(
+    () => tool.handler({ url: "https://x.com" }, { adapter }),
+    Error,
+  );
+  await assertRejects(
+    () => tool.handler({ events: ["x"] }, { adapter }),
+    Error,
+  );
 });
 
 Deno.test("einvoice_webhook_update - maps id and body", async () => {
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_webhook_update");
 
-  await tool.handler({ id: "wh-1", url: "https://new.com", active: false }, { adapter });
+  await tool.handler({ id: "wh-1", url: "https://new.com", active: false }, {
+    adapter,
+  });
 
   assertEquals(calls[0].method, "updateWebhook");
   assertEquals(calls[0].args[0], "wh-1");

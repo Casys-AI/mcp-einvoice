@@ -14,16 +14,16 @@ import { AfnorBaseAdapter } from "../afnor/base-adapter.ts";
 import { AfnorClient } from "../afnor/client.ts";
 import type {
   AdapterMethodName,
-  InvoiceDetail,
-  SearchInvoicesResult,
-  SearchDirectoryFrResult,
-  StatusHistoryResult,
+  DirectoryFrSearchFilters,
   DownloadResult,
   EmitInvoiceRequest,
-  InvoiceSearchFilters,
-  DirectoryFrSearchFilters,
-  SendStatusRequest,
   GenerateInvoiceRequest,
+  InvoiceDetail,
+  InvoiceSearchFilters,
+  SearchDirectoryFrResult,
+  SearchInvoicesResult,
+  SendStatusRequest,
+  StatusHistoryResult,
 } from "../../adapter.ts";
 import { SuperPDPClient } from "./client.ts";
 import { normalizeForSuperPDP } from "./normalize.ts";
@@ -45,16 +45,28 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   readonly capabilities: Set<AdapterMethodName> = new Set<AdapterMethodName>([
     // Native overrides
-    "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
-    "generateCII", "generateUBL",
-    "sendStatus", "getStatusHistory",
-    "getCustomerId", "getBusinessEntity",
-    "createOffice", "enrollFrench",
-    "registerNetwork", "registerNetworkByScheme", "unregisterNetwork",
-    "createIdentifier", "createIdentifierByScheme", "deleteIdentifier",
+    "emitInvoice",
+    "searchInvoices",
+    "getInvoice",
+    "downloadInvoice",
+    "generateCII",
+    "generateUBL",
+    "sendStatus",
+    "getStatusHistory",
+    "getCustomerId",
+    "getBusinessEntity",
+    "createOffice",
+    "enrollFrench",
+    "registerNetwork",
+    "registerNetworkByScheme",
+    "unregisterNetwork",
+    "createIdentifier",
+    "createIdentifierByScheme",
+    "deleteIdentifier",
     "searchDirectoryFr",
     // Inherited from AFNOR base
-    "reportInvoiceTransaction", "reportTransaction",
+    "reportInvoiceTransaction",
+    "reportTransaction",
   ]);
 
   private client: SuperPDPClient;
@@ -72,12 +84,18 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+  override async searchInvoices(
+    filters: InvoiceSearchFilters,
+  ): Promise<SearchInvoicesResult> {
     // Map normalized direction to SuperPDP API format ("in"/"out")
-    const direction = filters.direction === "received" ? "in"
-      : filters.direction === "sent" ? "out"
+    const direction = filters.direction === "received"
+      ? "in"
+      : filters.direction === "sent"
+      ? "out"
       // Legacy: also accept raw "in"/"out" in q for backwards compat
-      : (filters.q === "in" || filters.q === "out") ? filters.q : undefined;
+      : (filters.q === "in" || filters.q === "out")
+      ? filters.q
+      : undefined;
     // deno-lint-ignore no-explicit-any
     const raw = await this.client.get("/invoices", {
       "expand[]": ["en_invoice", "events"],
@@ -104,7 +122,9 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   override async getInvoice(id: string): Promise<InvoiceDetail> {
     // deno-lint-ignore no-explicit-any
-    const inv = await this.client.get(`/invoices/${encodePathSegment(id)}`) as any;
+    const inv = await this.client.get(
+      `/invoices/${encodePathSegment(id)}`,
+    ) as any;
     const en = inv.en_invoice;
     return {
       id: String(inv.id ?? id),
@@ -122,7 +142,9 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async downloadInvoice(id: string): Promise<DownloadResult> {
-    return await this.client.download(`/invoices/${encodePathSegment(id)}/download`);
+    return await this.client.download(
+      `/invoices/${encodePathSegment(id)}/download`,
+    );
   }
 
   // ─── Format Conversion (native) ───────────────────────
@@ -149,7 +171,9 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
       details.push({ reason: req.message });
     }
     if (req.payment) {
-      const amounts = Array.isArray(req.payment.amounts) ? req.payment.amounts : [req.payment];
+      const amounts = Array.isArray(req.payment.amounts)
+        ? req.payment.amounts
+        : [req.payment];
       details.push({ amounts });
     }
     return await this.client.post("/invoice_events", {
@@ -159,7 +183,9 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
+  override async getStatusHistory(
+    invoiceId: string,
+  ): Promise<StatusHistoryResult> {
     // deno-lint-ignore no-explicit-any
     const raw = await this.client.get("/invoice_events", {
       invoice_id: invoiceId,
@@ -181,14 +207,17 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   // ─── Directory (native) ───────────────────────────────
 
-  override async searchDirectoryFr(_filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
+  override async searchDirectoryFr(
+    _filters: DirectoryFrSearchFilters,
+  ): Promise<SearchDirectoryFrResult> {
     // deno-lint-ignore no-explicit-any
     const raw = await this.client.get("/directory_entries") as any;
     const data = Array.isArray(raw) ? raw : (raw?.data ?? []);
     // deno-lint-ignore no-explicit-any
     const rows = data.map((entry: any) => ({
       entityId: String(entry.id ?? ""),
-      name: entry.company?.formal_name ?? entry.company?.trade_name ?? entry.name,
+      name: entry.company?.formal_name ?? entry.company?.trade_name ??
+        entry.name,
       siret: entry.identifier,
       country: entry.company?.country ?? "FR",
       directory: entry.directory,
@@ -219,7 +248,10 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     return await this.client.post("/directory_entries", data);
   }
 
-  override async registerNetwork(identifierId: string, network: string): Promise<unknown> {
+  override async registerNetwork(
+    identifierId: string,
+    network: string,
+  ): Promise<unknown> {
     // Spec: { directory: "peppol"|"ppf", identifier: "scheme:value" }
     return await this.client.post("/directory_entries", {
       directory: mapNetworkToDirectory(network),
@@ -227,7 +259,11 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async registerNetworkByScheme(scheme: string, value: string, network: string): Promise<unknown> {
+  override async registerNetworkByScheme(
+    scheme: string,
+    value: string,
+    network: string,
+  ): Promise<unknown> {
     return await this.client.post("/directory_entries", {
       directory: mapNetworkToDirectory(network),
       identifier: `${scheme}:${value}`,
@@ -235,12 +271,17 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async unregisterNetwork(directoryId: string): Promise<unknown> {
-    return await this.client.delete(`/directory_entries/${encodePathSegment(directoryId)}`);
+    return await this.client.delete(
+      `/directory_entries/${encodePathSegment(directoryId)}`,
+    );
   }
 
   // ─── Identifier Management (native via directory) ─────
 
-  override async createIdentifier(_entityId: string, data: Record<string, unknown>): Promise<unknown> {
+  override async createIdentifier(
+    _entityId: string,
+    data: Record<string, unknown>,
+  ): Promise<unknown> {
     // Spec: { directory: "peppol"|"ppf", identifier: "scheme:value" }
     return await this.client.post("/directory_entries", {
       directory: data.directory ?? "ppf",
@@ -248,7 +289,11 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
     });
   }
 
-  override async createIdentifierByScheme(scheme: string, value: string, data: Record<string, unknown>): Promise<unknown> {
+  override async createIdentifierByScheme(
+    scheme: string,
+    value: string,
+    data: Record<string, unknown>,
+  ): Promise<unknown> {
     return await this.client.post("/directory_entries", {
       directory: data.directory ?? "ppf",
       identifier: `${scheme}:${value}`,
@@ -256,7 +301,9 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   }
 
   override async deleteIdentifier(identifierId: string): Promise<unknown> {
-    return await this.client.delete(`/directory_entries/${encodePathSegment(identifierId)}`);
+    return await this.client.delete(
+      `/directory_entries/${encodePathSegment(identifierId)}`,
+    );
   }
 
   // ─── Stubs (21 methods — inherited from AfnorBaseAdapter) ─
@@ -277,11 +324,12 @@ function lastEventCode(events: any[] | undefined): string | undefined {
   return events[events.length - 1].status_code;
 }
 
-
 /** Map adapter network names to SuperPDP directory values. */
 function mapNetworkToDirectory(network: string): "ppf" | "peppol" {
   if (network === "DOMESTIC_FR" || network === "ppf") return "ppf";
-  if (network === "PEPPOL_INTERNATIONAL" || network === "peppol") return "peppol";
+  if (network === "PEPPOL_INTERNATIONAL" || network === "peppol") {
+    return "peppol";
+  }
   throw new Error(
     `[SuperPDP] Unknown network "${network}". Supported: "DOMESTIC_FR"/"ppf", "PEPPOL_INTERNATIONAL"/"peppol".`,
   );
@@ -298,7 +346,6 @@ function toInvoiceId(id: string): number {
 
 // ─── Factory ──────────────────────────────────────────
 
-
 /**
  * Create a SuperPDPAdapter from environment variables.
  *
@@ -306,23 +353,32 @@ function toInvoiceId(id: string): number {
  * Optional: SUPERPDP_AUTH_URL, SUPERPDP_AFNOR_URL
  */
 export function createSuperPDPAdapter(): SuperPDPAdapter {
-  const baseUrl = requireEnv("SuperPDPAdapter",
+  const baseUrl = requireEnv(
+    "SuperPDPAdapter",
     "SUPERPDP_API_URL",
     "Set it to https://api.superpdp.tech/v1.beta",
   );
-  const clientId = requireEnv("SuperPDPAdapter",
+  const clientId = requireEnv(
+    "SuperPDPAdapter",
     "SUPERPDP_CLIENT_ID",
     "Get your client ID from the Super PDP dashboard.",
   );
-  const clientSecret = requireEnv("SuperPDPAdapter",
+  const clientSecret = requireEnv(
+    "SuperPDPAdapter",
     "SUPERPDP_CLIENT_SECRET",
     "Get your client secret from the Super PDP dashboard.",
   );
-  const authUrl = env("SUPERPDP_AUTH_URL") || "https://api.superpdp.tech/oauth2/token";
-  const afnorUrl = env("SUPERPDP_AFNOR_URL") || "https://api.superpdp.tech/afnor-flow";
+  const authUrl = env("SUPERPDP_AUTH_URL") ||
+    "https://api.superpdp.tech/oauth2/token";
+  const afnorUrl = env("SUPERPDP_AFNOR_URL") ||
+    "https://api.superpdp.tech/afnor-flow";
 
   // Same OAuth2 token works for both native and AFNOR APIs
-  const getToken = createOAuth2TokenProvider({ authUrl, clientId, clientSecret });
+  const getToken = createOAuth2TokenProvider({
+    authUrl,
+    clientId,
+    clientSecret,
+  });
 
   const client = new SuperPDPClient({ baseUrl, getToken });
   const afnor = new AfnorClient({ baseUrl: afnorUrl, getToken });

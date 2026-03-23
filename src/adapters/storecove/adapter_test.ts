@@ -73,7 +73,10 @@ Deno.test("StorecoveAdapter.emitInvoice() - POST /document_submissions with XML"
 
     assertEquals(result, { guid: "doc-123" });
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/api/v2/document_submissions");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/api/v2/document_submissions",
+    );
     const body = captured[0].body as Record<string, unknown>;
     const doc = body.document as Record<string, unknown>;
     assertEquals(doc.document_type, "invoice");
@@ -156,7 +159,10 @@ Deno.test("StorecoveAdapter.getInvoice() - GET /received_documents/{id}/json", a
     const adapter = makeAdapter();
     const result = await adapter.getInvoice("inv-123");
 
-    assertEquals(new URL(captured[0].url).pathname, "/api/v2/received_documents/inv-123/json");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/api/v2/received_documents/inv-123/json",
+    );
     assertEquals(result.id, "inv-123");
     assertEquals(result.invoiceNumber, "F-001");
     assertEquals(result.status, "received");
@@ -213,7 +219,10 @@ Deno.test("StorecoveAdapter.downloadInvoice() - GET /received_documents/{id}/ori
     const adapter = makeAdapter();
     const result = await adapter.downloadInvoice("inv-456");
 
-    assertEquals(new URL(captured[0].url).pathname, "/api/v2/received_documents/inv-456/original");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/api/v2/received_documents/inv-456/original",
+    );
     assertEquals(result.contentType, "application/xml");
   } finally {
     restore();
@@ -325,7 +334,10 @@ Deno.test("StorecoveAdapter.searchDirectoryFr() - POST /discovery/exists with q 
 
     assertEquals(captured[0].method, "POST");
     assertEquals(new URL(captured[0].url).pathname, "/api/v2/discovery/exists");
-    assertEquals((captured[0].body as Record<string, unknown>).identifier, "0009:123456789");
+    assertEquals(
+      (captured[0].body as Record<string, unknown>).identifier,
+      "0009:123456789",
+    );
     assertEquals(result.count, 1);
     assertEquals(result.rows.length, 1);
     assertEquals(result.rows[0].entityId, "0009:123456789");
@@ -382,8 +394,14 @@ Deno.test("StorecoveAdapter.searchDirectoryInt() - POST /discovery/receives", as
     await adapter.searchDirectoryInt({ value: "0208:BE0123456789" });
 
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/api/v2/discovery/receives");
-    assertEquals((captured[0].body as Record<string, unknown>).identifier, "0208:BE0123456789");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/api/v2/discovery/receives",
+    );
+    assertEquals(
+      (captured[0].body as Record<string, unknown>).identifier,
+      "0208:BE0123456789",
+    );
   } finally {
     restore();
   }
@@ -415,7 +433,11 @@ Deno.test("StorecoveAdapter.getStatusHistory() - GET /document_submissions/{id}/
   const { restore, captured } = mockFetch([
     {
       status: 200,
-      body: { timestamp: "2026-03-20T10:00:00Z", status: "delivered", description: "Delivered OK" },
+      body: {
+        timestamp: "2026-03-20T10:00:00Z",
+        status: "delivered",
+        description: "Delivered OK",
+      },
     },
   ]);
 
@@ -516,7 +538,10 @@ Deno.test("StorecoveAdapter.getBusinessEntity() - GET /legal_entities/{id}", asy
     const adapter = makeAdapter();
     const result = await adapter.getBusinessEntity("42");
 
-    assertEquals(new URL(captured[0].url).pathname, "/api/v2/legal_entities/42");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/api/v2/legal_entities/42",
+    );
     assertEquals((result as Record<string, unknown>).id, 42);
   } finally {
     restore();
@@ -550,7 +575,10 @@ Deno.test("StorecoveAdapter.deleteBusinessEntity() - DELETE /legal_entities/{id}
     await adapter.deleteBusinessEntity("99");
 
     assertEquals(captured[0].method, "DELETE");
-    assertEquals(new URL(captured[0].url).pathname, "/api/v2/legal_entities/99");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/api/v2/legal_entities/99",
+    );
   } finally {
     restore();
   }
@@ -650,7 +678,10 @@ Deno.test("StorecoveAdapter.enrollFrench() - throws NotSupportedError", async ()
 
 Deno.test("StorecoveAdapter.registerNetwork() - returns informational message (no HTTP call)", async () => {
   const adapter = makeAdapter();
-  const result = await adapter.registerNetwork("0009:43446637100011", "PEPPOL_INTERNATIONAL");
+  const result = await adapter.registerNetwork(
+    "0009:43446637100011",
+    "PEPPOL_INTERNATIONAL",
+  );
 
   assertEquals(typeof (result as Record<string, unknown>).message, "string");
   assertEquals(
@@ -661,7 +692,11 @@ Deno.test("StorecoveAdapter.registerNetwork() - returns informational message (n
 
 Deno.test("StorecoveAdapter.registerNetworkByScheme() - returns informational message (no HTTP call)", async () => {
   const adapter = makeAdapter();
-  const result = await adapter.registerNetworkByScheme("0225", "FR123", "PEPPOL_INTERNATIONAL");
+  const result = await adapter.registerNetworkByScheme(
+    "0225",
+    "FR123",
+    "PEPPOL_INTERNATIONAL",
+  );
 
   const msg = (result as Record<string, unknown>).message as string;
   assertEquals(typeof msg, "string");
@@ -730,7 +765,10 @@ Deno.test("StorecoveAdapter.createIdentifier() - non-Peppol scheme → /addition
 
   try {
     const adapter = makeAdapter();
-    await adapter.createIdentifier("42", { scheme: "VAT", value: "FR123456789" });
+    await adapter.createIdentifier("42", {
+      scheme: "VAT",
+      value: "FR123456789",
+    });
 
     assertEquals(captured[0].method, "POST");
     assertEquals(
@@ -758,10 +796,15 @@ Deno.test("StorecoveAdapter.deleteIdentifier() - path with slashes → DELETE /l
 
   try {
     const adapter = makeAdapter();
-    await adapter.deleteIdentifier("42/peppol_identifiers/iso6523-actorid-upis/0225/FR123");
+    await adapter.deleteIdentifier(
+      "42/peppol_identifiers/iso6523-actorid-upis/0225/FR123",
+    );
 
     assertEquals(captured[0].method, "DELETE");
-    assertEquals(new URL(captured[0].url).pathname.startsWith("/api/v2/legal_entities/"), true);
+    assertEquals(
+      new URL(captured[0].url).pathname.startsWith("/api/v2/legal_entities/"),
+      true,
+    );
   } finally {
     restore();
   }

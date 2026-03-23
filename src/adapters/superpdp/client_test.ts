@@ -95,11 +95,17 @@ Deno.test("SuperPDPClient.post() - sends JSON body", async () => {
 
   try {
     const client = makeClient();
-    await client.post("/invoice_events", { invoice_id: "inv-1", status_code: "fr:212" });
+    await client.post("/invoice_events", {
+      invoice_id: "inv-1",
+      status_code: "fr:212",
+    });
 
     assertEquals(captured[0].method, "POST");
     assertEquals(captured[0].headers["content-type"], "application/json");
-    assertEquals(captured[0].body, { invoice_id: "inv-1", status_code: "fr:212" });
+    assertEquals(captured[0].body, {
+      invoice_id: "inv-1",
+      status_code: "fr:212",
+    });
   } finally {
     restore();
   }
@@ -117,7 +123,10 @@ Deno.test("SuperPDPClient.delete() - sends DELETE", async () => {
     await client.delete("/directory_entries/de-1");
 
     assertEquals(captured[0].method, "DELETE");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries/de-1");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries/de-1",
+    );
   } finally {
     restore();
   }
@@ -132,7 +141,9 @@ Deno.test("SuperPDPClient.download() - returns Uint8Array and content type", asy
 
   try {
     const client = makeClient();
-    const { data, contentType } = await client.download("/invoices/inv-1/download");
+    const { data, contentType } = await client.download(
+      "/invoices/inv-1/download",
+    );
 
     assertEquals(contentType, "application/xml");
     assertEquals(data.length > 0, true);
@@ -186,7 +197,10 @@ Deno.test("SuperPDPClient - constructs correct URLs", async () => {
     const client = makeClient();
     await client.get("/companies/me");
 
-    assertEquals(new URL(captured[0].url).href, "https://api.superpdp.tech/v1.beta/companies/me");
+    assertEquals(
+      new URL(captured[0].url).href,
+      "https://api.superpdp.tech/v1.beta/companies/me",
+    );
   } finally {
     restore();
   }

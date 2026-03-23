@@ -46,17 +46,23 @@ export function createOAuth2TokenProvider(
     if (!response.ok) {
       const text = await response.text();
       throw new Error(
-        `[OAuth2] Token request failed: ${response.status} — ${text.slice(0, 500)}`,
+        `[OAuth2] Token request failed: ${response.status} — ${
+          text.slice(0, 500)
+        }`,
       );
     }
 
-    const data = await response.json() as { access_token: string; expires_in?: number };
+    const data = await response.json() as {
+      access_token: string;
+      expires_in?: number;
+    };
     if (!data.access_token) {
       throw new Error("[OAuth2] Token response missing access_token");
     }
 
     cachedToken = data.access_token;
-    expiresAt = Date.now() + ((data.expires_in ?? 600) * 1000) - REFRESH_MARGIN_MS;
+    expiresAt = Date.now() + ((data.expires_in ?? 600) * 1000) -
+      REFRESH_MARGIN_MS;
 
     return cachedToken;
   }
@@ -67,7 +73,9 @@ export function createOAuth2TokenProvider(
     }
     // Dedup concurrent token requests
     if (!inflight) {
-      inflight = fetchToken().finally(() => { inflight = undefined; });
+      inflight = fetchToken().finally(() => {
+        inflight = undefined;
+      });
     }
     return inflight;
   };

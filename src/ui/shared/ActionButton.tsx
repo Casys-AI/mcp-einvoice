@@ -5,26 +5,36 @@
  * Supports size variants for compact inline panels.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { colors, styles } from "./theme";
 import { t } from "./i18n";
 
 const VARIANT_COLORS: Record<string, { color: string; bg: string }> = {
   success: { color: colors.success, bg: colors.successDim },
-  error:   { color: colors.error,   bg: colors.errorDim },
-  info:    { color: colors.info,    bg: colors.infoDim },
+  error: { color: colors.error, bg: colors.errorDim },
+  info: { color: colors.info, bg: colors.infoDim },
   default: { color: colors.text.secondary, bg: colors.bg.elevated },
 };
 
-export function ActionButton({ label, variant = "default", disabled, loading, confirm, size = "md", onClick }: {
-  label: string;
-  variant?: "success" | "error" | "info" | "default";
-  disabled?: boolean;
-  loading?: boolean;
-  confirm?: boolean;
-  size?: "sm" | "md";
-  onClick: () => void;
-}) {
+export function ActionButton(
+  {
+    label,
+    variant = "default",
+    disabled,
+    loading,
+    confirm,
+    size = "md",
+    onClick,
+  }: {
+    label: string;
+    variant?: "success" | "error" | "info" | "default";
+    disabled?: boolean;
+    loading?: boolean;
+    confirm?: boolean;
+    size?: "sm" | "md";
+    onClick: () => void;
+  },
+) {
   const [confirming, setConfirming] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(timerRef.current), []);

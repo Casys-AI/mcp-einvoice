@@ -33,7 +33,10 @@ Deno.test("AfnorClient - sends Bearer token in Authorization header", async () =
     const client = makeClient();
     await client.searchFlows({});
 
-    assertEquals(captured[0].headers["authorization"], "Bearer test-afnor-token");
+    assertEquals(
+      captured[0].headers["authorization"],
+      "Bearer test-afnor-token",
+    );
     assertEquals(captured[0].headers["accept"], "application/json");
   } finally {
     restore();
@@ -128,7 +131,9 @@ Deno.test("AfnorClient.submitFlow() - returns parsed JSON body", async () => {
 
   try {
     const client = makeClient();
-    const result = await client.submitFlow(new Uint8Array([0]), { flowSyntax: "Factur-X" }) as Record<string, unknown>;
+    const result = await client.submitFlow(new Uint8Array([0]), {
+      flowSyntax: "Factur-X",
+    }) as Record<string, unknown>;
     assertEquals(result.flowId, "fl-5");
     assertEquals(result.status, "Pending");
   } finally {
@@ -204,7 +209,10 @@ Deno.test("AfnorClient.searchFlows() - wraps filters in { where } body", async (
     const body = captured[0].body as Record<string, unknown>;
     const where = body["where"] as Record<string, unknown>;
     assertEquals(Array.isArray(where["flowType"]), true);
-    assertEquals((where["flowType"] as string[]).includes("CustomerInvoice"), true);
+    assertEquals(
+      (where["flowType"] as string[]).includes("CustomerInvoice"),
+      true,
+    );
     assertEquals(where["trackingId"], "INV-001");
   } finally {
     restore();

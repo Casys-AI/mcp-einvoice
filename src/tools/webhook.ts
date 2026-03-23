@@ -33,7 +33,9 @@ export const webhookTools: EInvoiceTool[] = [
         "Nom": w.name ?? "—",
         "URL": w.url ?? "—",
         "Actif": w.active !== false ? "Oui" : "Non",
-        "Événements": Array.isArray(w.events) ? (w.events as string[]).join(", ") : "—",
+        "Événements": Array.isArray(w.events)
+          ? (w.events as string[]).join(", ")
+          : "—",
       }));
       return {
         content: `${data.length} webhook(s) configuré(s)`,
@@ -73,8 +75,7 @@ export const webhookTools: EInvoiceTool[] = [
   {
     name: "einvoice_webhook_create",
     requires: ["createWebhook"],
-    description:
-      "Create a new webhook to receive real-time notifications. " +
+    description: "Create a new webhook to receive real-time notifications. " +
       "Specify the target URL and which events to subscribe to " +
       "(e.g. invoice.received, status.changed).",
     category: "webhook",

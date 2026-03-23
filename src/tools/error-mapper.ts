@@ -10,30 +10,46 @@
  * @module lib/einvoice/src/tools/error-mapper
  */
 
-import { NotSupportedError, AdapterAPIError } from "../adapters/shared/errors.ts";
+import {
+  AdapterAPIError,
+  NotSupportedError,
+} from "../adapters/shared/errors.ts";
 
 /**
  * Map tool errors to user-friendly messages.
  * Returns a string → framework produces { isError: true, content: [{ text: msg }] }
  * Returns null → framework rethrows as JSON-RPC error.
  */
-export function einvoiceErrorMapper(error: unknown, toolName: string): string | null {
+export function einvoiceErrorMapper(
+  error: unknown,
+  toolName: string,
+): string | null {
   if (error instanceof NotSupportedError) {
     return error.message;
   }
 
   if (error instanceof AdapterAPIError) {
-    console.error(`[mcp-einvoice] [${toolName}] API error ${error.status}: ${error.message.slice(0, 200)}`);
-    return `[${toolName}] API error ${error.status}: ${error.message.slice(0, 300)}`;
+    console.error(
+      `[mcp-einvoice] [${toolName}] API error ${error.status}: ${
+        error.message.slice(0, 200)
+      }`,
+    );
+    return `[${toolName}] API error ${error.status}: ${
+      error.message.slice(0, 300)
+    }`;
   }
 
   if (error instanceof Error) {
     // Validation errors — return as business error
-    if (error.message.includes("is required") || error.message.includes("must ")) {
+    if (
+      error.message.includes("is required") || error.message.includes("must ")
+    ) {
       return error.message;
     }
     // Other known errors — log and return truncated
-    console.error(`[mcp-einvoice] [${toolName}] error: ${error.message.slice(0, 200)}`);
+    console.error(
+      `[mcp-einvoice] [${toolName}] error: ${error.message.slice(0, 200)}`,
+    );
     return `[${toolName}] ${error.message.slice(0, 300)}`;
   }
 

@@ -9,13 +9,13 @@
 
 /* ── Shared tokens ──────────────────────────────────────────────── */
 :root {
-  --accent: #6750A4;
+  --accent: #6750a4;
   --accent-dim: rgba(103, 80, 164, 0.12);
   --accent-border: rgba(103, 80, 164, 0.25);
 
   --success: #16a34a;
   --success-dim: rgba(22, 163, 74, 0.10);
-  --error: #BA1A1A;
+  --error: #ba1a1a;
   --error-dim: rgba(186, 26, 26, 0.10);
   --warning: #d97706;
   --warning-dim: rgba(217, 119, 6, 0.10);
@@ -26,23 +26,25 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --font-sans:
+    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", "Cascadia Code", "Fira Code", monospace;
 
   /* ── Light mode (default) ──────────────────────────────────── */
-  --bg-root: #FFFBFE;
-  --bg-surface: #F4ECF0;
-  --bg-elevated: #EEE6EA;
-  --bg-hover: #E9E0E4;
-  --bg-active: #CFC3CD;
+  --bg-root: #fffbfe;
+  --bg-surface: #f4ecf0;
+  --bg-elevated: #eee6ea;
+  --bg-hover: #e9e0e4;
+  --bg-active: #cfc3cd;
 
-  --text-primary: #1C1B1F;
-  --text-secondary: #625B71;
-  --text-muted: #7E747D;
-  --text-faint: #988D97;
+  --text-primary: #1c1b1f;
+  --text-secondary: #625b71;
+  --text-muted: #7e747d;
+  --text-faint: #988d97;
 
-  --border: #CFC3CD;
-  --border-subtle: #ECDFE9;
+  --border: #cfc3cd;
+  --border-subtle: #ecdfe9;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -51,27 +53,27 @@
 /* ── Dark mode ─────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --accent: #FFB86F;
+    --accent: #ffb86f;
     --accent-dim: rgba(255, 184, 111, 0.12);
     --accent-border: rgba(255, 184, 111, 0.2);
 
-    --bg-root: #0A0908;
+    --bg-root: #0a0908;
     --bg-surface: #161412;
-    --bg-elevated: #1E1C1A;
-    --bg-hover: #2A2A2E;
+    --bg-elevated: #1e1c1a;
+    --bg-hover: #2a2a2e;
     --bg-active: #383337;
 
-    --text-primary: #F5F0EA;
-    --text-secondary: #D5C3B5;
-    --text-muted: #B8AAA0;
-    --text-faint: #8D837A;
+    --text-primary: #f5f0ea;
+    --text-secondary: #d5c3b5;
+    --text-muted: #b8aaa0;
+    --text-faint: #8d837a;
 
-    --border: #2A2A2E;
-    --border-subtle: #1A1A1E;
+    --border: #2a2a2e;
+    --border-subtle: #1a1a1e;
 
-    --success: #4ADE80;
+    --success: #4ade80;
     --success-dim: rgba(74, 222, 128, 0.12);
-    --error: #F87171;
+    --error: #f87171;
     --error-dim: rgba(248, 113, 113, 0.12);
     --warning: #fbbf24;
     --warning-dim: rgba(251, 191, 36, 0.12);
@@ -112,25 +114,50 @@ body {
 
 #app {}
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.15; }
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.15;
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-.animate-pulse { animation: pulse 1.5s ease-in-out infinite; }
+.animate-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
 
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-elevated) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);

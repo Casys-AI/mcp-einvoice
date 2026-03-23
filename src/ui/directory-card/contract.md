@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Display a single business entity from the French PPF directory.
-Read-only view — shows company identity, registration, and routing information.
+Display a single business entity from the French PPF directory. Read-only view —
+shows company identity, registration, and routing information.
 
 ## Inputs
 
@@ -13,7 +13,7 @@ MCP tool result from `einvoice_directory_fr_search` (single result drill-down):
 interface DirectoryData {
   businessEntityId: string;
   name: string;
-  type: string;          // LEGAL_UNIT, OFFICE
+  type: string; // LEGAL_UNIT, OFFICE
   siren?: string;
   siret?: string;
   country?: string;
@@ -21,7 +21,7 @@ interface DirectoryData {
     scheme: string;
     value: string;
   }>;
-  networks?: string[];   // registered platforms
+  networks?: string[]; // registered platforms
 }
 ```
 

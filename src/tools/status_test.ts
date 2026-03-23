@@ -18,7 +18,9 @@ Deno.test("einvoice_status_send - maps code and message from input", async () =>
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_status_send");
 
-  await tool.handler({ invoice_id: "inv-1", code: "APPROVED", message: "OK" }, { adapter });
+  await tool.handler({ invoice_id: "inv-1", code: "APPROVED", message: "OK" }, {
+    adapter,
+  });
 
   assertEquals(calls[0].method, "sendStatus");
   const arg = calls[0].args[0] as Record<string, unknown>;
@@ -31,8 +33,14 @@ Deno.test("einvoice_status_send - throws without required fields", async () => {
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_status_send");
 
-  await assertRejects(() => tool.handler({ invoice_id: "inv-1" }, { adapter }), Error);
-  await assertRejects(() => tool.handler({ code: "APPROVED" }, { adapter }), Error);
+  await assertRejects(
+    () => tool.handler({ invoice_id: "inv-1" }, { adapter }),
+    Error,
+  );
+  await assertRejects(
+    () => tool.handler({ code: "APPROVED" }, { adapter }),
+    Error,
+  );
 });
 
 Deno.test("einvoice_status_history - calls adapter.getStatusHistory", async () => {
@@ -66,7 +74,9 @@ Deno.test("einvoice_status_history - passes through adapter StatusHistoryResult"
   const { adapter } = createMockAdapter(mockResponse);
   const tool = findTool("einvoice_status_history");
 
-  const result = unwrapStructured(await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ invoice_id: "inv-1" }, { adapter }),
+  ) as Record<string, unknown>;
   assertEquals(Array.isArray(result.entries), true);
   assertEquals((result.entries as unknown[]).length, 1);
 });
@@ -76,7 +86,9 @@ Deno.test("einvoice_status_history - returns empty entries when adapter has none
   const { adapter } = createMockAdapter(mockResponse);
   const tool = findTool("einvoice_status_history");
 
-  const result = unwrapStructured(await tool.handler({ invoice_id: "inv-1" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ invoice_id: "inv-1" }, { adapter }),
+  ) as Record<string, unknown>;
   assertEquals(result.entries, []);
 });
 

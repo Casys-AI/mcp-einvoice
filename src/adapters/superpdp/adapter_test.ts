@@ -52,8 +52,20 @@ const INVOICE_FIXTURE = {
     },
   },
   events: [
-    { id: 1, invoice_id: 12345, status_code: "fr:200", status_text: "Déposée", created_at: "2026-03-20T10:00:00Z" },
-    { id: 2, invoice_id: 12345, status_code: "fr:205", status_text: "Approuvée", created_at: "2026-03-20T11:00:00Z" },
+    {
+      id: 1,
+      invoice_id: 12345,
+      status_code: "fr:200",
+      status_text: "Déposée",
+      created_at: "2026-03-20T10:00:00Z",
+    },
+    {
+      id: 2,
+      invoice_id: 12345,
+      status_code: "fr:205",
+      status_text: "Approuvée",
+      created_at: "2026-03-20T11:00:00Z",
+    },
   ],
 };
 
@@ -66,8 +78,22 @@ const LIST_INVOICES_FIXTURE = {
 
 const LIST_EVENTS_FIXTURE = {
   data: [
-    { id: 1, invoice_id: 12345, status_code: "fr:200", status_text: "Déposée", created_at: "2026-03-20T10:00:00Z", data: {} },
-    { id: 2, invoice_id: 12345, status_code: "fr:205", status_text: "Approuvée", created_at: "2026-03-20T11:00:00Z", data: { reason: "OK" } },
+    {
+      id: 1,
+      invoice_id: 12345,
+      status_code: "fr:200",
+      status_text: "Déposée",
+      created_at: "2026-03-20T10:00:00Z",
+      data: {},
+    },
+    {
+      id: 2,
+      invoice_id: 12345,
+      status_code: "fr:205",
+      status_text: "Approuvée",
+      created_at: "2026-03-20T11:00:00Z",
+      data: { reason: "OK" },
+    },
   ],
   has_after: false,
 };
@@ -133,7 +159,10 @@ Deno.test("SuperPDPAdapter.searchInvoices() - maps en_invoice nested fields", as
 
     // Verify expand[] params in URL
     const url = new URL(captured[0].url);
-    assertEquals(url.searchParams.getAll("expand[]").sort(), ["en_invoice", "events"]);
+    assertEquals(url.searchParams.getAll("expand[]").sort(), [
+      "en_invoice",
+      "events",
+    ]);
     assertEquals(url.searchParams.get("limit"), "10");
 
     // Verify mapping from en_invoice nested structure
@@ -236,7 +265,10 @@ Deno.test("SuperPDPAdapter.downloadInvoice() - GET /invoices/{id}/download", asy
     const { contentType } = await adapter.downloadInvoice("inv-1");
 
     assertEquals(contentType, "application/xml");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/invoices/inv-1/download");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/invoices/inv-1/download",
+    );
   } finally {
     restore();
   }
@@ -251,7 +283,10 @@ Deno.test("SuperPDPAdapter.generateCII() - POST /invoices/convert?from=en16931&t
 
   try {
     const adapter = makeAdapter();
-    await adapter.generateCII({ invoice: { invoiceId: "F-001" }, flavor: "EN16931" });
+    await adapter.generateCII({
+      invoice: { invoiceId: "F-001" },
+      flavor: "EN16931",
+    });
 
     assertEquals(captured[0].method, "POST");
     const url = new URL(captured[0].url);
@@ -270,7 +305,10 @@ Deno.test("SuperPDPAdapter.generateUBL() - POST /invoices/convert?from=en16931&t
 
   try {
     const adapter = makeAdapter();
-    await adapter.generateUBL({ invoice: { invoiceId: "F-001" }, flavor: "EN16931" });
+    await adapter.generateUBL({
+      invoice: { invoiceId: "F-001" },
+      flavor: "EN16931",
+    });
 
     assertEquals(captured[0].method, "POST");
     const url = new URL(captured[0].url);
@@ -320,7 +358,12 @@ Deno.test("SuperPDPAdapter.sendStatus() - spec-compliant body with payment amoun
       invoiceId: "12345",
       code: "fr:212",
       payment: {
-        amounts: [{ vat_rate: "20.0", net_amount: "1000.00", currency_code: "EUR", type_code: "MEN" }],
+        amounts: [{
+          vat_rate: "20.0",
+          net_amount: "1000.00",
+          currency_code: "EUR",
+          type_code: "MEN",
+        }],
       },
     });
 
@@ -420,7 +463,10 @@ Deno.test("SuperPDPAdapter.searchDirectoryFr() - maps directory_entry response",
     const adapter = makeAdapter();
     const result = await adapter.searchDirectoryFr({ q: "test" });
 
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries",
+    );
     assertEquals(result.rows.length, 1);
     assertEquals(result.rows[0].entityId, "9396");
     assertEquals(result.rows[0].name, "Burger Queen");
@@ -441,7 +487,10 @@ Deno.test("SuperPDPAdapter.registerNetwork() - maps to { directory, identifier }
     await adapter.registerNetwork("0009:43446637100011", "DOMESTIC_FR");
 
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries",
+    );
     const body = captured[0].body as Record<string, unknown>;
     assertEquals(body.directory, "ppf");
     assertEquals(body.identifier, "0009:43446637100011");
@@ -457,7 +506,11 @@ Deno.test("SuperPDPAdapter.registerNetworkByScheme() - maps to { directory, iden
 
   try {
     const adapter = makeAdapter();
-    await adapter.registerNetworkByScheme("0225", "315143296_2913", "PEPPOL_INTERNATIONAL");
+    await adapter.registerNetworkByScheme(
+      "0225",
+      "315143296_2913",
+      "PEPPOL_INTERNATIONAL",
+    );
 
     assertEquals(captured[0].method, "POST");
     const body = captured[0].body as Record<string, unknown>;
@@ -478,7 +531,10 @@ Deno.test("SuperPDPAdapter.unregisterNetwork() - DELETE /directory_entries/{id}"
     await adapter.unregisterNetwork("9396");
 
     assertEquals(captured[0].method, "DELETE");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries/9396");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries/9396",
+    );
   } finally {
     restore();
   }
@@ -504,7 +560,10 @@ Deno.test("SuperPDPAdapter.getCustomerId() - GET /companies/me", async () => {
 
 Deno.test("SuperPDPAdapter.getBusinessEntity() - GET /companies/me (ignores id)", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: { id: 2913, formal_name: "Burger Queen", country: "FR" } },
+    {
+      status: 200,
+      body: { id: 2913, formal_name: "Burger Queen", country: "FR" },
+    },
   ]);
 
   try {
@@ -528,10 +587,16 @@ Deno.test("SuperPDPAdapter.createOffice() - POST /directory_entries", async () =
 
   try {
     const adapter = makeAdapter();
-    await adapter.createOffice({ directory: "ppf", identifier: "0009:43446637100011" });
+    await adapter.createOffice({
+      directory: "ppf",
+      identifier: "0009:43446637100011",
+    });
 
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries",
+    );
     const body = captured[0].body as Record<string, unknown>;
     assertEquals(body.directory, "ppf");
     assertEquals(body.identifier, "0009:43446637100011");
@@ -547,10 +612,16 @@ Deno.test("SuperPDPAdapter.enrollFrench() - POST /directory_entries", async () =
 
   try {
     const adapter = makeAdapter();
-    await adapter.enrollFrench({ directory: "ppf", identifier: "0009:43446637100011" });
+    await adapter.enrollFrench({
+      directory: "ppf",
+      identifier: "0009:43446637100011",
+    });
 
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries",
+    );
     const body = captured[0].body as Record<string, unknown>;
     assertEquals(body.directory, "ppf");
   } finally {
@@ -567,10 +638,16 @@ Deno.test("SuperPDPAdapter.createIdentifier() - POST /directory_entries with str
 
   try {
     const adapter = makeAdapter();
-    await adapter.createIdentifier("entity-1", { directory: "peppol", identifier: "0225:315143296_2913" });
+    await adapter.createIdentifier("entity-1", {
+      directory: "peppol",
+      identifier: "0225:315143296_2913",
+    });
 
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries",
+    );
     const body = captured[0].body as Record<string, unknown>;
     assertEquals(body.directory, "peppol");
     assertEquals(body.identifier, "0225:315143296_2913");
@@ -586,7 +663,9 @@ Deno.test("SuperPDPAdapter.createIdentifierByScheme() - POST with constructed id
 
   try {
     const adapter = makeAdapter();
-    await adapter.createIdentifierByScheme("0225", "315143296_2913", { directory: "peppol" });
+    await adapter.createIdentifierByScheme("0225", "315143296_2913", {
+      directory: "peppol",
+    });
 
     assertEquals(captured[0].method, "POST");
     const body = captured[0].body as Record<string, unknown>;
@@ -607,7 +686,10 @@ Deno.test("SuperPDPAdapter.deleteIdentifier() - DELETE /directory_entries/{id}",
     await adapter.deleteIdentifier("9396");
 
     assertEquals(captured[0].method, "DELETE");
-    assertEquals(new URL(captured[0].url).pathname, "/v1.beta/directory_entries/9396");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1.beta/directory_entries/9396",
+    );
   } finally {
     restore();
   }

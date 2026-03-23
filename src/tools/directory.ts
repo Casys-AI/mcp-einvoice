@@ -37,7 +37,10 @@ export const directoryTools: EInvoiceTool[] = [
             "Search query (required). SIRET, SIREN, VAT number, or company name.",
         },
         offset: { type: "number", description: "Result offset (default 0)" },
-        limit: { type: "number", description: "Max results (default 50, max 200)" },
+        limit: {
+          type: "number",
+          description: "Max results (default 50, max 200)",
+        },
       },
       required: ["q"],
     },
@@ -54,7 +57,9 @@ export const directoryTools: EInvoiceTool[] = [
 
       const viewerData = {
         data: rows.map((r) => {
-          const typeLabel = r.type ? (ENTITY_TYPE_LABELS[r.type] ?? r.type) : undefined;
+          const typeLabel = r.type
+            ? (ENTITY_TYPE_LABELS[r.type] ?? r.type)
+            : undefined;
           return {
             _id: r.entityId,
             _detail: {
@@ -90,8 +95,7 @@ export const directoryTools: EInvoiceTool[] = [
     name: "einvoice_directory_int_search",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/directory-list" } },
     requires: ["searchDirectoryInt"],
-    description:
-      "Search the international Peppol directory. " +
+    description: "Search the international Peppol directory. " +
       "Find companies registered on the Peppol network across 40+ countries. " +
       "Search by participant identifier value (e.g. VAT number, GLN, DUNS).",
     category: "directory",
@@ -100,12 +104,14 @@ export const directoryTools: EInvoiceTool[] = [
       properties: {
         value: {
           type: "string",
-          description:
-            "Participant identifier value (required). " +
+          description: "Participant identifier value (required). " +
             "E.g. a VAT number 'FR12345678901' or other identifier.",
         },
         offset: { type: "number", description: "Result offset (default 0)" },
-        limit: { type: "number", description: "Max results (default 50, max 200)" },
+        limit: {
+          type: "number",
+          description: "Max results (default 50, max 200)",
+        },
       },
       required: ["value"],
     },
@@ -139,7 +145,8 @@ export const directoryTools: EInvoiceTool[] = [
         },
         value: {
           type: "string",
-          description: "Participant identifier value (e.g. '0208:FR12345678901234')",
+          description:
+            "Participant identifier value (e.g. '0208:FR12345678901234')",
         },
       },
       required: ["scheme", "value"],

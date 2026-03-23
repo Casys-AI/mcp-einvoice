@@ -50,7 +50,9 @@ export function normalizeUiRefreshFailureMessage(cause: unknown): string {
  * Extract tool result data. Prefers structuredContent (SDK 1.27) over content text.
  * Returns the JSON string for parsing by viewers.
  */
-export function extractToolResultText(result: ToolResultPayload): string | null {
+export function extractToolResultText(
+  result: ToolResultPayload,
+): string | null {
   // structuredContent: viewer data separated from LLM summary (SDK 1.27)
   if (result.structuredContent) {
     return JSON.stringify(result.structuredContent);

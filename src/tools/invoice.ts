@@ -8,9 +8,8 @@
  */
 
 import type { EInvoiceTool } from "./types.ts";
-import { storeGenerated, getGenerated } from "../generated-store.ts";
+import { getGenerated, storeGenerated } from "../generated-store.ts";
 import { uint8ToBase64 } from "../adapters/shared/encoding.ts";
-
 
 /**
  * Map invoice input to invoice-viewer preview format.
@@ -25,7 +24,8 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
     return {
       description: line.item?.name ?? line.description ?? line.name,
       quantity: line.billedQuantity?.quantity ?? line.quantity,
-      unit_price: line.price?.netAmount?.amount ?? line.unitPrice ?? line.unit_price,
+      unit_price: line.price?.netAmount?.amount ?? line.unitPrice ??
+        line.unit_price,
       tax_rate: line.taxDetail?.percent ?? line.taxRate ?? line.tax_rate,
       amount: line.totalAmount?.amount ?? line.amount,
     };
@@ -43,15 +43,16 @@ function mapToViewerPreview(inv: any): Record<string, unknown> {
     receiver_id: inv.buyer?.siret ?? inv.buyer?.siren ?? inv.receiverId,
     receiver_vat: inv.buyer?.vatNumber ?? inv.receiverVat,
     currency: inv.monetary?.invoiceCurrency ?? inv.currency ?? "EUR",
-    total_ht: inv.monetary?.taxBasisTotalAmount?.amount ?? inv.monetary?.lineTotalAmount?.amount ?? inv.totalHt,
+    total_ht: inv.monetary?.taxBasisTotalAmount?.amount ??
+      inv.monetary?.lineTotalAmount?.amount ?? inv.totalHt,
     total_tax: inv.monetary?.taxTotalAmount?.amount ?? inv.totalTax,
-    total_ttc: inv.monetary?.invoiceAmount?.amount ?? inv.monetary?.payableAmount?.amount ?? inv.totalTtc ?? inv.total_amount,
+    total_ttc: inv.monetary?.invoiceAmount?.amount ??
+      inv.monetary?.payableAmount?.amount ?? inv.totalTtc ?? inv.total_amount,
     items: lines,
     status: "aperçu",
     direction: "sent",
   };
 }
-
 
 /** Shared hint for generate tools. */
 const GENERATE_HINT =
@@ -69,7 +70,7 @@ const INVOICE_SCHEMA_DESCRIPTION =
   "seller (object): { name, siren, siret, country, vatNumber }; " +
   "buyer (object): same structure as seller; " +
   "monetary (object): { invoiceCurrency, invoiceAmount: { amount }, taxTotalAmount: { amount }, lineTotalAmount: { amount }, taxBasisTotalAmount: { amount } }; " +
-  "taxDetails (array): [{ percent, taxType: \"VAT\", categoryCode: \"S\", taxableAmount: { amount }, taxAmount: { amount } }]; " +
+  'taxDetails (array): [{ percent, taxType: "VAT", categoryCode: "S", taxableAmount: { amount }, taxAmount: { amount } }]; ' +
   "lines (array): [{ id, item: { name }, billedQuantity: { quantity, unitCode }, price: { netAmount: { amount } }, totalAmount: { amount }, taxDetail: { percent } }]";
 
 export const invoiceTools: EInvoiceTool[] = [
@@ -79,8 +80,7 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_submit",
     annotations: { destructiveHint: true },
     requires: ["emitInvoice"],
-    description:
-      "Submit an invoice to the e-invoicing platform. " +
+    description: "Submit an invoice to the e-invoicing platform. " +
       "Usually triggered by the viewer's Submit button — do not call manually after a generate preview. " +
       "Accepts generated_id OR file_base64 + filename.",
     category: "invoice",
@@ -113,7 +113,7 @@ export const invoiceTools: EInvoiceTool[] = [
         if (!stored) {
           throw new Error(
             "[einvoice_invoice_submit] Generated file expired or not found. " +
-            "Regenerate the invoice first.",
+              "Regenerate the invoice first.",
           );
         }
         return await ctx.adapter.emitInvoice(stored);
@@ -128,14 +128,18 @@ export const invoiceTools: EInvoiceTool[] = [
       const filename = input.filename as string;
       const lower = filename.toLowerCase();
       if (!lower.endsWith(".pdf") && !lower.endsWith(".xml")) {
-        throw new Error("[einvoice_invoice_submit] filename must end in .pdf or .xml");
+        throw new Error(
+          "[einvoice_invoice_submit] filename must end in .pdf or .xml",
+        );
       }
       // Decode base64 to Uint8Array
       let binaryString: string;
       try {
         binaryString = atob(input.file_base64 as string);
       } catch {
-        throw new Error("[einvoice_invoice_submit] 'file_base64' is not valid base64");
+        throw new Error(
+          "[einvoice_invoice_submit] 'file_base64' is not valid base64",
+        );
       }
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -152,8 +156,7 @@ export const invoiceTools: EInvoiceTool[] = [
     annotations: { readOnlyHint: true },
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
     requires: ["searchInvoices"],
-    description:
-      "Search invoices. Use direction and status to filter. " +
+    description: "Search invoices. Use direction and status to filter. " +
       "Query searches by sender name, receiver name, or invoice number. " +
       "Use the direction and status parameters for filtering — not the query.",
     category: "invoice",
@@ -162,7 +165,8 @@ export const invoiceTools: EInvoiceTool[] = [
       properties: {
         q: {
           type: "string",
-          description: "Search query (e.g. company name, invoice number). Omit to list all.",
+          description:
+            "Search query (e.g. company name, invoice number). Omit to list all.",
         },
         direction: {
           type: "string",
@@ -173,15 +177,29 @@ export const invoiceTools: EInvoiceTool[] = [
           type: "string",
           description: "Filter by lifecycle status (after enrichment)",
           enum: [
-            "SUBMITTED", "ISSUED", "MADE_AVAILABLE", "DELIVERED",
-            "IN_HAND", "APPROVED", "PARTIALLY_APPROVED",
-            "REFUSED", "DISPUTED", "SUSPENDED",
-            "PAYMENT_SENT", "PAYMENT_RECEIVED", "COMPLETED",
-            "WRONG_ROUTING", "INVALID", "DUPLICATED",
+            "SUBMITTED",
+            "ISSUED",
+            "MADE_AVAILABLE",
+            "DELIVERED",
+            "IN_HAND",
+            "APPROVED",
+            "PARTIALLY_APPROVED",
+            "REFUSED",
+            "DISPUTED",
+            "SUSPENDED",
+            "PAYMENT_SENT",
+            "PAYMENT_RECEIVED",
+            "COMPLETED",
+            "WRONG_ROUTING",
+            "INVALID",
+            "DUPLICATED",
           ],
         },
         offset: { type: "number", description: "Result offset (default 0)" },
-        limit: { type: "number", description: "Max results (default 50, max 200)" },
+        limit: {
+          type: "number",
+          description: "Max results (default 50, max 200)",
+        },
       },
     },
     handler: async (input, ctx) => {
@@ -213,30 +231,51 @@ export const invoiceTools: EInvoiceTool[] = [
       // Direction as normalized value for icon rendering in doclist-viewer
       const data = rows.map((r) => {
         const shortDate = r.date
-          ? new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+          ? new Date(r.date).toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "short",
+          })
           : "";
         // "Tiers" = the other party (sender if received, receiver if sent)
         const tiers = r.direction === "sent" ? r.receiverName : r.senderName;
         return {
           _id: r.id,
           _direction: r.direction,
-          "Direction": r.direction === "received" ? "Entrante" : r.direction === "sent" ? "Sortante" : "—",
+          "Direction": r.direction === "received"
+            ? "Entrante"
+            : r.direction === "sent"
+            ? "Sortante"
+            : "—",
           "N°": r.invoiceNumber ?? "—",
           "Statut": r.status ?? "—",
           "Tiers": tiers ?? "—",
           "Date": shortDate || "—",
-          "Montant": r.amount != null ? `${Number(r.amount).toLocaleString("fr-FR")} ${r.currency ?? "EUR"}` : "—",
+          "Montant": r.amount != null
+            ? `${Number(r.amount).toLocaleString("fr-FR")} ${
+              r.currency ?? "EUR"
+            }`
+            : "—",
         };
       });
 
       // Dynamic title
-      const dirLabel = dirFilter === "received" ? "reçues" : dirFilter === "sent" ? "envoyées" : "";
+      const dirLabel = dirFilter === "received"
+        ? "reçues"
+        : dirFilter === "sent"
+        ? "envoyées"
+        : "";
       const statusLabel = statusFilter ?? "";
-      const titleParts = ["Factures", dirLabel, statusLabel ? `(${statusLabel})` : ""].filter(Boolean);
+      const titleParts = [
+        "Factures",
+        dirLabel,
+        statusLabel ? `(${statusLabel})` : "",
+      ].filter(Boolean);
 
       const viewerData = {
         data,
-        count: rows.length !== rawRows.length ? rows.length : (count ?? rows.length),
+        count: rows.length !== rawRows.length
+          ? rows.length
+          : (count ?? rows.length),
         _title: titleParts.join(" "),
         _rowAction: {
           toolName: "einvoice_invoice_get",
@@ -279,7 +318,13 @@ export const invoiceTools: EInvoiceTool[] = [
       const inv = await ctx.adapter.getInvoice(id);
 
       // Map to viewer format (snake_case for invoice-viewer compatibility)
-      const isTerminal = ["REFUSED", "COMPLETED", "CANCELLED", "PAYMENT_RECEIVED", "UNKNOWN"].includes(inv.status ?? "");
+      const isTerminal = [
+        "REFUSED",
+        "COMPLETED",
+        "CANCELLED",
+        "PAYMENT_RECEIVED",
+        "UNKNOWN",
+      ].includes(inv.status ?? "");
       const viewerData = {
         id: inv.id,
         invoice_number: inv.invoiceNumber,
@@ -310,10 +355,21 @@ export const invoiceTools: EInvoiceTool[] = [
         })),
         notes: inv.notes,
         ...(!isTerminal && inv.direction !== "received"
-          ? { refreshRequest: { toolName: "einvoice_invoice_get", arguments: { id } } }
+          ? {
+            refreshRequest: {
+              toolName: "einvoice_invoice_get",
+              arguments: { id },
+            },
+          }
           : {}),
       };
-      const summary = `Invoice ${inv.invoiceNumber ?? inv.id} — ${inv.status ?? "unknown"}, ${inv.direction ?? ""}, ${inv.totalTtc != null ? inv.totalTtc + " " + (inv.currency ?? "EUR") : "no amount"}`;
+      const summary = `Invoice ${inv.invoiceNumber ?? inv.id} — ${
+        inv.status ?? "unknown"
+      }, ${inv.direction ?? ""}, ${
+        inv.totalTtc != null
+          ? inv.totalTtc + " " + (inv.currency ?? "EUR")
+          : "no amount"
+      }`;
       return { content: summary, structuredContent: viewerData };
     },
   },
@@ -338,10 +394,17 @@ export const invoiceTools: EInvoiceTool[] = [
       if (!input.id) {
         throw new Error("[einvoice_invoice_download] 'id' is required");
       }
-      const { data, contentType } = await ctx.adapter.downloadInvoice(input.id as string);
+      const { data, contentType } = await ctx.adapter.downloadInvoice(
+        input.id as string,
+      );
       return {
-        content: `Downloaded invoice source (${contentType}, ${data.length} bytes)`,
-        structuredContent: { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length },
+        content:
+          `Downloaded invoice source (${contentType}, ${data.length} bytes)`,
+        structuredContent: {
+          content_type: contentType,
+          data_base64: uint8ToBase64(data),
+          size_bytes: data.length,
+        },
       };
     },
   },
@@ -363,12 +426,20 @@ export const invoiceTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.id) {
-        throw new Error("[einvoice_invoice_download_readable] 'id' is required");
+        throw new Error(
+          "[einvoice_invoice_download_readable] 'id' is required",
+        );
       }
-      const { data, contentType } = await ctx.adapter.downloadReadable(input.id as string);
+      const { data, contentType } = await ctx.adapter.downloadReadable(
+        input.id as string,
+      );
       return {
         content: `Downloaded readable PDF (${data.length} bytes)`,
-        structuredContent: { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length },
+        structuredContent: {
+          content_type: contentType,
+          data_base64: uint8ToBase64(data),
+          size_bytes: data.length,
+        },
       };
     },
   },
@@ -378,7 +449,8 @@ export const invoiceTools: EInvoiceTool[] = [
   {
     name: "einvoice_invoice_files",
     requires: ["getInvoiceFiles"],
-    description: "Get metadata of ALL related files for an invoice (source XML, readable PDF, attachments). Use einvoice_invoice_attachments for only business attachments.",
+    description:
+      "Get metadata of ALL related files for an invoice (source XML, readable PDF, attachments). Use einvoice_invoice_attachments for only business attachments.",
     category: "invoice",
     inputSchema: {
       type: "object",
@@ -400,7 +472,8 @@ export const invoiceTools: EInvoiceTool[] = [
   {
     name: "einvoice_invoice_attachments",
     requires: ["getAttachments"],
-    description: "Get only business attachments (supporting documents, purchase orders, etc.) for an invoice. Use einvoice_invoice_files for ALL related files including source XML and PDF.",
+    description:
+      "Get only business attachments (supporting documents, purchase orders, etc.) for an invoice. Use einvoice_invoice_files for ALL related files including source XML and PDF.",
     category: "invoice",
     inputSchema: {
       type: "object",
@@ -434,12 +507,20 @@ export const invoiceTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.file_id) {
-        throw new Error("[einvoice_invoice_download_file] 'file_id' is required");
+        throw new Error(
+          "[einvoice_invoice_download_file] 'file_id' is required",
+        );
       }
-      const { data, contentType } = await ctx.adapter.downloadFile(input.file_id as string);
+      const { data, contentType } = await ctx.adapter.downloadFile(
+        input.file_id as string,
+      );
       return {
         content: `Downloaded file (${contentType}, ${data.length} bytes)`,
-        structuredContent: { content_type: contentType, data_base64: uint8ToBase64(data), size_bytes: data.length },
+        structuredContent: {
+          content_type: contentType,
+          data_base64: uint8ToBase64(data),
+          size_bytes: data.length,
+        },
       };
     },
   },
@@ -455,8 +536,7 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_generate_cii",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     requires: ["generateCII"],
-    description:
-      GENERATE_HINT +
+    description: GENERATE_HINT +
       "Generate a CII invoice preview. Validates and converts to CII XML. " +
       "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931).",
@@ -478,7 +558,9 @@ export const invoiceTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.invoice || !input.flavor) {
-        throw new Error("[einvoice_invoice_generate_cii] 'invoice' and 'flavor' are required");
+        throw new Error(
+          "[einvoice_invoice_generate_cii] 'invoice' and 'flavor' are required",
+        );
       }
       const inv = input.invoice as Record<string, unknown>;
       const xml = await ctx.adapter.generateCII({
@@ -489,7 +571,8 @@ export const invoiceTools: EInvoiceTool[] = [
       const filename = `${inv.invoiceId ?? "invoice"}.xml`;
       const generated_id = storeGenerated(bytes, filename);
       return {
-        content: `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
+        content:
+          `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
         structuredContent: {
           generated_id,
           filename,
@@ -505,8 +588,7 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_generate_ubl",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     requires: ["generateUBL"],
-    description:
-      GENERATE_HINT +
+    description: GENERATE_HINT +
       "Generate a UBL invoice preview. Validates and converts to UBL XML. " +
       "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931).",
@@ -528,7 +610,9 @@ export const invoiceTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.invoice || !input.flavor) {
-        throw new Error("[einvoice_invoice_generate_ubl] 'invoice' and 'flavor' are required");
+        throw new Error(
+          "[einvoice_invoice_generate_ubl] 'invoice' and 'flavor' are required",
+        );
       }
       const inv = input.invoice as Record<string, unknown>;
       const xml = await ctx.adapter.generateUBL({
@@ -539,7 +623,8 @@ export const invoiceTools: EInvoiceTool[] = [
       const filename = `${inv.invoiceId ?? "invoice"}.xml`;
       const generated_id = storeGenerated(bytes, filename);
       return {
-        content: `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
+        content:
+          `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
         structuredContent: {
           generated_id,
           filename,
@@ -555,8 +640,7 @@ export const invoiceTools: EInvoiceTool[] = [
     name: "einvoice_invoice_generate_facturx",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/invoice-viewer" } },
     requires: ["generateFacturX"],
-    description:
-      GENERATE_HINT +
+    description: GENERATE_HINT +
       "Generate a Factur-X invoice preview. Creates a hybrid PDF/XML. " +
       "Returns a preview for review. Use einvoice_invoice_submit with the generated_id to send. " +
       "Requires a flavor (e.g. EN16931). Optionally accepts a language (FRENCH, ENGLISH, GERMAN).",
@@ -583,7 +667,9 @@ export const invoiceTools: EInvoiceTool[] = [
     },
     handler: async (input, ctx) => {
       if (!input.invoice || !input.flavor) {
-        throw new Error("[einvoice_invoice_generate_facturx] 'invoice' and 'flavor' are required");
+        throw new Error(
+          "[einvoice_invoice_generate_facturx] 'invoice' and 'flavor' are required",
+        );
       }
       const inv = input.invoice as Record<string, unknown>;
       const { data: bytes } = await ctx.adapter.generateFacturX({
@@ -594,7 +680,8 @@ export const invoiceTools: EInvoiceTool[] = [
       const filename = `${inv.invoiceId ?? "invoice"}.pdf`;
       const generated_id = storeGenerated(bytes, filename);
       return {
-        content: `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
+        content:
+          `Invoice preview generated (${filename}). The user can review and submit via the viewer button.`,
         structuredContent: {
           generated_id,
           filename,

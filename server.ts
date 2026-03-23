@@ -45,11 +45,11 @@ import { createStorecoveAdapter } from "./src/adapters/storecove/adapter.ts";
 import { createSuperPDPAdapter } from "./src/adapters/superpdp/adapter.ts";
 import {
   env,
-  getArgs,
-  statSync,
-  readTextFile,
-  onSignal,
   exit,
+  getArgs,
+  onSignal,
+  readTextFile,
+  statSync,
 } from "./src/runtime.ts";
 
 const DEFAULT_HTTP_PORT = 3015;
@@ -80,7 +80,11 @@ async function main() {
 
   // Inspector mode — launch MCP Inspector for interactive debugging
   if (args.includes("--inspect")) {
-    await launchInspector("deno", ["run", "--allow-all", import.meta.filename!]);
+    await launchInspector("deno", [
+      "run",
+      "--allow-all",
+      import.meta.filename!,
+    ]);
     return;
   }
 
@@ -99,7 +103,9 @@ async function main() {
   // HTTP mode
   const httpFlag = args.includes("--http");
   const portArg = args.find((arg) => arg.startsWith("--port="));
-  const httpPort = portArg ? parseInt(portArg.split("=")[1], 10) : DEFAULT_HTTP_PORT;
+  const httpPort = portArg
+    ? parseInt(portArg.split("=")[1], 10)
+    : DEFAULT_HTTP_PORT;
   const hostnameArg = args.find((arg) => arg.startsWith("--hostname="));
   const hostname = hostnameArg ? hostnameArg.split("=")[1] : "localhost";
 
@@ -131,7 +137,14 @@ async function main() {
   server.registerViewers({
     prefix: "mcp-einvoice",
     moduleUrl: import.meta.url,
-    viewers: ["invoice-viewer", "doclist-viewer", "status-timeline", "directory-card", "directory-list", "action-result"],
+    viewers: [
+      "invoice-viewer",
+      "doclist-viewer",
+      "status-timeline",
+      "directory-card",
+      "directory-list",
+      "action-result",
+    ],
     exists: statSync,
     readFile: readTextFile,
   });

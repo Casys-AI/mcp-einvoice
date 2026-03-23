@@ -10,11 +10,11 @@
  * - Expandable "Details" for extra unknown fields
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
-import { BrandHeader, BrandFooter } from "~/shared/Brand";
+import { BrandFooter, BrandHeader } from "~/shared/Brand";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -61,20 +61,48 @@ interface DirectoryResult {
 
 /** Fields handled explicitly by the card layout — excluded from "Details". */
 const KNOWN_FIELDS = new Set([
-  "name", "corporateName", "siren", "siret", "vatNumber",
-  "address", "networks", "peppolId", "type", "refreshRequest",
+  "name",
+  "corporateName",
+  "siren",
+  "siret",
+  "vatNumber",
+  "address",
+  "networks",
+  "peppolId",
+  "type",
+  "refreshRequest",
 ]);
 
 // ============================================================================
 // Sub-components
 // ============================================================================
 
-function InfoField({ label, value, sub }: { label: string; value?: string; sub?: string }) {
+function InfoField(
+  { label, value, sub }: { label: string; value?: string; sub?: string },
+) {
   return (
     <div style={{ padding: "6px 0" }}>
-      <div style={{ fontSize: 10, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 500, color: colors.text.primary }}>{value ?? "\u2014"}</div>
-      {sub && <div style={{ fontSize: 10, color: colors.text.faint, marginTop: 1 }}>{sub}</div>}
+      <div
+        style={{
+          fontSize: 10,
+          color: colors.text.muted,
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          marginBottom: 2,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{ fontSize: 13, fontWeight: 500, color: colors.text.primary }}
+      >
+        {value ?? "\u2014"}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 10, color: colors.text.faint, marginTop: 1 }}>
+          {sub}
+        </div>
+      )}
     </div>
   );
 }
@@ -85,18 +113,30 @@ function NetworkBadge({ network }: { network: DirectoryNetwork }) {
   const badgeBg = isActive ? colors.successDim : colors.bg.elevated;
 
   return (
-    <div style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 6,
-      padding: "4px 10px",
-      background: badgeBg,
-      border: `1px solid ${isActive ? colors.success : colors.border}`,
-      borderRadius: 6,
-      fontSize: 12,
-    }}>
-      <span style={{ fontWeight: 600, color: badgeColor }}>{network.scheme}</span>
-      <span style={{ color: colors.text.secondary, fontFamily: fonts.mono, fontSize: 11 }}>{network.value}</span>
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "4px 10px",
+        background: badgeBg,
+        border: `1px solid ${isActive ? colors.success : colors.border}`,
+        borderRadius: 6,
+        fontSize: 12,
+      }}
+    >
+      <span style={{ fontWeight: 600, color: badgeColor }}>
+        {network.scheme}
+      </span>
+      <span
+        style={{
+          color: colors.text.secondary,
+          fontFamily: fonts.mono,
+          fontSize: 11,
+        }}
+      >
+        {network.value}
+      </span>
       {network.status && (
         <span style={styles.badge(badgeColor, badgeBg)}>{network.status}</span>
       )}
@@ -117,7 +157,9 @@ function formatAddress(addr: DirectoryAddress): string {
 function formatUnknownValue(value: unknown): string {
   if (value == null) return "\u2014";
   if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
   return JSON.stringify(value, null, 2);
 }
 
@@ -143,26 +185,65 @@ function DetailsSection({ data }: { data: DirectoryResult }) {
         }}
       >
         <svg
-          width="10" height="10" viewBox="0 0 10 10" fill="none"
-          style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          style={{
+            transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 0.15s",
+          }}
         >
-          <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M3 1l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
         {t("details")} ({extraEntries.length})
       </button>
 
       {expanded && (
-        <div style={{ marginTop: 8, borderTop: `1px solid ${colors.border}`, paddingTop: 8 }}>
+        <div
+          style={{
+            marginTop: 8,
+            borderTop: `1px solid ${colors.border}`,
+            paddingTop: 8,
+          }}
+        >
           {extraEntries.map(([key, value]) => (
-            <div key={key} style={{ display: "flex", gap: 12, padding: "4px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
-              <span style={{ fontSize: 12, color: colors.text.muted, minWidth: 120, fontWeight: 500 }}>{key}</span>
-              <span style={{
-                fontSize: 12,
-                color: colors.text.primary,
-                fontFamily: typeof value === "object" ? fonts.mono : fonts.sans,
-                whiteSpace: typeof value === "object" ? "pre-wrap" : "normal",
-                wordBreak: "break-word",
-              }}>
+            <div
+              key={key}
+              style={{
+                display: "flex",
+                gap: 12,
+                padding: "4px 0",
+                borderBottom: `1px solid ${colors.borderSubtle}`,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 12,
+                  color: colors.text.muted,
+                  minWidth: 120,
+                  fontWeight: 500,
+                }}
+              >
+                {key}
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  color: colors.text.primary,
+                  fontFamily: typeof value === "object"
+                    ? fonts.mono
+                    : fonts.sans,
+                  whiteSpace: typeof value === "object" ? "pre-wrap" : "normal",
+                  wordBreak: "break-word",
+                }}
+              >
                 {formatUnknownValue(value)}
               </span>
             </div>
@@ -189,7 +270,10 @@ export function DirectoryCard() {
 
   function hydrateData(nextData: DirectoryResult) {
     dataRef.current = nextData;
-    refreshRequestRef.current = resolveUiRefreshRequest(nextData, refreshRequestRef.current);
+    refreshRequestRef.current = resolveUiRefreshRequest(
+      nextData,
+      refreshRequestRef.current,
+    );
     setData(nextData);
   }
 
@@ -224,15 +308,22 @@ export function DirectoryCard() {
   }
 
   async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
-    const request = resolveUiRefreshRequest(dataRef.current, refreshRequestRef.current);
-    if (!canRequestUiRefresh({
-      request,
-      visibilityState: typeof document === "undefined" ? "visible" : document.visibilityState,
-      refreshInFlight: refreshInFlightRef.current,
-      now: Date.now(),
-      lastRefreshStartedAt: lastRefreshStartedAtRef.current,
-      minIntervalMs: REFRESH_THROTTLE_MS,
-    }, options)) return;
+    const request = resolveUiRefreshRequest(
+      dataRef.current,
+      refreshRequestRef.current,
+    );
+    if (
+      !canRequestUiRefresh({
+        request,
+        visibilityState: typeof document === "undefined"
+          ? "visible"
+          : document.visibilityState,
+        refreshInFlight: refreshInFlightRef.current,
+        now: Date.now(),
+        lastRefreshStartedAt: lastRefreshStartedAtRef.current,
+        minIntervalMs: REFRESH_THROTTLE_MS,
+      }, options)
+    ) return;
 
     if (!request || !app.getHostCapabilities()?.serverTools) return;
 
@@ -241,7 +332,10 @@ export function DirectoryCard() {
     setRefreshing(true);
 
     try {
-      const result = await app.callServerTool({ name: request.toolName, arguments: request.arguments }, { timeout: TOOL_CALL_TIMEOUT_MS });
+      const result = await app.callServerTool({
+        name: request.toolName,
+        arguments: request.arguments,
+      }, { timeout: TOOL_CALL_TIMEOUT_MS });
       if (!result.isError) consumeToolResult(result);
       else setError(t("error_refresh"));
     } catch (cause) {
@@ -254,28 +348,49 @@ export function DirectoryCard() {
 
   useEffect(() => {
     app.connect().catch(() => {});
-    app.ontoolresult = (result: ToolResultPayload) => { consumeToolResult(result); };
-    app.ontoolinputpartial = () => { if (!dataRef.current) setLoading(true); };
+    app.ontoolresult = (result: ToolResultPayload) => {
+      consumeToolResult(result);
+    };
+    app.ontoolinputpartial = () => {
+      if (!dataRef.current) setLoading(true);
+    };
   }, []);
 
   useEffect(() => {
     const handleFocus = () => void requestRefresh({ ignoreInterval: true });
-    const handleVisibility = () => { if (document.visibilityState === "visible") void requestRefresh({ ignoreInterval: true }); };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void requestRefresh({ ignoreInterval: true });
+      }
+    };
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => { window.removeEventListener("focus", handleFocus); document.removeEventListener("visibilitychange", handleVisibility); };
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   // ── Loading skeleton ──────────────────────────────────────────
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
         <BrandHeader />
         <div style={{ padding: 24 }}>
-          <div className="skeleton" style={{ height: 28, width: "60%", marginBottom: 12 }} />
-          <div className="skeleton" style={{ height: 16, width: "30%", marginBottom: 20 }} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div
+            className="skeleton"
+            style={{ height: 28, width: "60%", marginBottom: 12 }}
+          />
+          <div
+            className="skeleton"
+            style={{ height: 16, width: "30%", marginBottom: 20 }}
+          />
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+          >
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="skeleton" style={{ height: 60 }} />
             ))}
@@ -290,13 +405,51 @@ export function DirectoryCard() {
 
   if (!data) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
         <BrandHeader />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", color: colors.text.muted, gap: 16, flex: 1 }}>
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style={{ opacity: 0.35 }}>
-            <rect x="8" y="8" width="40" height="40" rx="8" stroke="currentColor" strokeWidth="2" />
-            <circle cx="28" cy="22" r="6" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M16 42c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 24px",
+            color: colors.text.muted,
+            gap: 16,
+            flex: 1,
+          }}
+        >
+          <svg
+            width="56"
+            height="56"
+            viewBox="0 0 56 56"
+            fill="none"
+            style={{ opacity: 0.35 }}
+          >
+            <rect
+              x="8"
+              y="8"
+              width="40"
+              height="40"
+              rx="8"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <circle
+              cx="28"
+              cy="22"
+              r="6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M16 42c0-6.627 5.373-12 12-12s12 5.373 12 12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
           <div style={{ fontSize: 13 }}>{t("no_company")}</div>
         </div>
@@ -308,33 +461,71 @@ export function DirectoryCard() {
   // ── Card content ──────────────────────────────────────────────
 
   const companyName = data.name || data.corporateName || "\u2014";
-  const hasAddress = data.address && (data.address.street || data.address.city || data.address.postalCode || data.address.country);
+  const hasAddress = data.address &&
+    (data.address.street || data.address.city || data.address.postalCode ||
+      data.address.country);
   const hasNetworks = data.networks && data.networks.length > 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+    >
       <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
-
         {/* ── Title + Type Badge ────────────────────────────────── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 16,
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: colors.text.primary, lineHeight: 1.3 }}>
+            <div
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: colors.text.primary,
+                lineHeight: 1.3,
+              }}
+            >
               {companyName}
             </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 6,
+                alignItems: "center",
+              }}
+            >
               {data.type && (
-                <span style={styles.badge(colors.accent, colors.accentDim)}>{data.type}</span>
+                <span style={styles.badge(colors.accent, colors.accentDim)}>
+                  {data.type}
+                </span>
               )}
               {data.peppolId && (
-                <span style={{ fontSize: 11, color: colors.text.muted, fontFamily: fonts.mono }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: colors.text.muted,
+                    fontFamily: fonts.mono,
+                  }}
+                >
                   Peppol: {data.peppolId}
                 </span>
               )}
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <button onClick={() => void requestRefresh({ ignoreInterval: true })} disabled={refreshing} style={styles.button}>
+            <button
+              onClick={() => void requestRefresh({ ignoreInterval: true })}
+              disabled={refreshing}
+              style={styles.button}
+            >
               {refreshing ? "\u2026" : t("refresh")}
             </button>
           </div>
@@ -348,19 +539,43 @@ export function DirectoryCard() {
         )}
 
         {/* ── Info Grid ────────────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
           {data.siren != null && <InfoField label="SIREN" value={data.siren} />}
           {data.siret != null && <InfoField label="SIRET" value={data.siret} />}
-          {data.vatNumber != null && <InfoField label={t("vat_intra")} value={data.vatNumber} />}
-          {hasAddress && <InfoField label={t("address")} value={formatAddress(data.address!)} />}
-          {data.address?.country && !hasAddress && <InfoField label={t("country")} value={data.address.country} />}
+          {data.vatNumber != null && (
+            <InfoField label={t("vat_intra")} value={data.vatNumber} />
+          )}
+          {hasAddress && (
+            <InfoField
+              label={t("address")}
+              value={formatAddress(data.address!)}
+            />
+          )}
+          {data.address?.country && !hasAddress && (
+            <InfoField label={t("country")} value={data.address.country} />
+          )}
         </div>
-
 
         {/* ── Networks ─────────────────────────────────────────── */}
         {hasNetworks && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: colors.text.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, fontWeight: 600 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: colors.text.muted,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                marginBottom: 8,
+                fontWeight: 600,
+              }}
+            >
               {t("networks")}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>

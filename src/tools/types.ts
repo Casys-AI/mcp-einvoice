@@ -79,4 +79,3 @@ export interface MCPToolWireFormat {
   annotations?: ToolAnnotations;
   _meta?: { ui: { resourceUri: string } };
 }
-

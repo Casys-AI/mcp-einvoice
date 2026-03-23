@@ -14,7 +14,9 @@ const RECEIVED = new Set(["received", "inbound", "in"]);
 const SENT = new Set(["sent", "emitted", "outbound", "out"]);
 
 /** Normalize any PA direction string to "received" | "sent" | undefined. */
-export function normalizeDirection(raw: string | undefined): InvoiceDirection | undefined {
+export function normalizeDirection(
+  raw: string | undefined,
+): InvoiceDirection | undefined {
   if (!raw) return undefined;
   const l = raw.toLowerCase();
   if (RECEIVED.has(l)) return "received";

@@ -21,16 +21,30 @@ export type FlowSyntax = "CII" | "UBL" | "Factur-X" | "CDAR" | "FRR";
 export type FlowProfile = "Basic" | "CIUS" | "Extended-CTC-FR";
 
 export type ProcessingRule =
-  | "B2B" | "B2BInt" | "B2C" | "B2G" | "B2GInt"
-  | "OutOfScope" | "B2GOutOfScope" | "ArchiveOnly" | "NotApplicable";
+  | "B2B"
+  | "B2BInt"
+  | "B2C"
+  | "B2G"
+  | "B2GInt"
+  | "OutOfScope"
+  | "B2GOutOfScope"
+  | "ArchiveOnly"
+  | "NotApplicable";
 
 export type FlowType =
-  | "CustomerInvoice" | "SupplierInvoice" | "StateInvoice"
-  | "CustomerInvoiceLC" | "SupplierInvoiceLC"
-  | "StateCustomerInvoiceLC" | "StateSupplierInvoiceLC"
-  | "AggregatedCustomerTransactionReport" | "UnitaryCustomerTransactionReport"
-  | "AggregatedCustomerPaymentReport" | "UnitaryCustomerPaymentReport"
-  | "UnitarySupplierTransactionReport" | "MultiFlowReport";
+  | "CustomerInvoice"
+  | "SupplierInvoice"
+  | "StateInvoice"
+  | "CustomerInvoiceLC"
+  | "SupplierInvoiceLC"
+  | "StateCustomerInvoiceLC"
+  | "StateSupplierInvoiceLC"
+  | "AggregatedCustomerTransactionReport"
+  | "UnitaryCustomerTransactionReport"
+  | "AggregatedCustomerPaymentReport"
+  | "UnitaryCustomerPaymentReport"
+  | "UnitarySupplierTransactionReport"
+  | "MultiFlowReport";
 
 export type FlowDirection = "In" | "Out";
 
@@ -112,7 +126,11 @@ export class AfnorClient extends BaseHttpClient {
     try {
       const form = new FormData();
       form.append("flowInfo", JSON.stringify(flowInfo));
-      form.append("file", new Blob([file as BlobPart]), flowInfo.name ?? "invoice.xml");
+      form.append(
+        "file",
+        new Blob([file as BlobPart]),
+        flowInfo.name ?? "invoice.xml",
+      );
 
       const response = await fetch(url.toString(), {
         method: "POST",
@@ -173,7 +191,9 @@ export class AfnorClient extends BaseHttpClient {
     try {
       const fullUrl = new URL(url);
       if (query) {
-        for (const [k, v] of Object.entries(query)) fullUrl.searchParams.set(k, v);
+        for (const [k, v] of Object.entries(query)) {
+          fullUrl.searchParams.set(k, v);
+        }
       }
       const response = await fetch(fullUrl.toString(), {
         method: "GET",
@@ -192,7 +212,8 @@ export class AfnorClient extends BaseHttpClient {
       }
 
       const data = new Uint8Array(await response.arrayBuffer());
-      const contentType = response.headers.get("content-type") ?? "application/octet-stream";
+      const contentType = response.headers.get("content-type") ??
+        "application/octet-stream";
       return { data, contentType };
     } finally {
       clearTimeout(timeout);

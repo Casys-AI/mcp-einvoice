@@ -34,13 +34,18 @@ Deno.test("einvoice_config_customer_id - returns adapter response", async () => 
   const { adapter } = createMockAdapter({ customerId: "cust-abc" });
   const tool = findTool("einvoice_config_customer_id");
 
-  const result = unwrapStructured(await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({}, { adapter }),
+  ) as Record<string, unknown>;
   assertEquals(result.customerId, "cust-abc");
 });
 
 Deno.test("einvoice_config_customer_id - propagates NotSupportedError", async () => {
   const { adapter } = createMockAdapter();
-  adapter.getCustomerId = () => Promise.reject(new NotSupportedError("mock", "getCustomerId", "Not available"));
+  adapter.getCustomerId = () =>
+    Promise.reject(
+      new NotSupportedError("mock", "getCustomerId", "Not available"),
+    );
   const tool = findTool("einvoice_config_customer_id");
 
   await assertRejects(
@@ -65,14 +70,26 @@ Deno.test("einvoice_config_entities_list - reshapes rows with Nom, SIRET, Type c
   const { adapter } = createMockAdapter();
   adapter.listBusinessEntities = async () => ({
     rows: [
-      { entityId: "ent-1", name: "ACME Corp", siret: "12345678901234", type: "LEGAL_UNIT" },
-      { entityId: "ent-2", name: "ACME Office", siret: "12345678901235", type: "OFFICE" },
+      {
+        entityId: "ent-1",
+        name: "ACME Corp",
+        siret: "12345678901234",
+        type: "LEGAL_UNIT",
+      },
+      {
+        entityId: "ent-2",
+        name: "ACME Office",
+        siret: "12345678901235",
+        type: "OFFICE",
+      },
     ],
     count: 2,
   });
   const tool = findTool("einvoice_config_entities_list");
 
-  const result = unwrapStructured(await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({}, { adapter }),
+  ) as Record<string, unknown>;
   const data = result.data as Record<string, unknown>[];
 
   assertEquals(data.length, 2);
@@ -92,7 +109,9 @@ Deno.test("einvoice_config_entities_list - falls back to '—' for missing field
   });
   const tool = findTool("einvoice_config_entities_list");
 
-  const result = unwrapStructured(await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({}, { adapter }),
+  ) as Record<string, unknown>;
   const data = result.data as Record<string, unknown>[];
 
   assertEquals(data[0]["Nom"], "—");
@@ -108,7 +127,9 @@ Deno.test("einvoice_config_entities_list - uses raw type when not in label map",
   });
   const tool = findTool("einvoice_config_entities_list");
 
-  const result = unwrapStructured(await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({}, { adapter }),
+  ) as Record<string, unknown>;
   const data = result.data as Record<string, unknown>[];
 
   assertEquals(data[0]["Type"], "UNKNOWN_TYPE");
@@ -122,7 +143,9 @@ Deno.test("einvoice_config_entities_list - includes _title and count", async () 
   });
   const tool = findTool("einvoice_config_entities_list");
 
-  const result = unwrapStructured(await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({}, { adapter }),
+  ) as Record<string, unknown>;
 
   assertEquals(result._title, "Entités opérateur");
   assertEquals(result.count, 42);
@@ -132,7 +155,9 @@ Deno.test("einvoice_config_entities_list - _rowAction points to entity_get with 
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_config_entities_list");
 
-  const result = unwrapStructured(await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({}, { adapter }),
+  ) as Record<string, unknown>;
   const rowAction = result._rowAction as Record<string, string>;
 
   assertEquals(rowAction.toolName, "einvoice_config_entity_get");
@@ -144,7 +169,9 @@ Deno.test("einvoice_config_entities_list - returns empty data array when no rows
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_config_entities_list");
 
-  const result = unwrapStructured(await tool.handler({}, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({}, { adapter }),
+  ) as Record<string, unknown>;
   const data = result.data as Record<string, unknown>[];
 
   assertEquals(data.length, 0);
@@ -177,7 +204,10 @@ Deno.test("einvoice_config_entity_get - throws when id is missing", async () => 
 
 Deno.test("einvoice_config_entity_get - propagates NotSupportedError", async () => {
   const { adapter } = createMockAdapter();
-  adapter.getBusinessEntity = () => Promise.reject(new NotSupportedError("mock", "getBusinessEntity", "Not available"));
+  adapter.getBusinessEntity = () =>
+    Promise.reject(
+      new NotSupportedError("mock", "getBusinessEntity", "Not available"),
+    );
   const tool = findTool("einvoice_config_entity_get");
 
   await assertRejects(
@@ -192,7 +222,12 @@ Deno.test("einvoice_config_entity_create_legal - calls adapter.createLegalUnit w
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_config_entity_create_legal");
 
-  await tool.handler({ siren: "123456789", name: "ACME SA", country: "FR", scope: "PRIVATE_TAX_PAYER" }, { adapter });
+  await tool.handler({
+    siren: "123456789",
+    name: "ACME SA",
+    country: "FR",
+    scope: "PRIVATE_TAX_PAYER",
+  }, { adapter });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "createLegalUnit");
@@ -228,7 +263,10 @@ Deno.test("einvoice_config_entity_create_legal - throws when siren is missing", 
 
 Deno.test("einvoice_config_entity_create_legal - propagates NotSupportedError", async () => {
   const { adapter } = createMockAdapter();
-  adapter.createLegalUnit = () => Promise.reject(new NotSupportedError("mock", "createLegalUnit", "Not available"));
+  adapter.createLegalUnit = () =>
+    Promise.reject(
+      new NotSupportedError("mock", "createLegalUnit", "Not available"),
+    );
   const tool = findTool("einvoice_config_entity_create_legal");
 
   await assertRejects(
@@ -243,7 +281,12 @@ Deno.test("einvoice_config_entity_create_office - calls adapter.createOffice wit
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_config_entity_create_office");
 
-  await tool.handler({ siret: "12345678901234", legalUnitId: "ent-1", name: "Siege", scope: "PUBLIC" }, { adapter });
+  await tool.handler({
+    siret: "12345678901234",
+    legalUnitId: "ent-1",
+    name: "Siege",
+    scope: "PUBLIC",
+  }, { adapter });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "createOffice");
@@ -259,7 +302,9 @@ Deno.test("einvoice_config_entity_create_office - defaults scope to PRIMARY", as
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_config_entity_create_office");
 
-  await tool.handler({ siret: "12345678901234", legalUnitId: "ent-1" }, { adapter });
+  await tool.handler({ siret: "12345678901234", legalUnitId: "ent-1" }, {
+    adapter,
+  });
 
   const arg = calls[0].args[0] as Record<string, unknown>;
   assertEquals(arg.scope, "PRIMARY");
@@ -293,7 +338,10 @@ Deno.test("einvoice_config_entity_configure - calls adapter.configureBusinessEnt
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_config_entity_configure");
 
-  await tool.handler({ entity_id: "ent-1", vat_regime: "REAL_MONTHLY_TAX_REGIME" }, { adapter });
+  await tool.handler({
+    entity_id: "ent-1",
+    vat_regime: "REAL_MONTHLY_TAX_REGIME",
+  }, { adapter });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "configureBusinessEntity");
@@ -325,7 +373,10 @@ Deno.test("einvoice_config_entity_configure - throws when entity_id is missing",
 
 Deno.test("einvoice_config_entity_configure - propagates NotSupportedError", async () => {
   const { adapter } = createMockAdapter();
-  adapter.configureBusinessEntity = () => Promise.reject(new NotSupportedError("mock", "configureBusinessEntity", "Not available"));
+  adapter.configureBusinessEntity = () =>
+    Promise.reject(
+      new NotSupportedError("mock", "configureBusinessEntity", "Not available"),
+    );
   const tool = findTool("einvoice_config_entity_configure");
 
   await assertRejects(
@@ -361,7 +412,8 @@ Deno.test("einvoice_config_identifier_create_by_scheme - throws when any field i
   const tool = findTool("einvoice_config_identifier_create_by_scheme");
 
   await assertRejects(
-    () => tool.handler({ lookup_scheme: "0009", lookup_value: "123" }, { adapter }),
+    () =>
+      tool.handler({ lookup_scheme: "0009", lookup_value: "123" }, { adapter }),
     Error,
     "all fields are required",
   );
@@ -369,16 +421,24 @@ Deno.test("einvoice_config_identifier_create_by_scheme - throws when any field i
 
 Deno.test("einvoice_config_identifier_create_by_scheme - propagates NotSupportedError", async () => {
   const { adapter } = createMockAdapter();
-  adapter.createIdentifierByScheme = () => Promise.reject(new NotSupportedError("mock", "createIdentifierByScheme", "Not available"));
+  adapter.createIdentifierByScheme = () =>
+    Promise.reject(
+      new NotSupportedError(
+        "mock",
+        "createIdentifierByScheme",
+        "Not available",
+      ),
+    );
   const tool = findTool("einvoice_config_identifier_create_by_scheme");
 
   await assertRejects(
-    () => tool.handler({
-      lookup_scheme: "0009",
-      lookup_value: "12345678901234",
-      new_scheme: "0225",
-      new_value: "123456789012345",
-    }, { adapter }),
+    () =>
+      tool.handler({
+        lookup_scheme: "0009",
+        lookup_value: "12345678901234",
+        new_scheme: "0225",
+        new_value: "123456789012345",
+      }, { adapter }),
     NotSupportedError,
   );
 });
@@ -410,7 +470,10 @@ Deno.test("einvoice_config_identifier_create - throws when entity_id is missing"
   const tool = findTool("einvoice_config_identifier_create");
 
   await assertRejects(
-    () => tool.handler({ scheme: "0009", value: "123", type: "ROUTING_CODE" }, { adapter }),
+    () =>
+      tool.handler({ scheme: "0009", value: "123", type: "ROUTING_CODE" }, {
+        adapter,
+      }),
     Error,
     "'entity_id', 'scheme', 'value', and 'type' are required",
   );
@@ -421,7 +484,10 @@ Deno.test("einvoice_config_identifier_create - throws when scheme is missing", a
   const tool = findTool("einvoice_config_identifier_create");
 
   await assertRejects(
-    () => tool.handler({ entity_id: "ent-1", value: "123", type: "ROUTING_CODE" }, { adapter }),
+    () =>
+      tool.handler({ entity_id: "ent-1", value: "123", type: "ROUTING_CODE" }, {
+        adapter,
+      }),
     Error,
     "'entity_id', 'scheme', 'value', and 'type' are required",
   );
@@ -457,7 +523,9 @@ Deno.test("einvoice_config_enroll_fr - calls adapter.enrollFrench with siret and
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_config_enroll_fr");
 
-  await tool.handler({ siret: "12345678901234", siren: "123456789" }, { adapter });
+  await tool.handler({ siret: "12345678901234", siren: "123456789" }, {
+    adapter,
+  });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "enrollFrench");
@@ -553,7 +621,9 @@ Deno.test("einvoice_config_network_register - calls adapter.registerNetwork", as
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_config_network_register");
 
-  await tool.handler({ identifier_id: "id-uuid", network: "DOMESTIC_FR" }, { adapter });
+  await tool.handler({ identifier_id: "id-uuid", network: "DOMESTIC_FR" }, {
+    adapter,
+  });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "registerNetwork");
@@ -589,7 +659,11 @@ Deno.test("einvoice_config_network_register_by_id - calls adapter.registerNetwor
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_config_network_register_by_id");
 
-  await tool.handler({ scheme: "0009", value: "12345678901234", network: "DOMESTIC_FR" }, { adapter });
+  await tool.handler({
+    scheme: "0009",
+    value: "12345678901234",
+    network: "DOMESTIC_FR",
+  }, { adapter });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "registerNetworkByScheme");
@@ -603,7 +677,8 @@ Deno.test("einvoice_config_network_register_by_id - throws when any field is mis
   const tool = findTool("einvoice_config_network_register_by_id");
 
   await assertRejects(
-    () => tool.handler({ scheme: "0009", value: "12345678901234" }, { adapter }),
+    () =>
+      tool.handler({ scheme: "0009", value: "12345678901234" }, { adapter }),
     Error,
     "'scheme', 'value', and 'network' are required",
   );

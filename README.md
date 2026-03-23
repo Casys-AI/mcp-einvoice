@@ -1,6 +1,7 @@
 # mcp-einvoice
 
-Serveur MCP pour la facturation électronique — agnostique plateforme via le pattern adapter.
+Serveur MCP pour la facturation électronique — agnostique plateforme via le
+pattern adapter.
 
 <p align="center">
   <img src="docs/logos/iopole.svg" alt="Iopole" height="40">&nbsp;&nbsp;&nbsp;&nbsp;
@@ -10,19 +11,27 @@ Serveur MCP pour la facturation électronique — agnostique plateforme via le p
 
 ## Pourquoi
 
-La réforme de la facturation électronique en France (sept. 2026) impose l'utilisation de Plateformes Agréées (PA). Il en existe 106+, chacune avec sa propre API. Ce serveur MCP expose **une interface unique** pour toutes, avec 39 tools et 6 viewers interactifs.
+La réforme de la facturation électronique en France (sept. 2026) impose
+l'utilisation de Plateformes Agréées (PA). Il en existe 106+, chacune avec sa
+propre API. Ce serveur MCP expose **une interface unique** pour toutes, avec 39
+tools et 6 viewers interactifs.
 
 ## Adapters
 
-| | Adapter | Scope | Tools | Base |
-|---|---|---|---|---|
-| <img src="docs/logos/iopole.svg" height="16"> | **Iopole** | PA française, B2B | 39/39 | BaseAdapter |
-| <img src="docs/logos/storecove.png" height="16"> | **Storecove** | Peppol AP, 40+ pays | 19/39 | BaseAdapter |
-| <img src="docs/logos/superpdp.svg" height="16"> | **Super PDP** | PA française, B2B | 20/39 | AfnorBaseAdapter |
+|                                                  | Adapter       | Scope               | Tools | Base             |
+| ------------------------------------------------ | ------------- | ------------------- | ----- | ---------------- |
+| <img src="docs/logos/iopole.svg" height="16">    | **Iopole**    | PA française, B2B   | 39/39 | BaseAdapter      |
+| <img src="docs/logos/storecove.png" height="16"> | **Storecove** | Peppol AP, 40+ pays | 19/39 | BaseAdapter      |
+| <img src="docs/logos/superpdp.svg" height="16">  | **Super PDP** | PA française, B2B   | 20/39 | AfnorBaseAdapter |
 
-`BaseAdapter` fournit des stubs `NotSupportedError` pour les 45 méthodes de l'interface `EInvoiceAdapter`. Les PA françaises avec AFNOR héritent d'`AfnorBaseAdapter` (socle [AFNOR XP Z12-013](https://norminfo.afnor.org/norme/pr-xp-a00-002/standardisation-api-odpdp/211970)) qui ajoute les opérations flow. Les autres étendent `BaseAdapter` directement.
+`BaseAdapter` fournit des stubs `NotSupportedError` pour les 45 méthodes de
+l'interface `EInvoiceAdapter`. Les PA françaises avec AFNOR héritent
+d'`AfnorBaseAdapter` (socle
+[AFNOR XP Z12-013](https://norminfo.afnor.org/norme/pr-xp-a00-002/standardisation-api-odpdp/211970))
+qui ajoute les opérations flow. Les autres étendent `BaseAdapter` directement.
 
-Le filtrage par `capabilities` assure que le LLM ne voit que les tools supportés par l'adapter actif.
+Le filtrage par `capabilities` assure que le LLM ne voit que les tools supportés
+par l'adapter actif.
 
 ## Configuration rapide
 
@@ -52,7 +61,8 @@ deno task serve          # HTTP mode (port 3015)
 }
 ```
 
-Remplacer `EINVOICE_ADAPTER` par `storecove` ou `superpdp` avec les variables correspondantes (voir `.env.example`).
+Remplacer `EINVOICE_ADAPTER` par `storecove` ou `superpdp` avec les variables
+correspondantes (voir `.env.example`).
 
 ### Options serveur
 
@@ -91,16 +101,17 @@ Remplacer `EINVOICE_ADAPTER` par `storecove` ou `superpdp` avec les variables co
 
 ## Tools
 
-| Catégorie | Tools |
-|-----------|-------|
-| **invoice** (11) | submit, search, get, download, download_readable, files, attachments, download_file, generate_cii, generate_ubl, generate_facturx |
-| **directory** (3) | fr_search, int_search, peppol_check |
-| **status** (2) | send, history |
-| **reporting** (2) | invoice_transaction, transaction |
-| **webhook** (5) | list, get, create, update, delete |
-| **config** (16) | customer_id, entities_list, entity_get, entity_create_legal, entity_create_office, enroll_fr, entity_claim, entity_delete, network_register, network_register_by_id, network_unregister, identifier_create, identifier_create_by_scheme, identifier_delete, entity_configure, claim_delete |
+| Catégorie         | Tools                                                                                                                                                                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **invoice** (11)  | submit, search, get, download, download_readable, files, attachments, download_file, generate_cii, generate_ubl, generate_facturx                                                                                                                                                          |
+| **directory** (3) | fr_search, int_search, peppol_check                                                                                                                                                                                                                                                        |
+| **status** (2)    | send, history                                                                                                                                                                                                                                                                              |
+| **reporting** (2) | invoice_transaction, transaction                                                                                                                                                                                                                                                           |
+| **webhook** (5)   | list, get, create, update, delete                                                                                                                                                                                                                                                          |
+| **config** (16)   | customer_id, entities_list, entity_get, entity_create_legal, entity_create_office, enroll_fr, entity_claim, entity_delete, network_register, network_register_by_id, network_unregister, identifier_create, identifier_create_by_scheme, identifier_delete, entity_configure, claim_delete |
 
-Tous préfixés `einvoice_<category>_`. Chaque tool déclare ses `requires` — seuls ceux supportés par l'adapter actif sont exposés au LLM.
+Tous préfixés `einvoice_<category>_`. Chaque tool déclare ses `requires` — seuls
+ceux supportés par l'adapter actif sont exposés au LLM.
 
 ### Flow generate → preview → submit
 
@@ -110,14 +121,14 @@ Tous préfixés `einvoice_<category>_`. Chaque tool déclare ses `requires` — 
 
 ## Viewers (MCP Apps)
 
-| Viewer | Usage |
-|--------|-------|
-| **invoice-viewer** | Facture détaillée + actions (accepter, rejeter, déposer) |
-| **doclist-viewer** | Table avec drill-down, recherche, filtres direction/statut |
-| **status-timeline** | Timeline verticale des changements de statut |
-| **directory-card** | Fiche entreprise (SIREN/SIRET, réseaux) |
-| **directory-list** | Résultats annuaire — cartes avec expand, recherche client |
-| **action-result** | Feedback visuel d'action (enroll, register) |
+| Viewer              | Usage                                                      |
+| ------------------- | ---------------------------------------------------------- |
+| **invoice-viewer**  | Facture détaillée + actions (accepter, rejeter, déposer)   |
+| **doclist-viewer**  | Table avec drill-down, recherche, filtres direction/statut |
+| **status-timeline** | Timeline verticale des changements de statut               |
+| **directory-card**  | Fiche entreprise (SIREN/SIRET, réseaux)                    |
+| **directory-list**  | Résultats annuaire — cartes avec expand, recherche client  |
+| **action-result**   | Feedback visuel d'action (enroll, register)                |
 
 ```bash
 cd src/ui && node build-all.mjs   # Rebuild après modification TSX
@@ -125,7 +136,8 @@ cd src/ui && node build-all.mjs   # Rebuild après modification TSX
 
 ## Ajouter un adapter
 
-**PA française avec AFNOR** → `extends AfnorBaseAdapter` (socle AFNOR gratuit, override le natif) :
+**PA française avec AFNOR** → `extends AfnorBaseAdapter` (socle AFNOR gratuit,
+override le natif) :
 
 ```typescript
 export class MyPAAdapter extends AfnorBaseAdapter {
@@ -143,9 +155,11 @@ export class MyPAAdapter extends AfnorBaseAdapter {
 }
 ```
 
-**PA française sans AFNOR** → `extends BaseAdapter` (override toutes les méthodes avec l'API native, comme Iopole).
+**PA française sans AFNOR** → `extends BaseAdapter` (override toutes les
+méthodes avec l'API native, comme Iopole).
 
-**Plateforme non-française** → `extends BaseAdapter` directement (comme Storecove).
+**Plateforme non-française** → `extends BaseAdapter` directement (comme
+Storecove).
 
 Guide complet : `src/adapters/README.md`.
 

@@ -16,8 +16,7 @@ export const statusTools: EInvoiceTool[] = [
     name: "einvoice_status_send",
     annotations: { destructiveHint: true },
     requires: ["sendStatus"],
-    description:
-      "Send a lifecycle status update for an invoice. " +
+    description: "Send a lifecycle status update for an invoice. " +
       "Uses CDAR lifecycle codes: IN_HAND (204), APPROVED (205), REFUSED (210), " +
       "DISPUTED (207), SUSPENDED (208), PAYMENT_SENT (211), PAYMENT_RECEIVED (212). " +
       "Asynchronous — returns a confirmation.",
@@ -50,7 +49,8 @@ export const statusTools: EInvoiceTool[] = [
         },
         payment: {
           type: "object",
-          description: "Optional payment details (for PAYMENT_SENT / PAYMENT_RECEIVED)",
+          description:
+            "Optional payment details (for PAYMENT_SENT / PAYMENT_RECEIVED)",
         },
       },
       required: ["invoice_id", "code"],
@@ -93,13 +93,15 @@ export const statusTools: EInvoiceTool[] = [
         throw new Error("[einvoice_status_history] 'invoice_id' is required");
       }
       // Adapter returns normalized StatusHistoryResult { entries: StatusEntry[] }
-      const result = await ctx.adapter.getStatusHistory(input.invoice_id as string);
+      const result = await ctx.adapter.getStatusHistory(
+        input.invoice_id as string,
+      );
       return {
-        content: `${result.entries.length} status entries for invoice ${input.invoice_id}`,
+        content:
+          `${result.entries.length} status entries for invoice ${input.invoice_id}`,
         structuredContent: result,
       };
     },
   },
-
   // ── seen/notSeen tools removed — see invoice.ts comment and docs/CHANGELOG.md
 ];

@@ -1,6 +1,7 @@
 # Adapters — PA-agnostic e-invoicing
 
-Each PA (Plateforme Agréée / Access Point) has its own subdirectory with adapter, client, tests, and API specs.
+Each PA (Plateforme Agréée / Access Point) has its own subdirectory with
+adapter, client, tests, and API specs.
 
 ## Architecture
 
@@ -12,15 +13,16 @@ EInvoiceAdapter (interface, 43 methods + capabilities)
 └── StorecoveAdapter                     ← implements directly (Peppol, not French)
 ```
 
-Shared: `afnor/client.ts` (AfnorClient), `shared/oauth2.ts` (OAuth2 token provider).
+Shared: `afnor/client.ts` (AfnorClient), `shared/oauth2.ts` (OAuth2 token
+provider).
 
 ## Current Adapters
 
-| Adapter | Directory | Base | Status |
-|---------|-----------|------|--------|
-| [Iopole](./iopole/) | `src/adapters/iopole/` | AfnorBaseAdapter | 39/39 tools, production-ready |
-| [Storecove](./storecove/) | `src/adapters/storecove/` | EInvoiceAdapter | 21/39 tools, implemented |
-| [Super PDP](./superpdp/) | `src/adapters/superpdp/` | AfnorBaseAdapter | 22/39 tools, implemented |
+| Adapter                   | Directory                 | Base             | Status                        |
+| ------------------------- | ------------------------- | ---------------- | ----------------------------- |
+| [Iopole](./iopole/)       | `src/adapters/iopole/`    | AfnorBaseAdapter | 39/39 tools, production-ready |
+| [Storecove](./storecove/) | `src/adapters/storecove/` | EInvoiceAdapter  | 21/39 tools, implemented      |
+| [Super PDP](./superpdp/)  | `src/adapters/superpdp/`  | AfnorBaseAdapter | 22/39 tools, implemented      |
 
 ## Adding a New French PA Adapter
 
@@ -29,7 +31,8 @@ Shared: `afnor/client.ts` (AfnorClient), `shared/oauth2.ts` (OAuth2 token provid
 3. Override methods with native API when better than AFNOR default
 4. Set `capabilities` to the methods you support
 5. Add factory function: `export function create<Name>Adapter()`
-6. Add HTTP client in `client.ts` (use `createOAuth2TokenProvider` from `../shared/oauth2.ts`)
+6. Add HTTP client in `client.ts` (use `createOAuth2TokenProvider` from
+   `../shared/oauth2.ts`)
 7. Register in `src/adapters/mod.ts` and `server.ts`
 8. Add API specs and `README.md`
 
@@ -49,14 +52,16 @@ All adapters return status codes that the viewers resolve via `getStatus()` from
 - Iopole label: `"APPROVED"` → `approved`
 - AFNOR ack: `"Ok"` → `delivered`
 
-French PA adapters should use CDAR codes or Iopole-style labels.
-Non-French adapters (Storecove) can return any code — unknown codes display as-is.
+French PA adapters should use CDAR codes or Iopole-style labels. Non-French
+adapters (Storecove) can return any code — unknown codes display as-is.
 
-4 codes obligatoires PPF: **200** (Déposée), **210** (Refusée), **212** (Encaissée), **213** (Rejetée).
+4 codes obligatoires PPF: **200** (Déposée), **210** (Refusée), **212**
+(Encaissée), **213** (Rejetée).
 
 ## Interface
 
 `EInvoiceAdapter` from `src/adapter.ts` — 43 methods covering:
+
 - Invoice operations (submit, search, get, download, generate)
 - Status management (send, history)
 - Directory search (French PPF, Peppol international)

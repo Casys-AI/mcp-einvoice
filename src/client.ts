@@ -14,7 +14,12 @@ import {
   getToolsByCategory,
   toolsByCategory,
 } from "./tools/mod.ts";
-import type { EInvoiceTool, EInvoiceToolCategory, JSONSchema, MCPToolWireFormat } from "./tools/types.ts";
+import type {
+  EInvoiceTool,
+  EInvoiceToolCategory,
+  JSONSchema,
+  MCPToolWireFormat,
+} from "./tools/types.ts";
 import type { EInvoiceAdapter } from "./adapter.ts";
 
 // Re-export from tools
@@ -26,7 +31,12 @@ export {
   toolsByCategory,
 };
 
-export type { EInvoiceTool, EInvoiceToolCategory, JSONSchema, MCPToolWireFormat };
+export type {
+  EInvoiceTool,
+  EInvoiceToolCategory,
+  JSONSchema,
+  MCPToolWireFormat,
+};
 
 // ============================================================================
 // EInvoiceToolsClient Class
@@ -87,16 +97,24 @@ export class EInvoiceToolsClient {
   buildHandlersMap(
     adapter: EInvoiceAdapter,
   ): Map<string, (args: Record<string, unknown>) => Promise<unknown>> {
-    const handlers = new Map<string, (args: Record<string, unknown>) => Promise<unknown>>();
+    const handlers = new Map<
+      string,
+      (args: Record<string, unknown>) => Promise<unknown>
+    >();
     for (const tool of this.supportedTools(adapter)) {
       handlers.set(tool.name, async (args: Record<string, unknown>) => {
         const t0 = Date.now();
         try {
           const result = await tool.handler(args, { adapter });
-          console.error(`[mcp-einvoice] ${tool.name} ok (${Date.now() - t0}ms)`);
+          console.error(
+            `[mcp-einvoice] ${tool.name} ok (${Date.now() - t0}ms)`,
+          );
           return result;
         } catch (err) {
-          console.error(`[mcp-einvoice] ${tool.name} failed (${Date.now() - t0}ms):`, (err as Error).message?.slice(0, 200));
+          console.error(
+            `[mcp-einvoice] ${tool.name} failed (${Date.now() - t0}ms):`,
+            (err as Error).message?.slice(0, 200),
+          );
           throw err;
         }
       });

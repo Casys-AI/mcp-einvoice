@@ -11,10 +11,10 @@ import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { invoiceTools } from "./invoice.ts";
 import { createMockAdapter, unwrapStructured } from "../testing/helpers.ts";
 import {
-  storeGenerated,
-  getGenerated,
   _clearStore,
   _expireEntry,
+  getGenerated,
+  storeGenerated,
 } from "../generated-store.ts";
 
 function findTool(name: string) {
@@ -30,7 +30,9 @@ Deno.test("einvoice_invoice_submit - calls adapter.emitInvoice with file", async
   const tool = findTool("einvoice_invoice_submit");
 
   // btoa("hello") = "aGVsbG8="
-  await tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.pdf" }, { adapter });
+  await tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.pdf" }, {
+    adapter,
+  });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "emitInvoice");
@@ -55,7 +57,10 @@ Deno.test("einvoice_invoice_submit - throws for invalid filename extension", asy
   const tool = findTool("einvoice_invoice_submit");
 
   await assertRejects(
-    () => tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.docx" }, { adapter }),
+    () =>
+      tool.handler({ file_base64: "aGVsbG8=", filename: "invoice.docx" }, {
+        adapter,
+      }),
     Error,
     "filename must end in .pdf or .xml",
   );
@@ -67,7 +72,9 @@ Deno.test("einvoice_invoice_search - calls adapter.searchInvoices with q and pag
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_invoice_search");
 
-  await tool.handler({ q: "status:accepted", offset: 0, limit: 10 }, { adapter });
+  await tool.handler({ q: "status:accepted", offset: 0, limit: 10 }, {
+    adapter,
+  });
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].method, "searchInvoices");
@@ -146,7 +153,9 @@ Deno.test("einvoice_invoice_download - returns base64-encoded result", async () 
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_download");
 
-  const result = unwrapStructured(await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ id: "inv-123" }, { adapter }),
+  ) as Record<string, unknown>;
 
   assertEquals(result.content_type, "application/xml");
   assertEquals(typeof result.data_base64, "string");
@@ -159,7 +168,9 @@ Deno.test("einvoice_invoice_download_readable - returns base64 PDF", async () =>
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_download_readable");
 
-  const result = unwrapStructured(await tool.handler({ id: "inv-123" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ id: "inv-123" }, { adapter }),
+  ) as Record<string, unknown>;
 
   assertEquals(result.content_type, "application/pdf");
   assertEquals(result.size_bytes, 3);
@@ -183,7 +194,9 @@ Deno.test("einvoice_invoice_download_file - returns base64-encoded result", asyn
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_download_file");
 
-  const result = unwrapStructured(await tool.handler({ file_id: "file-abc" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ file_id: "file-abc" }, { adapter }),
+  ) as Record<string, unknown>;
 
   assertEquals(result.content_type, "application/octet-stream");
   assertEquals(typeof result.data_base64, "string");
@@ -210,10 +223,12 @@ Deno.test("einvoice_invoice_generate_cii - returns generated_id, no auto-emit", 
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_cii");
 
-  const result = unwrapStructured(await tool.handler(
-    { invoice: { invoiceId: "F-001" }, flavor: "EN16931" },
-    { adapter },
-  )) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler(
+      { invoice: { invoiceId: "F-001" }, flavor: "EN16931" },
+      { adapter },
+    ),
+  ) as Record<string, unknown>;
 
   // Should call generateCII but NOT emitInvoice
   assertEquals(calls[0].method, "generateCII");
@@ -239,10 +254,12 @@ Deno.test("einvoice_invoice_generate_ubl - returns generated_id, no auto-emit", 
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_ubl");
 
-  const result = unwrapStructured(await tool.handler(
-    { invoice: { invoiceId: "U-001" }, flavor: "MINIMUM" },
-    { adapter },
-  )) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler(
+      { invoice: { invoiceId: "U-001" }, flavor: "MINIMUM" },
+      { adapter },
+    ),
+  ) as Record<string, unknown>;
 
   assertEquals(calls[0].method, "generateUBL");
   assertEquals(calls.length, 1);
@@ -255,10 +272,16 @@ Deno.test("einvoice_invoice_generate_facturx - returns generated_id, no auto-emi
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_facturx");
 
-  const result = unwrapStructured(await tool.handler(
-    { invoice: { invoiceId: "FX-001" }, flavor: "EN16931", language: "FRENCH" },
-    { adapter },
-  )) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler(
+      {
+        invoice: { invoiceId: "FX-001" },
+        flavor: "EN16931",
+        language: "FRENCH",
+      },
+      { adapter },
+    ),
+  ) as Record<string, unknown>;
 
   assertEquals(calls[0].method, "generateFacturX");
   assertEquals(calls.length, 1);
@@ -341,7 +364,9 @@ Deno.test("einvoice_invoice_get - passes through normalized direction from adapt
   const tool = findTool("einvoice_invoice_get");
 
   // Mock adapter returns InvoiceDetail with direction already normalized
-  const result = unwrapStructured(await tool.handler({ id: "inv-1" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ id: "inv-1" }, { adapter }),
+  ) as Record<string, unknown>;
   assertEquals(result.direction, "received"); // from mock default
 });
 
@@ -354,10 +379,12 @@ Deno.test("einvoice_invoice_generate_cii - stores generated XML and returns gene
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_invoice_generate_cii");
 
-  const result = unwrapStructured(await tool.handler(
-    { invoice: { invoiceId: "ACCENT-01" }, flavor: "EN16931" },
-    { adapter },
-  )) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler(
+      { invoice: { invoiceId: "ACCENT-01" }, flavor: "EN16931" },
+      { adapter },
+    ),
+  ) as Record<string, unknown>;
 
   // Adapter returns string (XML), tool stores it and returns generated_id
   const stored = getGenerated(result.generated_id as string);
@@ -374,12 +401,21 @@ Deno.test("einvoice_invoice_search - _rowAction.idField is '_id' (matches format
   const { adapter, calls } = createMockAdapter();
   // Override searchInvoices to return test data
   adapter.searchInvoices = async () => ({
-    rows: [{ id: "inv-42", invoiceNumber: "F-001", status: "DELIVERED", direction: "sent" as const, senderName: "Foo", receiverName: "Bar" }],
+    rows: [{
+      id: "inv-42",
+      invoiceNumber: "F-001",
+      status: "DELIVERED",
+      direction: "sent" as const,
+      senderName: "Foo",
+      receiverName: "Bar",
+    }],
     count: 1,
   });
   const tool = findTool("einvoice_invoice_search");
 
-  const result = unwrapStructured(await tool.handler({ q: "test" }, { adapter })) as Record<string, unknown>;
+  const result = unwrapStructured(
+    await tool.handler({ q: "test" }, { adapter }),
+  ) as Record<string, unknown>;
   const rowAction = result._rowAction as Record<string, string>;
   assertEquals(rowAction.idField, "_id");
 

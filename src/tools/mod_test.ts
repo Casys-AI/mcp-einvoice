@@ -9,10 +9,10 @@
 import { assertEquals } from "jsr:@std/assert";
 import {
   allTools,
-  toolsByCategory,
-  getToolsByCategory,
-  getToolByName,
   getCategories,
+  getToolByName,
+  getToolsByCategory,
+  toolsByCategory,
 } from "./mod.ts";
 
 Deno.test("allTools contains the expected number of tools", () => {
@@ -81,7 +81,11 @@ Deno.test("all tools have einvoice_ prefix", () => {
 
 Deno.test("all tools have handler function", () => {
   for (const tool of allTools) {
-    assertEquals(typeof tool.handler, "function", `${tool.name} missing handler`);
+    assertEquals(
+      typeof tool.handler,
+      "function",
+      `${tool.name} missing handler`,
+    );
   }
 });
 

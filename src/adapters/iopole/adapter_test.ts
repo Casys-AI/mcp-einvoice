@@ -71,7 +71,10 @@ Deno.test("IopoleAdapter.searchInvoices() - GET /v1.1/invoice/search with q para
     assertEquals(captured[0].method, "GET");
     const url = new URL(captured[0].url);
     assertEquals(url.pathname, "/v1.1/invoice/search");
-    assertEquals(url.searchParams.get("q"), "status:accepted AND direction:received");
+    assertEquals(
+      url.searchParams.get("q"),
+      "status:accepted AND direction:received",
+    );
     assertEquals(url.searchParams.get("offset"), "0");
     assertEquals(url.searchParams.get("limit"), "10");
   } finally {
@@ -117,9 +120,25 @@ Deno.test("IopoleAdapter.searchInvoices() - defaults offset=0, limit=50", async 
 Deno.test("IopoleAdapter.getInvoice() - returns normalized InvoiceDetail", async () => {
   const { restore, captured } = mockFetch([
     // 1st: getInvoice
-    { status: 200, body: { invoiceId: "inv-123", state: "DELIVERED", way: "RECEIVED", businessData: { invoiceId: "F-001", seller: { name: "Acme" }, buyer: { name: "Corp" }, monetary: { invoiceCurrency: "EUR", invoiceAmount: { amount: 120 } } } } },
+    {
+      status: 200,
+      body: {
+        invoiceId: "inv-123",
+        state: "DELIVERED",
+        way: "RECEIVED",
+        businessData: {
+          invoiceId: "F-001",
+          seller: { name: "Acme" },
+          buyer: { name: "Corp" },
+          monetary: { invoiceCurrency: "EUR", invoiceAmount: { amount: 120 } },
+        },
+      },
+    },
     // 2nd: getStatusHistory (parallel)
-    { status: 200, body: { data: [{ date: "2026-03-19", status: { code: "DELIVERED" } }] } },
+    {
+      status: 200,
+      body: { data: [{ date: "2026-03-19", status: { code: "DELIVERED" } }] },
+    },
   ]);
 
   try {
@@ -147,7 +166,10 @@ Deno.test("IopoleAdapter.downloadReadable() - GET /invoice/{id}/download/readabl
     const adapter = makeAdapter();
     await adapter.downloadReadable("inv-123");
 
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-123/download/readable");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/inv-123/download/readable",
+    );
   } finally {
     restore();
   }
@@ -162,7 +184,10 @@ Deno.test("IopoleAdapter.getInvoiceFiles() - GET /invoice/{id}/files", async () 
     const adapter = makeAdapter();
     await adapter.getInvoiceFiles("inv-123");
 
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-123/files");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/inv-123/files",
+    );
   } finally {
     restore();
   }
@@ -177,7 +202,10 @@ Deno.test("IopoleAdapter.getAttachments() - GET /invoice/{id}/files/attachments"
     const adapter = makeAdapter();
     await adapter.getAttachments("inv-123");
 
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-123/files/attachments");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/inv-123/files/attachments",
+    );
   } finally {
     restore();
   }
@@ -185,14 +213,21 @@ Deno.test("IopoleAdapter.getAttachments() - GET /invoice/{id}/files/attachments"
 
 Deno.test("IopoleAdapter.downloadFile() - GET /invoice/file/{fileId}/download", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: "file-bytes", contentType: "application/octet-stream" },
+    {
+      status: 200,
+      body: "file-bytes",
+      contentType: "application/octet-stream",
+    },
   ]);
 
   try {
     const adapter = makeAdapter();
     await adapter.downloadFile("file-abc");
 
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/file/file-abc/download");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/file/file-abc/download",
+    );
   } finally {
     restore();
   }
@@ -208,7 +243,10 @@ Deno.test("IopoleAdapter.markInvoiceSeen() - PUT /invoice/{id}/markAsSeen", asyn
     await adapter.markInvoiceSeen("inv-456");
 
     assertEquals(captured[0].method, "PUT");
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-456/markAsSeen");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/inv-456/markAsSeen",
+    );
   } finally {
     restore();
   }
@@ -239,7 +277,10 @@ Deno.test("IopoleAdapter.generateCII() - POST /tools/cii/generate?flavor=EN16931
 
   try {
     const adapter = makeAdapter();
-    await adapter.generateCII({ invoice: { number: "F-001" }, flavor: "EN16931" });
+    await adapter.generateCII({
+      invoice: { number: "F-001" },
+      flavor: "EN16931",
+    });
 
     assertEquals(captured[0].method, "POST");
     const url = new URL(captured[0].url);
@@ -258,7 +299,10 @@ Deno.test("IopoleAdapter.generateUBL() - POST /tools/ubl/generate?flavor=MINIMUM
 
   try {
     const adapter = makeAdapter();
-    await adapter.generateUBL({ invoice: { number: "F-001" }, flavor: "MINIMUM" });
+    await adapter.generateUBL({
+      invoice: { number: "F-001" },
+      flavor: "MINIMUM",
+    });
 
     assertEquals(captured[0].method, "POST");
     const url = new URL(captured[0].url);
@@ -276,7 +320,11 @@ Deno.test("IopoleAdapter.generateFacturX() - POST /tools/facturx/generate?flavor
 
   try {
     const adapter = makeAdapter();
-    await adapter.generateFacturX({ invoice: { number: "F-001" }, flavor: "EN16931", language: "fr" });
+    await adapter.generateFacturX({
+      invoice: { number: "F-001" },
+      flavor: "EN16931",
+      language: "fr",
+    });
 
     assertEquals(captured[0].method, "POST");
     const url = new URL(captured[0].url);
@@ -361,7 +409,10 @@ Deno.test("IopoleAdapter.sendStatus() - POST /invoice/{invoiceId}/status with co
     });
 
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-123/status");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/inv-123/status",
+    );
     assertEquals(captured[0].body, {
       code: "APPROVED",
       message: "Looks good",
@@ -380,7 +431,10 @@ Deno.test("IopoleAdapter.getStatusHistory() - GET /invoice/{invoiceId}/status-hi
     const adapter = makeAdapter();
     await adapter.getStatusHistory("inv-123");
 
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-123/status-history");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/inv-123/status-history",
+    );
   } finally {
     restore();
   }
@@ -414,7 +468,10 @@ Deno.test("IopoleAdapter.markStatusSeen() - PUT /invoice/status/{statusId}/markA
     await adapter.markStatusSeen("status-456");
 
     assertEquals(captured[0].method, "PUT");
-    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/status/status-456/markAsSeen");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/invoice/status/status-456/markAsSeen",
+    );
   } finally {
     restore();
   }
@@ -429,9 +486,15 @@ Deno.test("IopoleAdapter.reportInvoiceTransaction() - POST /reporting/fr/invoice
 
   try {
     const adapter = makeAdapter();
-    await adapter.reportInvoiceTransaction({ amount: 1000, date: "2026-01-01" });
+    await adapter.reportInvoiceTransaction({
+      amount: 1000,
+      date: "2026-01-01",
+    });
 
-    assertEquals(new URL(captured[0].url).pathname, "/v1/reporting/fr/invoice/transaction");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/reporting/fr/invoice/transaction",
+    );
   } finally {
     restore();
   }
@@ -444,10 +507,16 @@ Deno.test("IopoleAdapter.reportTransaction() - POST /reporting/fr/transaction/{b
 
   try {
     const adapter = makeAdapter();
-    await adapter.reportTransaction("be-123", { amount: 500, date: "2026-03-01" });
+    await adapter.reportTransaction("be-123", {
+      amount: 500,
+      date: "2026-03-01",
+    });
 
     assertEquals(captured[0].method, "POST");
-    assertEquals(new URL(captured[0].url).pathname, "/v1/reporting/fr/transaction/be-123");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/reporting/fr/transaction/be-123",
+    );
     assertEquals(captured[0].body, { amount: 500, date: "2026-03-01" });
   } finally {
     restore();
@@ -505,7 +574,10 @@ Deno.test("IopoleAdapter.deleteWebhook() - DELETE /config/webhook/{id}", async (
     await adapter.deleteWebhook("wh-123");
 
     assertEquals(captured[0].method, "DELETE");
-    assertEquals(new URL(captured[0].url).pathname, "/v1/config/webhook/wh-123");
+    assertEquals(
+      new URL(captured[0].url).pathname,
+      "/v1/config/webhook/wh-123",
+    );
   } finally {
     restore();
   }

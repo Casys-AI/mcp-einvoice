@@ -6,7 +6,11 @@
  * @module lib/einvoice/src/testing/helpers
  */
 
-import type { EInvoiceAdapter, AdapterMethodName, DownloadResult } from "../adapter.ts";
+import type {
+  AdapterMethodName,
+  DownloadResult,
+  EInvoiceAdapter,
+} from "../adapter.ts";
 
 // ─── Mock Fetch ──────────────────────────────────────────
 
@@ -47,7 +51,9 @@ export function mockFetch(
       const fields: Record<string, string> = {};
       for (const [key, value] of init.body.entries()) {
         if (value instanceof Blob) {
-          fields[key] = `[Blob: ${(value as File).name ?? "unnamed"}, ${value.size} bytes]`;
+          fields[key] = `[Blob: ${
+            (value as File).name ?? "unnamed"
+          }, ${value.size} bytes]`;
         } else {
           fields[key] = String(value);
         }
@@ -68,8 +74,9 @@ export function mockFetch(
       body: bodyParsed,
     });
 
-    const responseBody =
-      typeof config.body === "string" ? config.body : JSON.stringify(config.body);
+    const responseBody = typeof config.body === "string"
+      ? config.body
+      : JSON.stringify(config.body);
 
     return new Response(responseBody, {
       status: config.status,
@@ -95,7 +102,10 @@ export function mockFetch(
  */
 export function createMockAdapter(
   defaultResponse: unknown = { ok: true },
-): { adapter: EInvoiceAdapter; calls: Array<{ method: string; args: unknown[] }> } {
+): {
+  adapter: EInvoiceAdapter;
+  calls: Array<{ method: string; args: unknown[] }>;
+} {
   const calls: Array<{ method: string; args: unknown[] }> = [];
 
   function record(method: string, ...args: unknown[]) {
@@ -106,32 +116,66 @@ export function createMockAdapter(
   const adapter: EInvoiceAdapter = {
     name: "mock",
     capabilities: new Set<AdapterMethodName>([
-      "emitInvoice", "searchInvoices", "getInvoice", "downloadInvoice",
-      "downloadReadable", "getInvoiceFiles", "getAttachments", "downloadFile",
-      "markInvoiceSeen", "getUnseenInvoices", "generateCII", "generateUBL", "generateFacturX",
-      "searchDirectoryFr", "searchDirectoryInt", "checkPeppolParticipant",
-      "sendStatus", "getStatusHistory", "getUnseenStatuses", "markStatusSeen",
-      "reportInvoiceTransaction", "reportTransaction",
-      "listWebhooks", "getWebhook", "createWebhook", "updateWebhook", "deleteWebhook",
-      "getCustomerId", "listBusinessEntities", "getBusinessEntity",
-      "createLegalUnit", "createOffice", "deleteBusinessEntity",
-      "configureBusinessEntity", "claimBusinessEntity", "claimBusinessEntityByIdentifier",
-      "enrollFrench", "enrollInternational", "registerNetwork", "registerNetworkByScheme",
-      "unregisterNetwork", "createIdentifier", "createIdentifierByScheme", "deleteIdentifier",
+      "emitInvoice",
+      "searchInvoices",
+      "getInvoice",
+      "downloadInvoice",
+      "downloadReadable",
+      "getInvoiceFiles",
+      "getAttachments",
+      "downloadFile",
+      "markInvoiceSeen",
+      "getUnseenInvoices",
+      "generateCII",
+      "generateUBL",
+      "generateFacturX",
+      "searchDirectoryFr",
+      "searchDirectoryInt",
+      "checkPeppolParticipant",
+      "sendStatus",
+      "getStatusHistory",
+      "getUnseenStatuses",
+      "markStatusSeen",
+      "reportInvoiceTransaction",
+      "reportTransaction",
+      "listWebhooks",
+      "getWebhook",
+      "createWebhook",
+      "updateWebhook",
+      "deleteWebhook",
+      "getCustomerId",
+      "listBusinessEntities",
+      "getBusinessEntity",
+      "createLegalUnit",
+      "createOffice",
+      "deleteBusinessEntity",
+      "configureBusinessEntity",
+      "claimBusinessEntity",
+      "claimBusinessEntityByIdentifier",
+      "enrollFrench",
+      "enrollInternational",
+      "registerNetwork",
+      "registerNetworkByScheme",
+      "unregisterNetwork",
+      "createIdentifier",
+      "createIdentifierByScheme",
+      "deleteIdentifier",
       "deleteClaim",
     ]),
 
     // Invoice
     emitInvoice: (req) => record("emitInvoice", req),
-    searchInvoices: (filters) => record("searchInvoices", filters).then(() => ({
-      rows: [],
-      count: 0,
-    })),
-    getInvoice: (id) => record("getInvoice", id).then(() => ({
-      id: id as string,
-      status: "DELIVERED",
-      direction: "received" as const,
-    })),
+    searchInvoices: (filters) =>
+      record("searchInvoices", filters).then(() => ({
+        rows: [],
+        count: 0,
+      })),
+    getInvoice: (id) =>
+      record("getInvoice", id).then(() => ({
+        id: id as string,
+        status: "DELIVERED",
+        direction: "received" as const,
+      })),
     downloadInvoice: (id) =>
       record("downloadInvoice", id).then(() => ({
         data: new Uint8Array([1, 2, 3]),
@@ -151,26 +195,38 @@ export function createMockAdapter(
       })) as Promise<DownloadResult>,
     markInvoiceSeen: (id) => record("markInvoiceSeen", id),
     getUnseenInvoices: (p) => record("getUnseenInvoices", p),
-    generateCII: (req) => record("generateCII", req).then(() => "<xml>mock</xml>") as Promise<string>,
-    generateUBL: (req) => record("generateUBL", req).then(() => "<xml>mock</xml>") as Promise<string>,
-    generateFacturX: (req) => record("generateFacturX", req).then(() => ({
-      data: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
-      contentType: "application/pdf",
-    })) as Promise<DownloadResult>,
+    generateCII: (req) =>
+      record("generateCII", req).then(() => "<xml>mock</xml>") as Promise<
+        string
+      >,
+    generateUBL: (req) =>
+      record("generateUBL", req).then(() => "<xml>mock</xml>") as Promise<
+        string
+      >,
+    generateFacturX: (req) =>
+      record("generateFacturX", req).then(() => ({
+        data: new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+        contentType: "application/pdf",
+      })) as Promise<DownloadResult>,
 
     // Directory
-    searchDirectoryFr: (f) => record("searchDirectoryFr", f).then(() => ({ rows: [], count: 0 })),
+    searchDirectoryFr: (f) =>
+      record("searchDirectoryFr", f).then(() => ({ rows: [], count: 0 })),
     searchDirectoryInt: (f) => record("searchDirectoryInt", f),
-    checkPeppolParticipant: (scheme, value) => record("checkPeppolParticipant", scheme, value),
+    checkPeppolParticipant: (scheme, value) =>
+      record("checkPeppolParticipant", scheme, value),
 
     // Status
     sendStatus: (r) => record("sendStatus", r),
-    getStatusHistory: (invoiceId) => record("getStatusHistory", invoiceId).then((r) => {
-      // Ensure return matches StatusHistoryResult shape
-      const result = r as Record<string, unknown>;
-      if (result && Array.isArray(result.entries)) return r as { entries: Array<{ date: string; code: string }> };
-      return { entries: [] };
-    }),
+    getStatusHistory: (invoiceId) =>
+      record("getStatusHistory", invoiceId).then((r) => {
+        // Ensure return matches StatusHistoryResult shape
+        const result = r as Record<string, unknown>;
+        if (result && Array.isArray(result.entries)) {
+          return r as { entries: Array<{ date: string; code: string }> };
+        }
+        return { entries: [] };
+      }),
     getUnseenStatuses: (p) => record("getUnseenStatuses", p),
     markStatusSeen: (statusId) => record("markStatusSeen", statusId),
 
@@ -187,21 +243,27 @@ export function createMockAdapter(
 
     // Config
     getCustomerId: () => record("getCustomerId"),
-    listBusinessEntities: () => record("listBusinessEntities").then(() => ({ rows: [], count: 0 })),
+    listBusinessEntities: () =>
+      record("listBusinessEntities").then(() => ({ rows: [], count: 0 })),
     getBusinessEntity: (id) => record("getBusinessEntity", id),
     createLegalUnit: (data) => record("createLegalUnit", data),
     createOffice: (data) => record("createOffice", data),
     deleteBusinessEntity: (id) => record("deleteBusinessEntity", id),
-    configureBusinessEntity: (id, data) => record("configureBusinessEntity", id, data),
+    configureBusinessEntity: (id, data) =>
+      record("configureBusinessEntity", id, data),
     claimBusinessEntity: (id, data) => record("claimBusinessEntity", id, data),
-    claimBusinessEntityByIdentifier: (scheme, value, data) => record("claimBusinessEntityByIdentifier", scheme, value, data),
+    claimBusinessEntityByIdentifier: (scheme, value, data) =>
+      record("claimBusinessEntityByIdentifier", scheme, value, data),
     enrollFrench: (data) => record("enrollFrench", data),
     enrollInternational: (data) => record("enrollInternational", data),
     registerNetwork: (id, network) => record("registerNetwork", id, network),
-    registerNetworkByScheme: (scheme, value, network) => record("registerNetworkByScheme", scheme, value, network),
+    registerNetworkByScheme: (scheme, value, network) =>
+      record("registerNetworkByScheme", scheme, value, network),
     unregisterNetwork: (id) => record("unregisterNetwork", id),
-    createIdentifier: (entityId, data) => record("createIdentifier", entityId, data),
-    createIdentifierByScheme: (scheme, value, data) => record("createIdentifierByScheme", scheme, value, data),
+    createIdentifier: (entityId, data) =>
+      record("createIdentifier", entityId, data),
+    createIdentifierByScheme: (scheme, value, data) =>
+      record("createIdentifierByScheme", scheme, value, data),
     deleteIdentifier: (id) => record("deleteIdentifier", id),
     deleteClaim: (id) => record("deleteClaim", id),
   };
@@ -216,7 +278,10 @@ export function createMockAdapter(
  */
 export function unwrapStructured(result: unknown): Record<string, unknown> {
   const r = result as Record<string, unknown>;
-  if (r && typeof r.content === "string" && r.structuredContent && typeof r.structuredContent === "object") {
+  if (
+    r && typeof r.content === "string" && r.structuredContent &&
+    typeof r.structuredContent === "object"
+  ) {
     return r.structuredContent as Record<string, unknown>;
   }
   return r;
