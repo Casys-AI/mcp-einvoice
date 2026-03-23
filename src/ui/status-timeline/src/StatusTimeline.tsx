@@ -33,14 +33,10 @@ const REFRESH_THROTTLE_MS = 15_000;
 // ============================================================================
 
 interface StatusEntry {
-  invoiceId: string;
-  statusId: string;
   date: string;        // ISO 8601
-  destType: string;    // "PLATFORM", "BUYER", etc.
-  status: {
-    code: string;      // "DELIVERED", "PAYMENT_SENT", "ACCEPTED", etc.
-  };
-  xml?: string;        // Raw XML — not displayed
+  code: string;        // "DELIVERED", "PAYMENT_SENT", "REJECTED", etc.
+  destType?: string;   // "PLATFORM", "OPERATOR", "PPF", etc.
+  message?: string;    // Optional description
 }
 
 interface TimelineData {
@@ -263,12 +259,12 @@ export function StatusTimeline() {
           {entries.map((entry, idx) => {
             const isFirst = idx === 0;
             const isLast = idx === entries.length - 1;
-            const scheme = getStatusScheme(entry.status.code);
+            const scheme = getStatusScheme(entry.code);
             const { date, time } = formatDate(entry.date);
             const dotSize = isFirst ? 8 : 6;
 
             return (
-              <div key={entry.statusId || idx} style={{ display: "flex", gap: 0, minHeight: 56 }}>
+              <div key={idx} style={{ display: "flex", gap: 0, minHeight: 56 }}>
                 {/* Left — date + time */}
                 <div style={{
                   width: 90,
