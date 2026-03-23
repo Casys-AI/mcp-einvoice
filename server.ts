@@ -101,7 +101,7 @@ async function main() {
   const portArg = args.find((arg) => arg.startsWith("--port="));
   const httpPort = portArg ? parseInt(portArg.split("=")[1], 10) : DEFAULT_HTTP_PORT;
   const hostnameArg = args.find((arg) => arg.startsWith("--hostname="));
-  const hostname = hostnameArg ? hostnameArg.split("=")[1] : "0.0.0.0";
+  const hostname = hostnameArg ? hostnameArg.split("=")[1] : "localhost";
 
   // Initialize adapter
   const adapter = createAdapter(adapterName);
