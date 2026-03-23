@@ -177,6 +177,7 @@ function DetailsSection({ data }: { data: DirectoryResult }) {
     <div style={{ marginTop: 16 }}>
       <button
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
         style={{
           ...styles.button,
           display: "inline-flex",

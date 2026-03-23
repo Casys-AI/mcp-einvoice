@@ -1207,6 +1207,7 @@ function DoclistContent(
             </button>
             <button
               onClick={() => exportCsv(columns, sorted, data.doctype)}
+              aria-label="Export CSV"
               style={secondaryButtonStyle}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.background =
@@ -1259,6 +1260,7 @@ function DoclistContent(
           <input
             type="text"
             placeholder={t("search")}
+            aria-label={t("search")}
             value={filter}
             onChange={(e) => {
               setFilter(e.target.value);
@@ -1385,6 +1387,9 @@ function DoclistContent(
                   <th
                     key={col}
                     onClick={() => handleSort(col)}
+                    aria-sort={sortKey === col
+                      ? (sortDir === "asc" ? "ascending" : "descending")
+                      : "none"}
                     style={{
                       ...styles.tableHeader,
                       ...colWidth(col),
