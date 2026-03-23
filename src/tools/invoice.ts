@@ -236,7 +236,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
       const viewerData = {
         data,
-        count: count ?? rows.length,
+        count: rows.length !== rawRows.length ? rows.length : (count ?? rows.length),
         _title: titleParts.join(" "),
         _rowAction: {
           toolName: "einvoice_invoice_get",
