@@ -13,6 +13,7 @@ import { assertEquals, assert } from "jsr:@std/assert";
 import { createIopoleAdapter } from "./adapters/iopole/adapter.ts";
 import { allTools, getToolByName } from "./tools/mod.ts";
 import type { EInvoiceAdapter } from "./adapter.ts";
+import { unwrapStructured } from "./testing/helpers.ts";
 import type { EInvoiceToolContext } from "./tools/types.ts";
 
 // Load .env from project root (best-effort)
@@ -71,10 +72,11 @@ Deno.test("E2E: adapter is iopole", () => {
 
 Deno.test("E2E: directory FR search by SIREN", async () => {
   if (skipIfNoAdapter()) return;
-  const result = await tool("einvoice_directory_fr_search").handler(
+  const raw = await tool("einvoice_directory_fr_search").handler(
     { q: "479661043" },
     ctx!,
-  ) as Record<string, unknown>;
+  );
+  const result = unwrapStructured(raw);
 
   assert(result != null, "result should not be null");
   const data = result.data as Record<string, unknown>[];
@@ -86,10 +88,11 @@ Deno.test("E2E: directory FR search by SIREN", async () => {
 
 Deno.test("E2E: directory FR search by company name", async () => {
   if (skipIfNoAdapter()) return;
-  const result = await tool("einvoice_directory_fr_search").handler(
+  const raw = await tool("einvoice_directory_fr_search").handler(
     { q: "Iopole" },
     ctx!,
-  ) as Record<string, unknown>;
+  );
+  const result = unwrapStructured(raw);
 
   assert(result != null);
   const data = result.data as Record<string, unknown>[];
@@ -100,10 +103,11 @@ Deno.test("E2E: directory FR search by company name", async () => {
 
 Deno.test("E2E: invoice search (list all)", async () => {
   if (skipIfNoAdapter()) return;
-  const result = await tool("einvoice_invoice_search").handler(
+  const raw = await tool("einvoice_invoice_search").handler(
     { limit: 5 },
     ctx!,
-  ) as Record<string, unknown>;
+  );
+  const result = unwrapStructured(raw);
 
   assert(result != null, "result should not be null");
   const rowAction = result._rowAction as Record<string, string>;
@@ -116,10 +120,10 @@ Deno.test("E2E: invoice search (list all)", async () => {
 
 Deno.test("E2E: invoice get by ID (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = await tool("einvoice_invoice_search").handler(
+  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
     { limit: 1 },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -130,10 +134,10 @@ Deno.test("E2E: invoice get by ID (from search)", async () => {
   const invoiceId = data[0]._id as string;
   assert(invoiceId, "first invoice should have _id");
 
-  const invoice = await tool("einvoice_invoice_get").handler(
+  const invoice = unwrapStructured(await tool("einvoice_invoice_get").handler(
     { id: invoiceId },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   assert(invoice != null, "invoice should not be null");
   assertEquals(invoice.id, invoiceId);
@@ -150,10 +154,10 @@ Deno.test("E2E: invoice get by ID (from search)", async () => {
 
 Deno.test("E2E: status history (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = await tool("einvoice_invoice_search").handler(
+  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
     { limit: 1 },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -162,10 +166,10 @@ Deno.test("E2E: status history (from search)", async () => {
   }
 
   const invoiceId = data[0]._id as string;
-  const history = await tool("einvoice_status_history").handler(
+  const history = unwrapStructured(await tool("einvoice_status_history").handler(
     { invoice_id: invoiceId },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   assert(history != null, "history should not be null");
   assert(Array.isArray(history.entries), "history.entries should be array");
@@ -226,10 +230,11 @@ Deno.test("E2E: generate CII (minimal invoice)", async () => {
     ],
   };
 
-  const result = await tool("einvoice_invoice_generate_cii").handler(
+  const raw = await tool("einvoice_invoice_generate_cii").handler(
     { invoice, flavor: "EN16931" },
     ctx!,
-  ) as Record<string, unknown>;
+  );
+  const result = unwrapStructured(raw);
 
   assert(result != null, "generate CII should return a result");
   assert(typeof result.generated_id === "string", "should have generated_id");

@@ -14,6 +14,7 @@ import { createSuperPDPAdapter } from "./adapters/superpdp/adapter.ts";
 import { getToolByName } from "./tools/mod.ts";
 import type { EInvoiceAdapter } from "./adapter.ts";
 import type { EInvoiceToolContext } from "./tools/types.ts";
+import { unwrapStructured } from "./testing/helpers.ts";
 
 // Load .env from project root (best-effort)
 const envPath = new URL("../.env", import.meta.url).pathname;
@@ -93,10 +94,10 @@ Deno.test("E2E SuperPDP: getCustomerId returns company info", async () => {
 
 Deno.test("E2E SuperPDP: invoice search (list all)", async () => {
   if (skipIfNoAdapter()) return;
-  const result = await tool("einvoice_invoice_search").handler(
+  const result = unwrapStructured(await tool("einvoice_invoice_search").handler(
     { limit: 5 },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   assert(result != null, "result should not be null");
   const rowAction = result._rowAction as Record<string, string>;
@@ -117,10 +118,10 @@ Deno.test("E2E SuperPDP: invoice search (list all)", async () => {
 
 Deno.test("E2E SuperPDP: invoice search by direction 'out'", async () => {
   if (skipIfNoAdapter()) return;
-  const result = await tool("einvoice_invoice_search").handler(
+  const result = unwrapStructured(await tool("einvoice_invoice_search").handler(
     { q: "out", limit: 3 },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   assert(result != null);
   const data = result.data as Record<string, unknown>[];
@@ -138,10 +139,10 @@ Deno.test("E2E SuperPDP: invoice search by direction 'out'", async () => {
 
 Deno.test("E2E SuperPDP: invoice get by ID (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = await tool("einvoice_invoice_search").handler(
+  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
     { limit: 1 },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -152,10 +153,10 @@ Deno.test("E2E SuperPDP: invoice get by ID (from search)", async () => {
   const invoiceId = data[0]._id as string;
   assert(invoiceId, "first invoice should have _id");
 
-  const invoice = await tool("einvoice_invoice_get").handler(
+  const invoice = unwrapStructured(await tool("einvoice_invoice_get").handler(
     { id: invoiceId },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   assert(invoice != null, "invoice should not be null");
   assertEquals(String(invoice.id), String(invoiceId));
@@ -181,10 +182,10 @@ Deno.test("E2E SuperPDP: invoice get by ID (from search)", async () => {
 
 Deno.test("E2E SuperPDP: status history (from search)", async () => {
   if (skipIfNoAdapter()) return;
-  const searchResult = await tool("einvoice_invoice_search").handler(
+  const searchResult = unwrapStructured(await tool("einvoice_invoice_search").handler(
     { limit: 1 },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   const data = searchResult.data as Record<string, unknown>[];
   if (!data || data.length === 0) {
@@ -193,10 +194,10 @@ Deno.test("E2E SuperPDP: status history (from search)", async () => {
   }
 
   const invoiceId = data[0]._id as string;
-  const history = await tool("einvoice_status_history").handler(
+  const history = unwrapStructured(await tool("einvoice_status_history").handler(
     { invoice_id: invoiceId },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   assert(history != null, "history should not be null");
   assert(Array.isArray(history.entries), "history.entries should be array");
@@ -214,10 +215,10 @@ Deno.test("E2E SuperPDP: status history (from search)", async () => {
 
 Deno.test("E2E SuperPDP: directory entries (searchDirectoryFr)", async () => {
   if (skipIfNoAdapter()) return;
-  const result = await tool("einvoice_directory_fr_search").handler(
+  const result = unwrapStructured(await tool("einvoice_directory_fr_search").handler(
     { q: "Burger Queen" },
     ctx!,
-  ) as Record<string, unknown>;
+  ));
 
   assert(result != null);
   const data = result.data as Record<string, unknown>[];
@@ -257,10 +258,10 @@ Deno.test("E2E SuperPDP: generate CII from EN16931 JSON", async () => {
   };
 
   try {
-    const result = await tool("einvoice_invoice_generate_cii").handler(
+    const result = unwrapStructured(await tool("einvoice_invoice_generate_cii").handler(
       { invoice, flavor: "EN16931" },
       ctx!,
-    ) as Record<string, unknown>;
+    ));
 
     assert(result != null, "generate CII should return a result");
     assert(typeof result.generated_id === "string", "should have generated_id");
@@ -289,10 +290,10 @@ Deno.test("E2E SuperPDP: generate UBL from EN16931 JSON", async () => {
   };
 
   try {
-    const result = await tool("einvoice_invoice_generate_ubl").handler(
+    const result = unwrapStructured(await tool("einvoice_invoice_generate_ubl").handler(
       { invoice, flavor: "EN16931" },
       ctx!,
-    ) as Record<string, unknown>;
+    ));
 
     assert(result != null, "generate UBL should return a result");
     assert(typeof result.generated_id === "string", "should have generated_id");
