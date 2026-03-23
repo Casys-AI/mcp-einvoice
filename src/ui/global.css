@@ -162,3 +162,10 @@ body {
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .skeleton {
+    animation: none !important;
+  }
+}

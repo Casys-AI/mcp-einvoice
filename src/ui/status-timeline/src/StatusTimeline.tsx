@@ -452,6 +452,20 @@ export function StatusTimeline() {
                       {formatDestType(entry.destType)}
                     </span>
                   </div>
+                  {entry.message && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 12,
+                        color: colors.text.secondary,
+                        lineHeight: 1.45,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {entry.message}
+                    </div>
+                  )}
                 </div>
               </div>
             );

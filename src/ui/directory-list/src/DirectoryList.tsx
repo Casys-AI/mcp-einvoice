@@ -13,6 +13,7 @@ import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
 import { BrandFooter, BrandHeader } from "~/shared/Brand";
+import { FeedbackBanner } from "~/shared/Feedback";
 import {
   canRequestUiRefresh,
   extractToolResultText,
@@ -679,9 +680,11 @@ export function DirectoryList() {
 
         {/* Error */}
         {error && (
-          <div style={{ fontSize: 12, color: colors.error, marginBottom: 8 }}>
-            {error}
-          </div>
+          <FeedbackBanner
+            type="error"
+            message={error}
+            onDismiss={() => setError(null)}
+          />
         )}
 
         {/* Search */}

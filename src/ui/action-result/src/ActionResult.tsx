@@ -13,6 +13,7 @@ import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
 import { BrandFooter, BrandHeader } from "~/shared/Brand";
+import { FeedbackBanner } from "~/shared/Feedback";
 import {
   extractToolResultText,
   type ToolResultPayload,
@@ -52,26 +53,52 @@ function getStatusIcons() {
 
 export function ActionResult() {
   const [data, setData] = useState<ActionResultData | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [navLoading, setNavLoading] = useState(false);
   const dataRef = useRef<ActionResultData | null>(null);
+
+  function applyData(next: ActionResultData, nextError: string | null) {
+    dataRef.current = next;
+    setData(next);
+    setError(nextError);
+    setLoading(false);
+  }
 
   function consumeToolResult(result: ToolResultPayload): boolean {
     const text = extractToolResultText(result);
     if (!text) return false;
     try {
       const parsed = JSON.parse(text);
-      const isAlreadyShaped = parsed.action || parsed.status || parsed.title;
+      const isAlreadyShaped = parsed && typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        ("action" in parsed || "status" in parsed || "title" in parsed);
       const next: ActionResultData = isAlreadyShaped
         ? parsed
-        : { status: "success", title: t("operation_ok"), details: parsed };
-      dataRef.current = next;
-      setData(next);
-      setLoading(false);
+        : typeof parsed === "object" && parsed !== null
+        ? {
+          status: result.isError ? "error" : "success",
+          title: result.isError ? t("error") : t("operation_ok"),
+          details: parsed as Record<string, unknown>,
+        }
+        : {
+          status: result.isError ? "error" : "success",
+          title: result.isError ? t("error") : t("operation_ok"),
+          message: String(parsed),
+        };
+      const nextError = result.isError || next.status === "error"
+        ? next.message ?? next.title ?? t("error")
+        : null;
+      applyData(next, nextError);
       return true;
     } catch {
-      setLoading(false);
-      return false;
+      const next: ActionResultData = {
+        status: result.isError ? "error" : "success",
+        title: result.isError ? t("error") : t("operation_ok"),
+        message: text,
+      };
+      applyData(next, result.isError ? text : null);
+      return true;
     }
   }
 
@@ -139,6 +166,9 @@ export function ActionResult() {
   const detailEntries = Object.entries(details).filter(([k]) =>
     !k.startsWith("_")
   );
+  const bodyMessage = data.message && data.message !== error
+    ? data.message
+    : null;
 
   return (
     <div
@@ -146,6 +176,14 @@ export function ActionResult() {
     >
       <BrandHeader />
       <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
+        {error && (
+          <FeedbackBanner
+            type="error"
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        )}
+
         {/* Status icon + title */}
         <div
           style={{
@@ -190,7 +228,7 @@ export function ActionResult() {
         </div>
 
         {/* Message */}
-        {data.message && (
+        {bodyMessage && (
           <div
             style={{
               fontSize: 13,
@@ -199,7 +237,7 @@ export function ActionResult() {
               lineHeight: 1.5,
             }}
           >
-            {data.message}
+            {bodyMessage}
           </div>
         )}
 
