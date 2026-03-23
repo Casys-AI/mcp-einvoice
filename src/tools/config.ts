@@ -52,11 +52,8 @@ export const configTools: EInvoiceTool[] = [
       properties: {},
     },
     handler: async (_input, ctx) => {
-      // Adapter returns normalized ListBusinessEntitiesResult
       const { rows, count } = await ctx.adapter.listBusinessEntities();
-
-      // Priority columns only — Type, SIREN, Scope, Pays visible in drill-down
-      return {
+      const viewerData = {
         data: rows.map((r) => ({
           _id: r.entityId,
           "Nom": r.name ?? "—",
@@ -70,6 +67,10 @@ export const configTools: EInvoiceTool[] = [
           idField: "_id",
           argName: "id",
         },
+      };
+      return {
+        content: `${rows.length} entité(s) opérateur`,
+        structuredContent: viewerData,
       };
     },
   },
