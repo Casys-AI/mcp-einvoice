@@ -1,12 +1,13 @@
 /**
- * ActionButton — shared button with optional confirm (double-click) pattern.
+ * ActionButton — shared button with optional inline confirmation.
  *
- * Used by InvoiceViewer and DoclistViewer InlineDetailPanel.
- * Supports size variants for compact inline panels.
+ * When `confirm` is set, clicking shows a confirmation bar with
+ * "Confirmer" / "Annuler" buttons instead of executing immediately.
+ * Auto-dismisses after 6 seconds.
  */
 
 import { useEffect, useRef, useState } from "react";
-import { colors, styles } from "./theme";
+import { colors, fonts, styles } from "./theme";
 import { t } from "./i18n";
 
 const VARIANT_COLORS: Record<string, { color: string; bg: string }> = {
@@ -42,18 +43,84 @@ export function ActionButton(
   const vc = VARIANT_COLORS[variant] ?? VARIANT_COLORS.default;
   const isSm = size === "sm";
 
+  function handleClick() {
+    if (confirm && !confirming) {
+      setConfirming(true);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setConfirming(false), 6000);
+      return;
+    }
+    setConfirming(false);
+    onClick();
+  }
+
+  if (confirming) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          background: colors.bg.elevated,
+          borderRadius: 8,
+          padding: "4px 6px",
+          border: `1px solid ${vc.color}40`,
+        }}
+      >
+        <span
+          style={{
+            fontSize: isSm ? 10 : 11,
+            color: colors.text.muted,
+            fontFamily: fonts.sans,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label} ?
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setConfirming(false);
+            clearTimeout(timerRef.current);
+            onClick();
+          }}
+          style={{
+            ...styles.button,
+            background: vc.bg,
+            color: vc.color,
+            borderColor: vc.color,
+            fontSize: isSm ? 10 : 11,
+            padding: isSm ? "2px 8px" : "3px 10px",
+            fontWeight: 700,
+          }}
+        >
+          {t("confirm")}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setConfirming(false);
+            clearTimeout(timerRef.current);
+          }}
+          style={{
+            ...styles.button,
+            background: "transparent",
+            color: colors.text.faint,
+            border: "none",
+            fontSize: isSm ? 10 : 11,
+            padding: isSm ? "2px 6px" : "3px 8px",
+          }}
+        >
+          ✕
+        </button>
+      </span>
+    );
+  }
+
   return (
     <button
-      onClick={() => {
-        if (confirm && !confirming) {
-          setConfirming(true);
-          clearTimeout(timerRef.current);
-          timerRef.current = setTimeout(() => setConfirming(false), 4000);
-          return;
-        }
-        setConfirming(false);
-        onClick();
-      }}
+      type="button"
+      onClick={handleClick}
       disabled={disabled || loading}
       style={{
         ...styles.button,
@@ -64,7 +131,7 @@ export function ActionButton(
         ...(isSm ? { fontSize: 11, padding: "4px 10px" } : {}),
       }}
     >
-      {loading ? "…" : confirming ? t("confirm") : label}
+      {loading ? "…" : label}
     </button>
   );
 }
