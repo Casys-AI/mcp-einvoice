@@ -50,7 +50,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
 
   // ─── Invoice Operations (AFNOR: submitFlow, searchFlows, downloadFlow) ───
 
-  async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
+  override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
     const afnor = this.requireAfnor("emitInvoice");
     const syntax = req.filename.toLowerCase().endsWith(".pdf") ? "Factur-X" : "CII";
     return await afnor.submitFlow(
@@ -59,7 +59,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     );
   }
 
-  async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+  override async searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
     const afnor = this.requireAfnor("searchInvoices");
     const result = await afnor.searchFlows(
       {
@@ -78,7 +78,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     return { rows, count: rows.length };
   }
 
-  async getInvoice(id: string): Promise<InvoiceDetail> {
+  override async getInvoice(id: string): Promise<InvoiceDetail> {
     const afnor = this.requireAfnor("getInvoice");
     const { data, contentType } = await afnor.downloadFlow(id);
     if (contentType.includes("json")) {
@@ -98,14 +98,14 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     return { id, status: "UNKNOWN" };
   }
 
-  async downloadInvoice(id: string): Promise<DownloadResult> {
+  override async downloadInvoice(id: string): Promise<DownloadResult> {
     const afnor = this.requireAfnor("downloadInvoice");
     return await afnor.downloadFlow(id, "Original");
   }
 
   // ─── Status (AFNOR: lifecycle flows) ───────────────────
 
-  async sendStatus(req: SendStatusRequest): Promise<unknown> {
+  override async sendStatus(req: SendStatusRequest): Promise<unknown> {
     const afnor = this.requireAfnor("sendStatus");
     // Lifecycle events are submitted as CDAR flows
     const cdarPayload = JSON.stringify({
@@ -120,7 +120,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     );
   }
 
-  async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
+  override async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
     const afnor = this.requireAfnor("getStatusHistory");
     const result = await afnor.searchFlows({
       flowType: ["CustomerInvoiceLC", "SupplierInvoiceLC"],
@@ -138,7 +138,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
 
   // ─── Reporting (AFNOR: e-reporting flows) ──────────────
 
-  async reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportInvoiceTransaction(transaction: Record<string, unknown>): Promise<unknown> {
     const afnor = this.requireAfnor("reportInvoiceTransaction");
     const payload = new TextEncoder().encode(JSON.stringify(transaction));
     return await afnor.submitFlow(
@@ -147,7 +147,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     );
   }
 
-  async reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportTransaction(businessEntityId: string, transaction: Record<string, unknown>): Promise<unknown> {
     const afnor = this.requireAfnor("reportTransaction");
     const payload = new TextEncoder().encode(JSON.stringify({ businessEntityId, ...transaction }));
     return await afnor.submitFlow(
