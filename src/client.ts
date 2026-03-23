@@ -90,7 +90,15 @@ export class EInvoiceToolsClient {
     const handlers = new Map<string, (args: Record<string, unknown>) => Promise<unknown>>();
     for (const tool of this.supportedTools(adapter)) {
       handlers.set(tool.name, async (args: Record<string, unknown>) => {
-        return await tool.handler(args, { adapter });
+        const t0 = Date.now();
+        try {
+          const result = await tool.handler(args, { adapter });
+          console.error(`[mcp-einvoice] ${tool.name} ok (${Date.now() - t0}ms)`);
+          return result;
+        } catch (err) {
+          console.error(`[mcp-einvoice] ${tool.name} failed (${Date.now() - t0}ms):`, (err as Error).message?.slice(0, 200));
+          throw err;
+        }
       });
     }
     return handlers;

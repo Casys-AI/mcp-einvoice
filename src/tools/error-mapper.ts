@@ -23,6 +23,7 @@ export function einvoiceErrorMapper(error: unknown, toolName: string): string | 
   }
 
   if (error instanceof AdapterAPIError) {
+    console.error(`[mcp-einvoice] [${toolName}] API error ${error.status}: ${error.message.slice(0, 200)}`);
     return `[${toolName}] API error ${error.status}: ${error.message.slice(0, 300)}`;
   }
 
@@ -31,10 +32,12 @@ export function einvoiceErrorMapper(error: unknown, toolName: string): string | 
     if (error.message.includes("is required") || error.message.includes("must ")) {
       return error.message;
     }
-    // Other known errors — return truncated
+    // Other known errors — log and return truncated
+    console.error(`[mcp-einvoice] [${toolName}] error: ${error.message.slice(0, 200)}`);
     return `[${toolName}] ${error.message.slice(0, 300)}`;
   }
 
-  // Unknown — let framework handle
+  // Unknown — log and let framework handle
+  console.error(`[mcp-einvoice] [${toolName}] unknown error:`, error);
   return null;
 }
