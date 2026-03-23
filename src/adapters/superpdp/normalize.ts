@@ -281,7 +281,10 @@ export const normalizeForSuperPDP: NormalizeFn = (inv: Record<string, unknown>):
   // BR-FR-12: buyer electronic_address (BT-49) is mandatory in France
   if (n.buyer && !n.buyer.electronic_address) {
     const siret = buyerSiret ?? n.buyer.legal_registration_identifier?.value;
-    n.buyer.electronic_address = { scheme: "0009", value: siret ?? "0000000000000" };
+    if (!siret) {
+      throw new Error("BR-FR-12: buyer.electronic_address is required. Provide buyer.siret, buyer.electronic_address, or buyer.legal_registration_identifier.");
+    }
+    n.buyer.electronic_address = { scheme: "0009", value: siret };
   }
 
   return n;
