@@ -121,6 +121,16 @@ function isDirectionField(key: string): boolean {
   return DIRECTION_FIELDS.has(key);
 }
 
+/** Column width hints — compact columns for icons/badges, stretch for text */
+function colWidth(col: string): { width?: string | number; minWidth?: number; maxWidth?: number } {
+  const lc = col.toLowerCase();
+  if (isDirectionField(col)) return { width: 40, minWidth: 40, maxWidth: 40 };
+  if (isStatusField(col)) return { width: 48, minWidth: 48, maxWidth: 48 };
+  if (lc.includes("date")) return { width: 80, minWidth: 70, maxWidth: 100 };
+  if (lc.includes("montant") || lc.includes("amount") || lc.includes("total")) return { width: 120, minWidth: 90, maxWidth: 160 };
+  return {};
+}
+
 function DirectionCell({ value }: { value: string }) {
   const isReceived = value === "Entrante" || value === "received";
   const isSent = value === "Sortante" || value === "sent";
@@ -829,7 +839,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
 
       <div style={{ background: colors.bg.surface, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: Math.max(600, columns.length * 110) }}>
+          <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, tableLayout: "auto", minWidth: 500 }}>
             <thead>
               <tr>
                 {columns.map((col) => (
@@ -838,6 +848,7 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                     onClick={() => handleSort(col)}
                     style={{
                       ...styles.tableHeader,
+                      ...colWidth(col),
                       background: colors.bg.elevated,
                       color: sortKey === col ? colors.accent : colors.text.faint,
                       padding: "9px 12px",
@@ -891,13 +902,14 @@ function DoclistContent({ data, error, refreshing, onRefresh, onError }: { data:
                         key={col}
                         style={{
                           ...styles.tableCell,
+                          ...colWidth(col),
                           padding: "11px 12px",
                           textAlign: isNum ? "right" : isStatus || isDirection ? "center" : "left",
                           fontFamily: isNum ? fonts.mono : fonts.sans,
                           fontSize: isNum ? 11 : 12,
                           fontWeight: isNum ? 700 : (col === "name" || col === "id" ? 500 : 400),
                           color: isNum ? colors.text.primary : colors.text.secondary,
-                          maxWidth: 250,
+                          maxWidth: colWidth(col).maxWidth ?? 250,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
