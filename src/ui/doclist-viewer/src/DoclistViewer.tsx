@@ -1316,34 +1316,6 @@ function DoclistContent(
                 >
                   {col}
                 </span>
-                <button
-                  onClick={() => {
-                    setChipFilters((prev) => {
-                      const next = { ...prev };
-                      delete next[col];
-                      return next;
-                    });
-                    setPage(0);
-                  }}
-                  style={{
-                    ...styles.button,
-                    padding: "4px 10px",
-                    fontSize: 10,
-                    borderRadius: 8,
-                    border: "1px solid transparent",
-                    background: chipFilters[col] == null
-                      ? colors.accentDim
-                      : colors.bg.elevated,
-                    color: chipFilters[col] == null
-                      ? colors.accent
-                      : colors.text.secondary,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  {t("all")}
-                </button>
                 {values.map((v) => {
                   const isActive = chipFilters[col] === v;
                   const statusScheme = isStatusField(col)
@@ -1353,7 +1325,14 @@ function DoclistContent(
                     <button
                       key={v}
                       onClick={() => {
-                        setChipFilters((prev) => ({ ...prev, [col]: v }));
+                        setChipFilters((prev) => {
+                          if (prev[col] === v) {
+                            const next = { ...prev };
+                            delete next[col];
+                            return next;
+                          }
+                          return { ...prev, [col]: v };
+                        });
                         setPage(0);
                       }}
                       style={{
