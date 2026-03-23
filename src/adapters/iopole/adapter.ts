@@ -41,7 +41,7 @@ import type { NormalizeFn } from "../shared/types.ts";
 import { env } from "../../runtime.ts";
 
 const IOPOLE_DEFAULT_AUTH_URL =
-  "https://auth.iopole.com/realms/iopole/protocol/openid-connect/token";
+  "https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token";
 
 /**
  * Iopole adapter for the EInvoice interface.
@@ -565,7 +565,7 @@ function normalizeStatusHistory(raw: unknown): StatusHistoryResult {
  * Create an IopoleAdapter from environment variables.
  *
  * Required: IOPOLE_API_URL, IOPOLE_CLIENT_ID, IOPOLE_CLIENT_SECRET, IOPOLE_CUSTOMER_ID
- * Optional: IOPOLE_AUTH_URL (default: production Keycloak)
+ * Optional: IOPOLE_AUTH_URL (default: sandbox auth.ppd.iopole.fr)
  */
 export function createIopoleAdapter(): IopoleAdapter {
   const baseUrl = requireEnv("IopoleAdapter",
