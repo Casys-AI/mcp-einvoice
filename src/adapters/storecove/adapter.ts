@@ -21,10 +21,17 @@ import type {
   EmitInvoiceRequest,
   InvoiceSearchFilters,
   DirectoryFrSearchFilters,
+  DirectoryIntSearchFilters,
   SendStatusRequest,
+  PaginatedRequest,
+  GenerateInvoiceRequest,
+  GenerateFacturXRequest,
+  CreateWebhookRequest,
+  UpdateWebhookRequest,
 } from "../../adapter.ts";
 import { BaseAdapter } from "../base-adapter.ts";
 import { StorecoveClient } from "./client.ts";
+import { NotSupportedError } from "../shared/errors.ts";
 import { requireEnv } from "../shared/env.ts";
 import { uint8ToBase64, encodePathSegment } from "../shared/encoding.ts";
 import { env } from "../../runtime.ts";
@@ -69,7 +76,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Invoice Operations ───────────────────────────────
 
-  async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
+  override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
     // Storecove accepts JSON Pure, JSON Parsed, or JSON Enveloped.
     // For file upload (UBL/CII XML), use JSON Enveloped mode:
     // base64-encode the file and wrap it in the document_submission structure.
@@ -87,7 +94,7 @@ export class StorecoveAdapter extends BaseAdapter {
     });
   }
 
-  async searchInvoices(_filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
+  override async searchInvoices(_filters: InvoiceSearchFilters): Promise<SearchInvoicesResult> {
     throw new NotSupportedError(this.name,
       "searchInvoices",
       "Storecove delivers invoices via webhooks (push) or pull queue. " +
@@ -95,7 +102,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async getInvoice(id: string): Promise<InvoiceDetail> {
+  override async getInvoice(id: string): Promise<InvoiceDetail> {
     // deno-lint-ignore no-explicit-any
     const doc = await this.client.get(`/received_documents/${encodePathSegment(id)}/json`) as any;
     return {
@@ -112,53 +119,53 @@ export class StorecoveAdapter extends BaseAdapter {
     };
   }
 
-  async downloadInvoice(id: string): Promise<DownloadResult> {
+  override async downloadInvoice(id: string): Promise<DownloadResult> {
     return await this.client.download(`/received_documents/${encodePathSegment(id)}/original`);
   }
 
-  async downloadReadable(_id: string): Promise<DownloadResult> {
+  override async downloadReadable(_id: string): Promise<DownloadResult> {
     throw new NotSupportedError(this.name,
       "downloadReadable",
       "Storecove does not generate readable PDFs. Use getInvoice for JSON or downloadInvoice for the original document.",
     );
   }
 
-  async getInvoiceFiles(_id: string): Promise<unknown> {
+  override async getInvoiceFiles(_id: string): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "getInvoiceFiles",
       "Storecove documents are atomic — no separate files list. Use getInvoice or downloadInvoice.",
     );
   }
 
-  async getAttachments(_id: string): Promise<unknown> {
+  override async getAttachments(_id: string): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "getAttachments",
       "Attachments are embedded in the Storecove document. Use getInvoice to access them.",
     );
   }
 
-  async downloadFile(_fileId: string): Promise<DownloadResult> {
+  override async downloadFile(_fileId: string): Promise<DownloadResult> {
     throw new NotSupportedError(this.name,
       "downloadFile",
       "Storecove has no separate file download. Use downloadInvoice for the full document.",
     );
   }
 
-  async markInvoiceSeen(_id: string): Promise<unknown> {
+  override async markInvoiceSeen(_id: string): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "markInvoiceSeen",
       "Storecove does not track seen/unseen state via API.",
     );
   }
 
-  async getUnseenInvoices(_pagination: PaginatedRequest): Promise<unknown> {
+  override async getUnseenInvoices(_pagination: PaginatedRequest): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "getUnseenInvoices",
       "Use Storecove webhook pull mode to poll for new documents.",
     );
   }
 
-  async generateCII(_req: GenerateInvoiceRequest): Promise<string> {
+  override async generateCII(_req: GenerateInvoiceRequest): Promise<string> {
     throw new NotSupportedError(this.name,
       "generateCII",
       "Storecove auto-generates the compliant format on submission. " +
@@ -166,7 +173,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async generateUBL(_req: GenerateInvoiceRequest): Promise<string> {
+  override async generateUBL(_req: GenerateInvoiceRequest): Promise<string> {
     throw new NotSupportedError(this.name,
       "generateUBL",
       "Storecove auto-generates the compliant format on submission. " +
@@ -174,7 +181,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async generateFacturX(_req: GenerateFacturXRequest): Promise<DownloadResult> {
+  override async generateFacturX(_req: GenerateFacturXRequest): Promise<DownloadResult> {
     throw new NotSupportedError(this.name,
       "generateFacturX",
       "Storecove auto-generates the compliant format on submission. " +
@@ -184,7 +191,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Directory ────────────────────────────────────────
 
-  async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
+  override async searchDirectoryFr(filters: DirectoryFrSearchFilters): Promise<SearchDirectoryFrResult> {
     // Map French directory search to Storecove discovery
     // deno-lint-ignore no-explicit-any
     const raw = await this.client.post("/discovery/exists", {
@@ -205,13 +212,13 @@ export class StorecoveAdapter extends BaseAdapter {
     };
   }
 
-  async searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown> {
+  override async searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown> {
     return await this.client.post("/discovery/receives", {
       identifier: filters.value,
     });
   }
 
-  async checkPeppolParticipant(scheme: string, value: string): Promise<unknown> {
+  override async checkPeppolParticipant(scheme: string, value: string): Promise<unknown> {
     return await this.client.post("/discovery/exists", {
       identifier: { scheme, identifier: value },
     });
@@ -219,7 +226,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Status ───────────────────────────────────────────
 
-  async sendStatus(_req: SendStatusRequest): Promise<unknown> {
+  override async sendStatus(_req: SendStatusRequest): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "sendStatus",
       "Storecove status is managed by the receiving Access Point. " +
@@ -227,7 +234,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
+  override async getStatusHistory(invoiceId: string): Promise<StatusHistoryResult> {
     // Map to document submission evidence (proof of delivery)
     // deno-lint-ignore no-explicit-any
     const raw = await this.client.get(
@@ -242,14 +249,14 @@ export class StorecoveAdapter extends BaseAdapter {
     };
   }
 
-  async getUnseenStatuses(_pagination: PaginatedRequest): Promise<unknown> {
+  override async getUnseenStatuses(_pagination: PaginatedRequest): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "getUnseenStatuses",
       "Storecove delivers status changes via webhooks.",
     );
   }
 
-  async markStatusSeen(_statusId: string): Promise<unknown> {
+  override async markStatusSeen(_statusId: string): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "markStatusSeen",
       "Storecove does not track seen/unseen status via API.",
@@ -258,14 +265,14 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Reporting ────────────────────────────────────────
 
-  async reportInvoiceTransaction(_transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportInvoiceTransaction(_transaction: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "reportInvoiceTransaction",
       "Storecove handles tax reporting internally based on the destination country.",
     );
   }
 
-  async reportTransaction(_businessEntityId: string, _transaction: Record<string, unknown>): Promise<unknown> {
+  override async reportTransaction(_businessEntityId: string, _transaction: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "reportTransaction",
       "Storecove handles tax reporting internally based on the destination country.",
@@ -274,14 +281,14 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Webhooks ─────────────────────────────────────────
 
-  async listWebhooks(): Promise<unknown> {
+  override async listWebhooks(): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "listWebhooks",
       "Storecove /webhook_instances is a pull queue, not webhook config CRUD.",
     );
   }
 
-  async getWebhook(_id: string): Promise<unknown> {
+  override async getWebhook(_id: string): Promise<unknown> {
     // Storecove has no get-by-id — return the list and let the tool filter
     throw new NotSupportedError(this.name,
       "getWebhook",
@@ -289,21 +296,21 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async createWebhook(_req: CreateWebhookRequest): Promise<unknown> {
+  override async createWebhook(_req: CreateWebhookRequest): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "createWebhook",
       "Storecove webhooks are configured via the Storecove dashboard UI, not the API.",
     );
   }
 
-  async updateWebhook(_id: string, _req: UpdateWebhookRequest): Promise<unknown> {
+  override async updateWebhook(_id: string, _req: UpdateWebhookRequest): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "updateWebhook",
       "Storecove webhooks are configured via the Storecove dashboard UI, not the API.",
     );
   }
 
-  async deleteWebhook(_id: string): Promise<unknown> {
+  override async deleteWebhook(_id: string): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "deleteWebhook",
       "Storecove /webhook_instances is a pull queue, not webhook config CRUD.",
@@ -312,14 +319,14 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Operator Config ───────────────────────────────────
 
-  async getCustomerId(): Promise<unknown> {
+  override async getCustomerId(): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "getCustomerId",
       "Storecove uses API keys, not customer IDs. Your identity is implicit in the API key.",
     );
   }
 
-  async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
+  override async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
     throw new NotSupportedError(this.name,
       "listBusinessEntities",
       "Storecove has no list-all endpoint for legal entities. " +
@@ -327,64 +334,64 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async getBusinessEntity(id: string): Promise<unknown> {
+  override async getBusinessEntity(id: string): Promise<unknown> {
     return await this.client.get(`/legal_entities/${encodePathSegment(id)}`);
   }
 
-  async createLegalUnit(_data: Record<string, unknown>): Promise<unknown> {
+  override async createLegalUnit(_data: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "createLegalUnit",
       "Storecove requires address fields (line1, city, zip) not collected by the generic tool schema. Implement normalizeForStorecove when ready.",
     );
   }
 
-  async createOffice(_data: Record<string, unknown>): Promise<unknown> {
+  override async createOffice(_data: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "createOffice",
       "Storecove has no office/establishment concept. Use createLegalUnit for all entities.",
     );
   }
 
-  async deleteBusinessEntity(id: string): Promise<unknown> {
+  override async deleteBusinessEntity(id: string): Promise<unknown> {
     return await this.client.delete(`/legal_entities/${encodePathSegment(id)}`);
   }
 
-  async configureBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
+  override async configureBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "configureBusinessEntity",
       "Storecove PATCH /legal_entities uses a different model than the generic tool schema.",
     );
   }
 
-  async claimBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
+  override async claimBusinessEntity(_id: string, _data: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "claimBusinessEntity",
       "Storecove has no entity claim workflow. Entities are created and owned directly.",
     );
   }
 
-  async claimBusinessEntityByIdentifier(_scheme: string, _value: string, _data: Record<string, unknown>): Promise<unknown> {
+  override async claimBusinessEntityByIdentifier(_scheme: string, _value: string, _data: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "claimBusinessEntityByIdentifier",
       "Storecove has no entity claim workflow. Entities are created and owned directly.",
     );
   }
 
-  async enrollFrench(_data: Record<string, unknown>): Promise<unknown> {
+  override async enrollFrench(_data: Record<string, unknown>): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "enrollFrench",
       "Use enrollInternational with Peppol identifiers for French entity registration on Storecove.",
     );
   }
 
-  async enrollInternational(data: Record<string, unknown>): Promise<unknown> {
+  override async enrollInternational(data: Record<string, unknown>): Promise<unknown> {
     // Map to Peppol identifier creation
     const legalEntityId = data.legalEntityId ?? this.defaultLegalEntityId;
     if (!legalEntityId) {
       throw new Error("[StorecoveAdapter] enrollInternational requires legalEntityId");
     }
     return await this.client.post(
-      `/legal_entities/${encodePathSegment(legalEntityId)}/peppol_identifiers`,
+      `/legal_entities/${encodePathSegment(String(legalEntityId))}/peppol_identifiers`,
       {
         superscheme: data.superscheme ?? "iso6523-actorid-upis",
         scheme: data.scheme,
@@ -393,13 +400,13 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async registerNetwork(identifierId: string, _network: string): Promise<unknown> {
+  override async registerNetwork(identifierId: string, _network: string): Promise<unknown> {
     // In Storecove, Peppol registration is done at identifier creation time.
     // This is a no-op if the identifier already exists.
     return { message: `Peppol identifier ${identifierId} is registered on creation in Storecove.` };
   }
 
-  async registerNetworkByScheme(scheme: string, value: string, _network: string): Promise<unknown> {
+  override async registerNetworkByScheme(scheme: string, value: string, _network: string): Promise<unknown> {
     // Same as registerNetwork — Peppol identifiers are registered on creation
     return {
       message: `Peppol identifier ${scheme}:${value} is registered on creation in Storecove. ` +
@@ -407,7 +414,7 @@ export class StorecoveAdapter extends BaseAdapter {
     };
   }
 
-  async unregisterNetwork(directoryId: string): Promise<unknown> {
+  override async unregisterNetwork(directoryId: string): Promise<unknown> {
     // directoryId maps to the Peppol identifier deletion path
     // Expected format: legalEntityId/superscheme/scheme/identifier
     const parts = directoryId.split("/");
@@ -424,7 +431,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Identifier Management ───────────────────────────────
 
-  async createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown> {
+  override async createIdentifier(entityId: string, data: Record<string, unknown>): Promise<unknown> {
     // Route to Peppol identifiers or additional tax identifiers based on data
     if (data.scheme && String(data.scheme).startsWith("0")) {
       // Peppol scheme (ISO 6523)
@@ -444,7 +451,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async createIdentifierByScheme(
+  override async createIdentifierByScheme(
     _scheme: string,
     _value: string,
     _data: Record<string, unknown>,
@@ -455,7 +462,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  async deleteIdentifier(identifierId: string): Promise<unknown> {
+  override async deleteIdentifier(identifierId: string): Promise<unknown> {
     // identifierId could be a Peppol path or a tax identifier ID
     // If it contains '/', treat as Peppol identifier path
     if (identifierId.includes("/")) {
@@ -473,7 +480,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Claim Management ────────────────────────────────────
 
-  async deleteClaim(_entityId: string): Promise<unknown> {
+  override async deleteClaim(_entityId: string): Promise<unknown> {
     throw new NotSupportedError(this.name,
       "deleteClaim",
       "Storecove has no entity claim concept. Delete the entity directly with deleteBusinessEntity.",
