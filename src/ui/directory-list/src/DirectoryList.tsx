@@ -239,6 +239,9 @@ function DirectoryEntryCard({ entry, expanded, onToggle }: {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
       style={{
         background: expanded ? colors.bg.elevated : colors.bg.surface,
         borderRadius: 12,
@@ -248,6 +251,12 @@ function DirectoryEntryCard({ entry, expanded, onToggle }: {
         marginBottom: 8,
       }}
       onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
       onMouseEnter={(e) => {
         if (!expanded) {(e.currentTarget as HTMLElement).style.background =
             colors.bg.hover;}
@@ -689,6 +698,7 @@ export function DirectoryList() {
           <input
             type="text"
             placeholder={t("search")}
+            aria-label={t("search")}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             style={{
