@@ -4,9 +4,9 @@ Serveur MCP pour la facturation électronique — agnostique plateforme via le
 pattern adapter.
 
 <p align="center">
-  <img src="docs/logos/iopole.svg" alt="Iopole" height="40">&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/logos/storecove.png" alt="Storecove" height="40">&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/logos/superpdp.svg" alt="Super PDP" height="40">
+  <a href="https://www.iopole.com/contact?utm_medium=affiliate&utm_source=thenocodeguy&utm_campaign=erwan%20lee%20pesle"><img src="docs/logos/iopole.svg" alt="Iopole" height="40"></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.storecove.com/"><img src="docs/logos/storecove.png" alt="Storecove" height="40"></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.superpdp.tech/"><img src="docs/logos/superpdp.svg" alt="Super PDP" height="40"></a>
 </p>
 
 ## Pourquoi
@@ -20,9 +20,9 @@ tools et 6 viewers interactifs.
 
 |                                                  | Adapter       | Scope               | Tools | Base             |
 | ------------------------------------------------ | ------------- | ------------------- | ----- | ---------------- |
-| <img src="docs/logos/iopole.svg" height="16">    | **Iopole**    | PA française, B2B   | 39/39 | BaseAdapter      |
-| <img src="docs/logos/storecove.png" height="16"> | **Storecove** | Peppol AP, 40+ pays | 19/39 | BaseAdapter      |
-| <img src="docs/logos/superpdp.svg" height="16">  | **Super PDP** | PA française, B2B   | 20/39 | AfnorBaseAdapter |
+| <img src="docs/logos/iopole.svg" height="16">    | **[Iopole](https://www.iopole.com/contact?utm_medium=affiliate&utm_source=thenocodeguy&utm_campaign=erwan%20lee%20pesle)**    | PA française, B2B   | 39/39 | BaseAdapter      |
+| <img src="docs/logos/storecove.png" height="16"> | **[Storecove](https://www.storecove.com/)** | Peppol AP, 40+ pays | 19/39 | BaseAdapter      |
+| <img src="docs/logos/superpdp.svg" height="16">  | **[Super PDP](https://www.superpdp.tech/)** | PA française, B2B   | 20/39 | AfnorBaseAdapter |
 
 `BaseAdapter` fournit des stubs `NotSupportedError` pour les 45 méthodes de
 l'interface `EInvoiceAdapter`. Les PA françaises avec AFNOR héritent
@@ -32,6 +32,18 @@ qui ajoute les opérations flow. Les autres étendent `BaseAdapter` directement.
 
 Le filtrage par `capabilities` assure que le LLM ne voit que les tools supportés
 par l'adapter actif.
+
+## Obtenir un compte sandbox
+
+Pour tester, vous avez besoin d'identifiants sandbox auprès d'une plateforme
+supportée :
+
+- **[Iopole](https://www.iopole.com/contact?utm_medium=affiliate&utm_source=thenocodeguy&utm_campaign=erwan%20lee%20pesle)** —
+  adapter le plus complet (39/39 tools), idéal pour démarrer.
+  [Demander un accès sandbox →](https://www.iopole.com/contact?utm_medium=affiliate&utm_source=thenocodeguy&utm_campaign=erwan%20lee%20pesle)
+- **[Storecove](https://www.storecove.com/)** — réseau Peppol international
+  (40+ pays)
+- **[Super PDP](https://www.superpdp.tech/)** — PA française, socle AFNOR
 
 ## Configuration rapide
 
