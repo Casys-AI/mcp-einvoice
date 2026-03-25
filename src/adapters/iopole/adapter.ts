@@ -145,8 +145,8 @@ export class IopoleAdapter extends BaseAdapter {
       };
     });
 
-    // Enrich with lifecycle status — capped concurrency to avoid flooding the API
-    const CONCURRENCY = 5;
+    // Enrich with lifecycle status — high concurrency is fine on sandbox
+    const CONCURRENCY = 25;
     for (let i = 0; i < rows.length; i += CONCURRENCY) {
       const batch = rows.slice(i, i + CONCURRENCY);
       await Promise.all(batch.map(async (row) => {
