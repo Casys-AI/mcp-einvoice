@@ -1,6 +1,6 @@
 {
   "name": "@casys/mcp-einvoice",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "PA-agnostic MCP tools for French e-invoicing. Currently implemented: Iopole (REST/JSON).",
   "nodeModulesDir": "auto",
   "tasks": {

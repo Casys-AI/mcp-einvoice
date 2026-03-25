@@ -924,9 +924,9 @@ function DoclistContent(
           }
           if (!detail.direction) {
             const rawDir = row["_direction"] ?? row["Direction"];
-            if (rawDir === "INBOUND" || rawDir === "Entrante") {
+            if (rawDir === "received" || rawDir === "INBOUND" || rawDir === "Entrante") {
               detail.direction = "received";
-            } else if (rawDir === "OUTBOUND" || rawDir === "Sortante") {
+            } else if (rawDir === "sent" || rawDir === "OUTBOUND" || rawDir === "Sortante") {
               detail.direction = "sent";
             }
           }
