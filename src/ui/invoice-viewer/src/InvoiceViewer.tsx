@@ -31,8 +31,13 @@ import {
   type ToolResultPayload,
 } from "~/shared/refresh";
 import { useCompactMode } from "~/shared/useCompactMode";
+import { useDisplayMode } from "~/shared/useDisplayMode";
+import { FullscreenButton } from "~/shared/FullscreenButton";
 
-const app = new App({ name: "Invoice Viewer", version: "1.0.0" });
+const app = new App(
+  { name: "Invoice Viewer", version: "1.0.0" },
+  { availableDisplayModes: ["inline", "fullscreen"] },
+);
 
 /** Action keys for loading state tracking */
 const AK = {
@@ -141,6 +146,7 @@ export function InvoiceViewer() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [emitSuccess, setEmitSuccess] = useState(false);
   const [compact, compactRef] = useCompactMode();
+  const { isFullscreen, canFullscreen, toggleFullscreen } = useDisplayMode(app);
 
   const {
     data,
@@ -350,6 +356,12 @@ export function InvoiceViewer() {
             >
               {refreshing ? "…" : t("refresh")}
             </button>
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              canFullscreen={canFullscreen}
+              onToggle={toggleFullscreen}
+              compact={compact}
+            />
           </div>
         </div>
 

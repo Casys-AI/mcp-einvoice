@@ -99,6 +99,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "success": "Succès",
     "error": "Erreur",
     "operation_ok": "Opération réussie",
+    // ── Display mode ─────────────────────────────
+    "fullscreen": "Plein écran",
+    "exit_fullscreen": "Quitter le plein écran",
     // ── Brand ───────────────────────────────────
     "tagline": "facturation électronique",
     // ── Counts ──────────────────────────────────
@@ -187,6 +190,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "success": "Success",
     "error": "Error",
     "operation_ok": "Operation successful",
+    "fullscreen": "Full screen",
+    "exit_fullscreen": "Exit full screen",
     "tagline": "e-invoicing",
     "item": "item",
     "items": "items",
