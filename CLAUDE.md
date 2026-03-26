@@ -123,8 +123,8 @@ AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
   (used by directory search)
 - `_rowAction` = remote expand (calls tool), `_detail` = local expand (data
   already in row)
-- CSS `border-radius` on iframe: apply `overflow: hidden` to `html` only — NOT
-  `body` (kills scroll)
+- CSS `border-radius` on iframe: `border-radius` on `html`, `overflow: hidden`
+  on `#app` — NOT on `html` (kills vertical scroll on mobile WebView)
 - Direction cell: SVG arrows (↓ blue received, ↑ orange sent)
 - Status filter chips filtered by active direction (RECEIVED_STATUSES,
   SENT_STATUSES)

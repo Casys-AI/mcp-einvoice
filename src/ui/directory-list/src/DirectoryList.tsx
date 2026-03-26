@@ -8,23 +8,19 @@
  * Design: Stitch "Amber Ledger" (.stitch/designs/directory-cards.html)
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
 import { BrandFooter, BrandHeader } from "~/shared/Brand";
 import { FeedbackBanner } from "~/shared/Feedback";
-import {
-  canRequestUiRefresh,
-  extractToolResultText,
-  normalizeUiRefreshFailureMessage,
-  resolveUiRefreshRequest,
-  type ToolResultPayload,
-  type UiRefreshRequestData,
-} from "~/shared/refresh";
+import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
+import { extractToolResultText, type ToolResultPayload } from "~/shared/refresh";
+import { formatAddress } from "~/shared/format";
+import { InfoField } from "~/shared/InfoField";
+import { ChevronIcon } from "~/shared/ChevronIcon";
 
 const app = new App({ name: "Directory List", version: "1.0.0" });
-const TOOL_CALL_TIMEOUT_MS = 10_000;
 const REFRESH_THROTTLE_MS = 15_000;
 
 // ── Types ────────────────────────────────────────────────
@@ -70,38 +66,36 @@ interface DirectoryListData {
   >;
   count?: number;
   _title?: string;
-  refreshRequest?: UiRefreshRequestData;
+  refreshRequest?: import("~/shared/refresh").UiRefreshRequestData;
+}
+
+// ── Parse payload ────────────────────────────────────────
+
+function normalizePayload(raw: unknown): DirectoryListData | null {
+  if (!raw) return null;
+  if (Array.isArray(raw)) return { data: raw, count: raw.length };
+  const obj = raw as Record<string, unknown>;
+  if (Array.isArray(obj.data)) return obj as DirectoryListData;
+  return { data: [obj as Record<string, unknown>], count: 1 };
+}
+
+function parseDirectoryListPayload(
+  result: ToolResultPayload,
+): import("~/shared/useViewerLifecycle").ParsePayloadResult<DirectoryListData> {
+  const text = extractToolResultText(result);
+  if (!text) return null;
+  try {
+    const parsed = normalizePayload(JSON.parse(text));
+    if (!parsed || parsed.data.length === 0) {
+      return { error: t("no_results") };
+    }
+    return { data: parsed };
+  } catch {
+    return { error: t("error_parsing") };
+  }
 }
 
 // ── Sub-components ───────────────────────────────────────
-
-function InfoField({ label, value }: { label: string; value?: string }) {
-  return (
-    <div style={{ padding: "4px 0" }}>
-      <div
-        style={{
-          fontSize: 10,
-          color: colors.text.muted,
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          marginBottom: 2,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 500,
-          color: colors.text.primary,
-          fontFamily: fonts.mono,
-        }}
-      >
-        {value ?? "—"}
-      </div>
-    </div>
-  );
-}
 
 const NETWORK_LABELS: Record<string, string> = {
   DOMESTIC_FR: "PPF France",
@@ -209,23 +203,6 @@ function NetworkRow({ network }: { network: DirectoryNetwork }) {
   );
 }
 
-function formatAddress(
-  addr: {
-    street?: string;
-    city?: string;
-    postalCode?: string;
-    country?: string;
-  },
-): string {
-  const parts: string[] = [];
-  if (addr.street) parts.push(addr.street);
-  if (addr.postalCode || addr.city) {
-    parts.push([addr.postalCode, addr.city].filter(Boolean).join(" "));
-  }
-  if (addr.country) parts.push(addr.country);
-  return parts.join(", ") || "—";
-}
-
 // ── Card component ───────────────────────────────────────
 
 function DirectoryEntryCard({ entry, expanded, onToggle }: {
@@ -328,26 +305,10 @@ function DirectoryEntryCard({ entry, expanded, onToggle }: {
             </div>
           )}
         </div>
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          style={{
-            transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-            transition: "transform 0.15s",
-            flexShrink: 0,
-            opacity: 0.4,
-          }}
-        >
-          <path
-            d="M3 1l4 4-4 4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <ChevronIcon
+          expanded={expanded}
+          style={{ flexShrink: 0, opacity: 0.4 }}
+        />
       </div>
 
       {/* Expanded detail */}
@@ -368,14 +329,14 @@ function DirectoryEntryCard({ entry, expanded, onToggle }: {
               marginBottom: 12,
             }}
           >
-            {entry.siren && <InfoField label="SIREN" value={entry.siren} />}
+            {entry.siren && <InfoField label="SIREN" value={entry.siren} mono />}
             {entry.vatNumber && (
-              <InfoField label={t("vat_intra")} value={entry.vatNumber} />
+              <InfoField label={t("vat_intra")} value={entry.vatNumber} mono />
             )}
             {entry.directory && (
-              <InfoField label="Directory" value={entry.directory} />
+              <InfoField label="Directory" value={entry.directory} mono />
             )}
-            {entry.status && <InfoField label="Status" value={entry.status} />}
+            {entry.status && <InfoField label="Status" value={entry.status} mono />}
           </div>
 
           {hasAddress && (
@@ -452,115 +413,21 @@ function LoadingSkeleton() {
 // ── Main component ───────────────────────────────────────
 
 export function DirectoryList() {
-  const [data, setData] = useState<DirectoryListData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const dataRef = useRef<DirectoryListData | null>(null);
-  const refreshRequestRef = useRef<UiRefreshRequestData | null>(null);
-  const refreshInFlightRef = useRef(false);
-  const lastRefreshStartedAtRef = useRef(0);
 
-  function normalizePayload(raw: unknown): DirectoryListData | null {
-    if (!raw) return null;
-    if (Array.isArray(raw)) return { data: raw, count: raw.length };
-    const obj = raw as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj as DirectoryListData;
-    return { data: [obj as Record<string, unknown>], count: 1 };
-  }
-
-  function hydrateData(next: DirectoryListData) {
-    dataRef.current = next;
-    refreshRequestRef.current = resolveUiRefreshRequest(
-      next,
-      refreshRequestRef.current,
-    );
-    setData(next);
-  }
-
-  function consumeToolResult(result: ToolResultPayload): boolean {
-    const text = extractToolResultText(result);
-    if (!text) return false;
-    try {
-      const parsed = normalizePayload(JSON.parse(text));
-      if (!parsed || parsed.data.length === 0) {
-        setError(t("no_results"));
-        setLoading(false);
-        return parsed != null;
-      }
-      hydrateData(parsed);
-      setError(null);
-      setLoading(false);
-      return true;
-    } catch {
-      setError(t("error_parsing"));
-      setLoading(false);
-      return false;
-    }
-  }
-
-  async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
-    const request = resolveUiRefreshRequest(
-      dataRef.current,
-      refreshRequestRef.current,
-    );
-    if (
-      !canRequestUiRefresh({
-        request,
-        visibilityState: typeof document === "undefined"
-          ? "visible"
-          : document.visibilityState,
-        refreshInFlight: refreshInFlightRef.current,
-        now: Date.now(),
-        lastRefreshStartedAt: lastRefreshStartedAtRef.current,
-        minIntervalMs: REFRESH_THROTTLE_MS,
-      }, options)
-    ) return;
-    if (!request || !app.getHostCapabilities()?.serverTools) return;
-    refreshInFlightRef.current = true;
-    lastRefreshStartedAtRef.current = Date.now();
-    setRefreshing(true);
-    try {
-      const result = await app.callServerTool({
-        name: request.toolName,
-        arguments: request.arguments,
-      }, { timeout: TOOL_CALL_TIMEOUT_MS });
-      if (!result.isError) consumeToolResult(result);
-      else setError(t("error_refresh"));
-    } catch (cause) {
-      setError(normalizeUiRefreshFailureMessage(cause));
-    } finally {
-      refreshInFlightRef.current = false;
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => {
-    app.connect().catch(() => {});
-    app.ontoolresult = (result: ToolResultPayload) => {
-      consumeToolResult(result);
-    };
-    app.ontoolinputpartial = () => {
-      if (!dataRef.current) setLoading(true);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleFocus = () => void requestRefresh({ ignoreInterval: true });
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void requestRefresh({ ignoreInterval: true });
-      }
-    };
-    globalThis.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => {
-      globalThis.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, []);
+  const {
+    data,
+    loading,
+    refreshing,
+    error,
+    onRefresh,
+    onError,
+  } = useViewerLifecycle<DirectoryListData>({
+    app,
+    minIntervalMs: REFRESH_THROTTLE_MS,
+    parsePayload: parseDirectoryListPayload,
+  });
 
   // ── Filtered entries ────────────────────────────────────
 
@@ -679,7 +546,7 @@ export function DirectoryList() {
             </div>
           </div>
           <button
-            onClick={() => void requestRefresh({ ignoreInterval: true })}
+            onClick={onRefresh}
             disabled={refreshing}
             style={styles.button}
           >
@@ -692,7 +559,7 @@ export function DirectoryList() {
           <FeedbackBanner
             type="error"
             message={error}
-            onDismiss={() => setError(null)}
+            onDismiss={() => onError(null)}
           />
         )}
 

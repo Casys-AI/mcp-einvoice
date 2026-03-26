@@ -95,7 +95,10 @@
 
 html {
   border-radius: var(--radius-lg);
-  overflow: hidden;
+}
+
+html, body {
+  overscroll-behavior: contain;
 }
 
 html, body {
@@ -112,7 +115,10 @@ body {
   overflow: auto;
 }
 
-#app {}
+#app {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
 
 ::-webkit-scrollbar {
   width: 6px;

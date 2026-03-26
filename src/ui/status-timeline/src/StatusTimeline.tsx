@@ -8,24 +8,18 @@
  * Most recent status at top. Latest dot is larger with a pulse animation.
  */
 
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { dateLocale, t } from "~/shared/i18n";
 import { BrandFooter, BrandHeader } from "~/shared/Brand";
 import { EmptyTimelineIcon, FeedbackBanner } from "~/shared/Feedback";
 import { getStatus } from "~/shared/status";
-import {
-  canRequestUiRefresh,
-  extractToolResultText,
-  normalizeUiRefreshFailureMessage,
-  resolveUiRefreshRequest,
-  type ToolResultPayload,
-  type UiRefreshRequestData,
-} from "~/shared/refresh";
+import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
+import { extractToolResultText, type ToolResultPayload, type UiRefreshRequestData } from "~/shared/refresh";
+import { StatusBadge } from "~/shared/StatusBadge";
 
 const app = new App({ name: "Status Timeline", version: "1.0.0" });
-const TOOL_CALL_TIMEOUT_MS = 10_000;
 const REFRESH_THROTTLE_MS = 15_000;
 
 // ============================================================================
@@ -44,12 +38,6 @@ interface TimelineData {
   refreshRequest?: UiRefreshRequestData;
 }
 
-// Status colors — uses shared registry (~/shared/status.ts)
-
-function getStatusScheme(code: string) {
-  return getStatus(code);
-}
-
 // ============================================================================
 // Date formatting — French locale
 // ============================================================================
@@ -57,6 +45,7 @@ function getStatusScheme(code: string) {
 function formatDate(iso: string): { date: string; time: string } {
   try {
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return { date: iso || "—", time: "" };
     const loc = dateLocale();
     return {
       date: d.toLocaleDateString(loc, {
@@ -67,7 +56,7 @@ function formatDate(iso: string): { date: string; time: string } {
       time: d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" }),
     };
   } catch {
-    return { date: iso, time: "" };
+    return { date: iso || "—", time: "" };
   }
 }
 
@@ -110,129 +99,59 @@ function injectPulseKeyframes() {
 }
 
 // ============================================================================
-// Main Component
+// Parse payload
 // ============================================================================
 
-export function StatusTimeline() {
-  const [entries, setEntries] = useState<StatusEntry[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const dataRef = useRef<TimelineData | null>(null);
-  const refreshRequestRef = useRef<UiRefreshRequestData | null>(null);
-  const refreshInFlightRef = useRef(false);
-  const lastRefreshStartedAtRef = useRef(0);
-
-  useEffect(() => {
-    injectPulseKeyframes();
-  }, []);
-
-  function hydrateData(raw: unknown) {
-    // The tool returns a JSON array of StatusEntry directly,
-    // or an object with { entries, refreshRequest }.
+function parseTimelinePayload(
+  result: ToolResultPayload,
+): import("~/shared/useViewerLifecycle").ParsePayloadResult<TimelineData> {
+  const text = extractToolResultText(result);
+  if (!text) return null;
+  try {
+    const raw = JSON.parse(text);
     let parsed: TimelineData;
     if (Array.isArray(raw)) {
       parsed = { entries: raw as StatusEntry[] };
     } else if (raw && typeof raw === "object" && "entries" in raw) {
       parsed = raw as TimelineData;
     } else if (raw && typeof raw === "object") {
-      // Wrap single entry
       parsed = { entries: [raw as StatusEntry] };
     } else {
-      return;
+      return null;
     }
-
     // Sort most recent first
     parsed.entries.sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-
-    dataRef.current = parsed;
-    refreshRequestRef.current = resolveUiRefreshRequest(
-      parsed,
-      refreshRequestRef.current,
-    );
-    setEntries(parsed.entries);
+    return { data: parsed };
+  } catch {
+    return { error: t("error_parsing") };
   }
+}
 
-  function consumeToolResult(result: ToolResultPayload): boolean {
-    const text = extractToolResultText(result);
-    if (!text) return false;
-    try {
-      hydrateData(JSON.parse(text));
-      setError(null);
-      setLoading(false);
-      return true;
-    } catch {
-      setError(t("error_parsing"));
-      setLoading(false);
-      return false;
-    }
-  }
+// ============================================================================
+// Main Component
+// ============================================================================
 
-  async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
-    const request = resolveUiRefreshRequest(
-      dataRef.current,
-      refreshRequestRef.current,
-    );
-    if (
-      !canRequestUiRefresh({
-        request,
-        visibilityState: typeof document === "undefined"
-          ? "visible"
-          : document.visibilityState,
-        refreshInFlight: refreshInFlightRef.current,
-        now: Date.now(),
-        lastRefreshStartedAt: lastRefreshStartedAtRef.current,
-        minIntervalMs: REFRESH_THROTTLE_MS,
-      }, options)
-    ) return;
-
-    if (!request || !app.getHostCapabilities()?.serverTools) return;
-
-    refreshInFlightRef.current = true;
-    lastRefreshStartedAtRef.current = Date.now();
-    setRefreshing(true);
-
-    try {
-      const result = await app.callServerTool({
-        name: request.toolName,
-        arguments: request.arguments,
-      }, { timeout: TOOL_CALL_TIMEOUT_MS });
-      if (!result.isError) consumeToolResult(result);
-      else setError(t("error_refresh"));
-    } catch (cause) {
-      setError(normalizeUiRefreshFailureMessage(cause));
-    } finally {
-      refreshInFlightRef.current = false;
-      setRefreshing(false);
-    }
-  }
-
+export function StatusTimeline() {
   useEffect(() => {
-    app.connect().catch(() => {});
-    app.ontoolresult = (result: ToolResultPayload) => {
-      consumeToolResult(result);
-    };
-    app.ontoolinputpartial = () => {
-      if (!dataRef.current) setLoading(true);
-    };
+    injectPulseKeyframes();
   }, []);
 
-  useEffect(() => {
-    const handleFocus = () => void requestRefresh({ ignoreInterval: true });
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void requestRefresh({ ignoreInterval: true });
-      }
-    };
-    globalThis.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => {
-      globalThis.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, []);
+  const {
+    data,
+    loading,
+    refreshing,
+    error,
+    onRefresh,
+    onError,
+  } = useViewerLifecycle<TimelineData>({
+    app,
+    minIntervalMs: REFRESH_THROTTLE_MS,
+    parsePayload: parseTimelinePayload,
+  });
+
+  const entries = data?.entries ?? null;
 
   // ── Loading skeleton ──────────────────────────────────────────────
 
@@ -325,7 +244,7 @@ export function StatusTimeline() {
             {t("status_history_title")}
           </div>
           <button
-            onClick={() => void requestRefresh({ ignoreInterval: true })}
+            onClick={onRefresh}
             disabled={refreshing}
             style={styles.button}
           >
@@ -338,7 +257,7 @@ export function StatusTimeline() {
           <FeedbackBanner
             type="error"
             message={error}
-            onDismiss={() => setError(null)}
+            onDismiss={() => onError(null)}
           />
         )}
 
@@ -347,7 +266,7 @@ export function StatusTimeline() {
           {entries.map((entry, idx) => {
             const isFirst = idx === 0;
             const isLast = idx === entries.length - 1;
-            const scheme = getStatusScheme(entry.code);
+            const scheme = getStatus(entry.code);
             const { date, time } = formatDate(entry.date);
             const dotSize = isFirst ? 8 : 6;
 
@@ -445,11 +364,9 @@ export function StatusTimeline() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <span style={styles.badge(scheme.color, scheme.bg)}>
-                      {scheme.label}
-                    </span>
+                    <StatusBadge code={entry.code} />
                     <span style={{ fontSize: 11, color: colors.text.muted }}>
-                      {formatDestType(entry.destType)}
+                      {formatDestType(entry.destType ?? "")}
                     </span>
                   </div>
                   {entry.message && (

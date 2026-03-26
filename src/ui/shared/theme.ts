@@ -105,6 +105,7 @@ export const styles = {
     textTransform: "uppercase" as const,
     letterSpacing: "0.1em",
     borderBottom: `1px solid ${colors.borderSubtle}`,
+    scrollSnapAlign: "start",
     cursor: "pointer",
     userSelect: "none" as const,
     whiteSpace: "nowrap" as const,
@@ -116,6 +117,16 @@ export const styles = {
     fontSize: "12px",
     borderBottom: "none",
     color: colors.text.primary,
+  } as CSSProperties,
+
+  tableScrollViewport: {
+    width: "100%",
+    maxWidth: "100%",
+    overflowX: "auto",
+    overflowY: "hidden",
+    WebkitOverflowScrolling: "touch",
+    overscrollBehaviorX: "contain",
+    scrollSnapType: "x mandatory",
   } as CSSProperties,
 
   mono: {

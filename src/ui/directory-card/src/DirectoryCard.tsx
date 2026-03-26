@@ -10,23 +10,19 @@
  * - Expandable "Details" for extra unknown fields
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
 import { BrandFooter, BrandHeader } from "~/shared/Brand";
 import { FeedbackBanner } from "~/shared/Feedback";
-import {
-  canRequestUiRefresh,
-  extractToolResultText,
-  normalizeUiRefreshFailureMessage,
-  resolveUiRefreshRequest,
-  type ToolResultPayload,
-  type UiRefreshRequestData,
-} from "~/shared/refresh";
+import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
+import { extractToolResultText, type ToolResultPayload } from "~/shared/refresh";
+import { formatAddress } from "~/shared/format";
+import { InfoField } from "~/shared/InfoField";
+import { ChevronIcon } from "~/shared/ChevronIcon";
 
 const app = new App({ name: "Directory Card", version: "1.0.0" });
-const TOOL_CALL_TIMEOUT_MS = 10_000;
 const REFRESH_THROTTLE_MS = 15_000;
 
 // ============================================================================
@@ -56,7 +52,7 @@ interface DirectoryResult {
   networks?: DirectoryNetwork[];
   peppolId?: string;
   type?: string;
-  refreshRequest?: UiRefreshRequestData;
+  refreshRequest?: import("~/shared/refresh").UiRefreshRequestData;
   [key: string]: unknown;
 }
 
@@ -75,38 +71,35 @@ const KNOWN_FIELDS = new Set([
 ]);
 
 // ============================================================================
-// Sub-components
+// Parse payload
 // ============================================================================
 
-function InfoField(
-  { label, value, sub }: { label: string; value?: string; sub?: string },
-) {
-  return (
-    <div style={{ padding: "6px 0" }}>
-      <div
-        style={{
-          fontSize: 10,
-          color: colors.text.muted,
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          marginBottom: 2,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{ fontSize: 13, fontWeight: 500, color: colors.text.primary }}
-      >
-        {value ?? "\u2014"}
-      </div>
-      {sub && (
-        <div style={{ fontSize: 10, color: colors.text.faint, marginTop: 1 }}>
-          {sub}
-        </div>
-      )}
-    </div>
-  );
+/** Normalize incoming payload: single object or array (take first element). */
+function normalizePayload(raw: unknown): DirectoryResult | null {
+  if (Array.isArray(raw)) {
+    return raw.length > 0 ? (raw[0] as DirectoryResult) : null;
+  }
+  if (raw && typeof raw === "object") return raw as DirectoryResult;
+  return null;
 }
+
+function parseDirectoryCardPayload(
+  result: ToolResultPayload,
+): import("~/shared/useViewerLifecycle").ParsePayloadResult<DirectoryResult> {
+  const text = extractToolResultText(result);
+  if (!text) return null;
+  try {
+    const parsed = normalizePayload(JSON.parse(text));
+    if (!parsed) return { error: t("no_results") };
+    return { data: parsed };
+  } catch {
+    return { error: t("error_parsing") };
+  }
+}
+
+// ============================================================================
+// Sub-components
+// ============================================================================
 
 function NetworkBadge({ network }: { network: DirectoryNetwork }) {
   const isActive = !network.status || network.status.toLowerCase() === "active";
@@ -145,16 +138,6 @@ function NetworkBadge({ network }: { network: DirectoryNetwork }) {
   );
 }
 
-function formatAddress(addr: DirectoryAddress): string {
-  const parts: string[] = [];
-  if (addr.street) parts.push(addr.street);
-  if (addr.postalCode || addr.city) {
-    parts.push([addr.postalCode, addr.city].filter(Boolean).join(" "));
-  }
-  if (addr.country) parts.push(addr.country);
-  return parts.join(", ") || "\u2014";
-}
-
 function formatUnknownValue(value: unknown): string {
   if (value == null) return "\u2014";
   if (typeof value === "string") return value;
@@ -186,24 +169,7 @@ function DetailsSection({ data }: { data: DirectoryResult }) {
           fontSize: 12,
         }}
       >
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          style={{
-            transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-            transition: "transform 0.15s",
-          }}
-        >
-          <path
-            d="M3 1l4 4-4 4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <ChevronIcon expanded={expanded} />
         {t("details")} ({extraEntries.length})
       </button>
 
@@ -261,117 +227,18 @@ function DetailsSection({ data }: { data: DirectoryResult }) {
 // ============================================================================
 
 export function DirectoryCard() {
-  const [data, setData] = useState<DirectoryResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const dataRef = useRef<DirectoryResult | null>(null);
-  const refreshRequestRef = useRef<UiRefreshRequestData | null>(null);
-  const refreshInFlightRef = useRef(false);
-  const lastRefreshStartedAtRef = useRef(0);
-
-  function hydrateData(nextData: DirectoryResult) {
-    dataRef.current = nextData;
-    refreshRequestRef.current = resolveUiRefreshRequest(
-      nextData,
-      refreshRequestRef.current,
-    );
-    setData(nextData);
-  }
-
-  /** Normalize incoming payload: single object or array (take first element). */
-  function normalizePayload(raw: unknown): DirectoryResult | null {
-    if (Array.isArray(raw)) {
-      return raw.length > 0 ? (raw[0] as DirectoryResult) : null;
-    }
-    if (raw && typeof raw === "object") return raw as DirectoryResult;
-    return null;
-  }
-
-  function consumeToolResult(result: ToolResultPayload): boolean {
-    const text = extractToolResultText(result);
-    if (!text) return false;
-    try {
-      const parsed = normalizePayload(JSON.parse(text));
-      if (!parsed) {
-        setError(t("no_results"));
-        setLoading(false);
-        return false;
-      }
-      hydrateData(parsed);
-      setError(null);
-      setLoading(false);
-      return true;
-    } catch {
-      setError(t("error_parsing"));
-      setLoading(false);
-      return false;
-    }
-  }
-
-  async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
-    const request = resolveUiRefreshRequest(
-      dataRef.current,
-      refreshRequestRef.current,
-    );
-    if (
-      !canRequestUiRefresh({
-        request,
-        visibilityState: typeof document === "undefined"
-          ? "visible"
-          : document.visibilityState,
-        refreshInFlight: refreshInFlightRef.current,
-        now: Date.now(),
-        lastRefreshStartedAt: lastRefreshStartedAtRef.current,
-        minIntervalMs: REFRESH_THROTTLE_MS,
-      }, options)
-    ) return;
-
-    if (!request || !app.getHostCapabilities()?.serverTools) return;
-
-    refreshInFlightRef.current = true;
-    lastRefreshStartedAtRef.current = Date.now();
-    setRefreshing(true);
-
-    try {
-      const result = await app.callServerTool({
-        name: request.toolName,
-        arguments: request.arguments,
-      }, { timeout: TOOL_CALL_TIMEOUT_MS });
-      if (!result.isError) consumeToolResult(result);
-      else setError(t("error_refresh"));
-    } catch (cause) {
-      setError(normalizeUiRefreshFailureMessage(cause));
-    } finally {
-      refreshInFlightRef.current = false;
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => {
-    app.connect().catch(() => {});
-    app.ontoolresult = (result: ToolResultPayload) => {
-      consumeToolResult(result);
-    };
-    app.ontoolinputpartial = () => {
-      if (!dataRef.current) setLoading(true);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleFocus = () => void requestRefresh({ ignoreInterval: true });
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void requestRefresh({ ignoreInterval: true });
-      }
-    };
-    globalThis.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => {
-      globalThis.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, []);
+  const {
+    data,
+    loading,
+    refreshing,
+    error,
+    onRefresh,
+    onError,
+  } = useViewerLifecycle<DirectoryResult>({
+    app,
+    minIntervalMs: REFRESH_THROTTLE_MS,
+    parsePayload: parseDirectoryCardPayload,
+  });
 
   // ── Loading skeleton ──────────────────────────────────────────
 
@@ -524,7 +391,7 @@ export function DirectoryCard() {
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button
-              onClick={() => void requestRefresh({ ignoreInterval: true })}
+              onClick={onRefresh}
               disabled={refreshing}
               style={styles.button}
             >
@@ -538,7 +405,7 @@ export function DirectoryCard() {
           <FeedbackBanner
             type="error"
             message={error}
-            onDismiss={() => setError(null)}
+            onDismiss={() => onError(null)}
           />
         )}
 

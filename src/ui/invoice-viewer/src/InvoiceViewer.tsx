@@ -12,7 +12,7 @@
  * deposited → received → accepted/rejected/disputed → paid
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, formatCurrency, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
@@ -22,16 +22,13 @@ import {
   canAcceptReject as canAccept,
   canReceivePayment as canReceivePay,
   canSendPayment as canPay,
-  getStatus,
 } from "~/shared/status";
 import { ActionButton } from "~/shared/ActionButton";
+import { StatusBadge } from "~/shared/StatusBadge";
+import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
 import {
-  canRequestUiRefresh,
   extractToolResultText,
-  normalizeUiRefreshFailureMessage,
-  resolveUiRefreshRequest,
   type ToolResultPayload,
-  type UiRefreshRequestData,
 } from "~/shared/refresh";
 
 const app = new App({ name: "Invoice Viewer", version: "1.0.0" });
@@ -50,6 +47,13 @@ const AK = {
 } as const;
 const REFRESH_INTERVAL_MS = 15_000;
 const TOOL_CALL_TIMEOUT_MS = 30_000;
+const LINE_ITEM_COLUMN_WIDTHS = {
+  description: { minWidth: 220, maxWidth: 320 },
+  quantity: { minWidth: 72 },
+  unitPrice: { minWidth: 108 },
+  taxRate: { minWidth: 84 },
+  amount: { minWidth: 120 },
+} as const;
 
 // ============================================================================
 // Types — Iopole invoice data shape
@@ -88,16 +92,30 @@ interface InvoiceData {
   items?: InvoiceItem[];
   notes?: string[]; // Payment notes, conditions
   generated_id?: string; // From generate preview — used to emit via einvoice_invoice_submit
-  refreshRequest?: UiRefreshRequestData;
+  refreshRequest?: import("~/shared/refresh").UiRefreshRequestData;
 }
 
 // ============================================================================
-// Status colors — French e-invoicing lifecycle
+// Parse payload for InvoiceViewer
 // ============================================================================
 
-function StatusBadge({ status }: { status: string }) {
-  const s = getStatus(status);
-  return <span style={styles.badge(s.color, s.bg)}>{s.label}</span>;
+function parseInvoicePayload(
+  result: ToolResultPayload,
+): import("~/shared/useViewerLifecycle").ParsePayloadResult<InvoiceData> {
+  const text = extractToolResultText(result);
+  if (!text) return null;
+  try {
+    const parsed = JSON.parse(text);
+    // If the result has a `preview` field (from generate tools), use that for display
+    const invoiceData = parsed.preview ?? parsed;
+    // Propagate generated_id from the outer payload into the invoice data
+    if (parsed.generated_id && !invoiceData.generated_id) {
+      invoiceData.generated_id = parsed.generated_id;
+    }
+    return { data: invoiceData as InvoiceData };
+  } catch {
+    return { error: t("error_parsing") };
+  }
 }
 
 function FormatBadge({ format }: { format: string }) {
@@ -114,95 +132,29 @@ function FormatBadge({ format }: { format: string }) {
 }
 
 // ============================================================================
-// Action Buttons — interactive tool calls
-// ============================================================================
-
-// ============================================================================
 // Main Component
 // ============================================================================
 
 export function InvoiceViewer() {
-  const [data, setData] = useState<InvoiceData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [emitSuccess, setEmitSuccess] = useState(false);
-  const dataRef = useRef<InvoiceData | null>(null);
-  const refreshRequestRef = useRef<UiRefreshRequestData | null>(null);
-  const refreshInFlightRef = useRef(false);
-  const lastRefreshStartedAtRef = useRef(0);
 
-  function hydrateData(nextData: InvoiceData) {
-    dataRef.current = nextData;
-    refreshRequestRef.current = resolveUiRefreshRequest(
-      nextData,
-      refreshRequestRef.current,
-    );
-    setData(nextData);
-  }
-
-  function consumeToolResult(result: ToolResultPayload): boolean {
-    const text = extractToolResultText(result);
-    if (!text) return false;
-    try {
-      const parsed = JSON.parse(text);
-      // If the result has a `preview` field (from generate tools), use that for display
-      const invoiceData = parsed.preview ?? parsed;
-      // Propagate generated_id from the outer payload into the invoice data
-      if (parsed.generated_id && !invoiceData.generated_id) {
-        invoiceData.generated_id = parsed.generated_id;
-      }
-      hydrateData(invoiceData as InvoiceData);
-      setError(null);
-      setLoading(false);
-      return true;
-    } catch {
-      setError(t("error_parsing"));
-      setLoading(false);
-      return false;
-    }
-  }
-
-  async function requestRefresh(options: { ignoreInterval?: boolean } = {}) {
-    const request = resolveUiRefreshRequest(
-      dataRef.current,
-      refreshRequestRef.current,
-    );
-    if (
-      !canRequestUiRefresh({
-        request,
-        visibilityState: typeof document === "undefined"
-          ? "visible"
-          : document.visibilityState,
-        refreshInFlight: refreshInFlightRef.current,
-        now: Date.now(),
-        lastRefreshStartedAt: lastRefreshStartedAtRef.current,
-        minIntervalMs: REFRESH_INTERVAL_MS,
-      }, options)
-    ) return;
-
-    if (!request || !app.getHostCapabilities()?.serverTools) return;
-
-    refreshInFlightRef.current = true;
-    lastRefreshStartedAtRef.current = Date.now();
-    setRefreshing(true);
-
-    try {
-      const result = await app.callServerTool({
-        name: request.toolName,
-        arguments: request.arguments,
-      }, { timeout: TOOL_CALL_TIMEOUT_MS });
-      if (!result.isError) consumeToolResult(result);
-      else setError(t("error_refresh"));
-    } catch (cause) {
-      setError(normalizeUiRefreshFailureMessage(cause));
-    } finally {
-      refreshInFlightRef.current = false;
-      setRefreshing(false);
-    }
-  }
+  const {
+    data,
+    loading,
+    refreshing,
+    error,
+    onRefresh,
+    onRefreshWithDelay,
+    onError,
+    hydrateData,
+  } = useViewerLifecycle<InvoiceData>({
+    app,
+    minIntervalMs: REFRESH_INTERVAL_MS,
+    parsePayload: parseInvoicePayload,
+    enableAutoRefresh: true,
+  });
 
   async function callAction(
     actionKey: string,
@@ -225,8 +177,7 @@ export function InvoiceViewer() {
       } else {
         if (successMsg) setActionMessage(successMsg);
         // Delay refresh to let server settle before fetching new state
-        lastRefreshStartedAtRef.current = Date.now();
-        setTimeout(() => void requestRefresh({ ignoreInterval: true }), 2000);
+        onRefreshWithDelay(2000);
         return extractToolResultText(result) ?? "";
       }
     } catch {
@@ -274,38 +225,6 @@ export function InvoiceViewer() {
       return false;
     }
   }
-
-  useEffect(() => {
-    app.connect().catch(() => {});
-    app.ontoolresult = (result: ToolResultPayload) => {
-      consumeToolResult(result);
-    };
-    app.ontoolinputpartial = () => {
-      if (!dataRef.current) setLoading(true);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleFocus = () => void requestRefresh({ ignoreInterval: true });
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void requestRefresh({ ignoreInterval: true });
-      }
-    };
-    globalThis.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    // Auto-refresh interval (same pattern as erpnext kanban)
-    const intervalId = globalThis.setInterval(() => {
-      void requestRefresh();
-    }, REFRESH_INTERVAL_MS);
-
-    return () => {
-      globalThis.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibility);
-      globalThis.clearInterval(intervalId);
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -408,7 +327,7 @@ export function InvoiceViewer() {
                 flexWrap: "wrap",
               }}
             >
-              {data.status && <StatusBadge status={data.status} />}
+              {data.status && <StatusBadge code={data.status} />}
               {data.format && <FormatBadge format={data.format} />}
               {data.network && (
                 <span
@@ -434,7 +353,7 @@ export function InvoiceViewer() {
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button
-              onClick={() => void requestRefresh({ ignoreInterval: true })}
+              onClick={onRefresh}
               disabled={refreshing}
               style={styles.button}
             >
@@ -448,7 +367,7 @@ export function InvoiceViewer() {
           <FeedbackBanner
             type="error"
             message={error}
-            onDismiss={() => setError(null)}
+            onDismiss={() => onError(null)}
           />
         )}
         {!error && actionMessage && (
@@ -534,7 +453,13 @@ export function InvoiceViewer() {
 
         {/* Dates — inline */}
         <div
-          style={{ display: "flex", gap: 24, marginBottom: 16, fontSize: 12 }}
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "4px 24px",
+            marginBottom: 16,
+            fontSize: 12,
+          }}
         >
           {data.issue_date && (
             <span>
@@ -572,125 +497,152 @@ export function InvoiceViewer() {
             style={{
               border: `1px solid ${colors.border}`,
               borderRadius: 12,
-              overflowX: "auto",
+              overflow: "hidden",
               marginBottom: 16,
             }}
           >
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th
-                    style={{
-                      ...styles.tableHeader,
-                      background: colors.bg.surface,
-                    }}
-                  >
-                    {t("description")}
-                  </th>
-                  <th
-                    style={{
-                      ...styles.tableHeader,
-                      background: colors.bg.surface,
-                      textAlign: "right",
-                    }}
-                  >
-                    {t("qty")}
-                  </th>
-                  <th
-                    style={{
-                      ...styles.tableHeader,
-                      background: colors.bg.surface,
-                      textAlign: "right",
-                    }}
-                  >
-                    {t("unit_price")}
-                  </th>
-                  <th
-                    style={{
-                      ...styles.tableHeader,
-                      background: colors.bg.surface,
-                      textAlign: "right",
-                    }}
-                  >
-                    {t("vat_pct")}
-                  </th>
-                  <th
-                    style={{
-                      ...styles.tableHeader,
-                      background: colors.bg.surface,
-                      textAlign: "right",
-                    }}
-                  >
-                    {t("amount")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((item, i) => (
-                  <tr
-                    key={i}
-                    style={{ transition: "background 0.1s" }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background =
-                        colors.bg.hover;
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background =
-                        "transparent";
-                    }}
-                  >
-                    <td style={styles.tableCell}>
-                      {item.description ?? item.item_name ?? "—"}
-                    </td>
-                    <td
+            <div style={styles.tableScrollViewport}>
+              <table
+                style={{
+                  width: "max-content",
+                  minWidth: "100%",
+                  borderCollapse: "collapse",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th
                       style={{
-                        ...styles.tableCell,
-                        textAlign: "right",
-                        fontFamily: fonts.mono,
-                        fontSize: 12,
+                        ...styles.tableHeader,
+                        ...LINE_ITEM_COLUMN_WIDTHS.description,
+                        background: colors.bg.surface,
                       }}
                     >
-                      {item.quantity ?? "—"}
-                    </td>
-                    <td
+                      {t("description")}
+                    </th>
+                    <th
                       style={{
-                        ...styles.tableCell,
+                        ...styles.tableHeader,
+                        ...LINE_ITEM_COLUMN_WIDTHS.quantity,
+                        background: colors.bg.surface,
                         textAlign: "right",
-                        fontFamily: fonts.mono,
-                        fontSize: 12,
                       }}
                     >
-                      {item.unit_price != null
-                        ? formatCurrency(item.unit_price, currency)
-                        : "—"}
-                    </td>
-                    <td
+                      {t("qty")}
+                    </th>
+                    <th
                       style={{
-                        ...styles.tableCell,
+                        ...styles.tableHeader,
+                        ...LINE_ITEM_COLUMN_WIDTHS.unitPrice,
+                        background: colors.bg.surface,
                         textAlign: "right",
-                        fontFamily: fonts.mono,
-                        fontSize: 12,
                       }}
                     >
-                      {item.tax_rate != null ? `${item.tax_rate}%` : "—"}
-                    </td>
-                    <td
+                      {t("unit_price")}
+                    </th>
+                    <th
                       style={{
-                        ...styles.tableCell,
+                        ...styles.tableHeader,
+                        ...LINE_ITEM_COLUMN_WIDTHS.taxRate,
+                        background: colors.bg.surface,
                         textAlign: "right",
-                        fontFamily: fonts.mono,
-                        fontSize: 12,
-                        fontWeight: 500,
                       }}
                     >
-                      {item.amount != null
-                        ? formatCurrency(item.amount, currency)
-                        : "—"}
-                    </td>
+                      {t("vat_pct")}
+                    </th>
+                    <th
+                      style={{
+                        ...styles.tableHeader,
+                        ...LINE_ITEM_COLUMN_WIDTHS.amount,
+                        background: colors.bg.surface,
+                        textAlign: "right",
+                      }}
+                    >
+                      {t("amount")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.items.map((item, i) => (
+                    <tr
+                      key={i}
+                      style={{ transition: "background 0.1s" }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.background =
+                          colors.bg.hover;
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.background =
+                          "transparent";
+                      }}
+                    >
+                      <td
+                        style={{
+                          ...styles.tableCell,
+                          ...LINE_ITEM_COLUMN_WIDTHS.description,
+                          verticalAlign: "top",
+                        }}
+                      >
+                        {item.description ?? item.item_name ?? "—"}
+                      </td>
+                      <td
+                        style={{
+                          ...styles.tableCell,
+                          ...LINE_ITEM_COLUMN_WIDTHS.quantity,
+                          textAlign: "right",
+                          fontFamily: fonts.mono,
+                          fontSize: 12,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.quantity ?? "—"}
+                      </td>
+                      <td
+                        style={{
+                          ...styles.tableCell,
+                          ...LINE_ITEM_COLUMN_WIDTHS.unitPrice,
+                          textAlign: "right",
+                          fontFamily: fonts.mono,
+                          fontSize: 12,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.unit_price != null
+                          ? formatCurrency(item.unit_price, currency)
+                          : "—"}
+                      </td>
+                      <td
+                        style={{
+                          ...styles.tableCell,
+                          ...LINE_ITEM_COLUMN_WIDTHS.taxRate,
+                          textAlign: "right",
+                          fontFamily: fonts.mono,
+                          fontSize: 12,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.tax_rate != null ? `${item.tax_rate}%` : "—"}
+                      </td>
+                      <td
+                        style={{
+                          ...styles.tableCell,
+                          ...LINE_ITEM_COLUMN_WIDTHS.amount,
+                          textAlign: "right",
+                          fontFamily: fonts.mono,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.amount != null
+                          ? formatCurrency(item.amount, currency)
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -940,8 +892,7 @@ export function InvoiceViewer() {
                     role: "user",
                     content: [{
                       type: "text",
-                      text:
-                        `${t("nav_status_history")} ${data.id}`,
+                      text: `${t("nav_status_history")} ${data.id}`,
                     }],
                   });
                 } catch { /* host may not support sendMessage */ }
@@ -960,8 +911,10 @@ export function InvoiceViewer() {
                       role: "user",
                       content: [{
                         type: "text",
-                        text:
-                          t("nav_directory_sender").replace("{siret}", data.sender_id),
+                        text: t("nav_directory_sender").replace(
+                          "{siret}",
+                          data.sender_id,
+                        ),
                       }],
                     });
                   } catch { /* host may not support sendMessage */ }
