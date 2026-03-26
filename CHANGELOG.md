@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.6 (2026-03-26)
+
+### Added
+- **Deno Deploy support**: auto-detect runtime via `DENO_DEPLOYMENT_ID`, bind `0.0.0.0`, read `PORT` env var
+- **Deploy config**: `deno.json` includes deploy org/app for `deno deploy` CLI
+
+### Notes
+- No impact on existing consumers (stdio, HTTP local, npm package)
+- OAuth2 auth via `mcp-server.yaml` coming in next release
+
 ## 0.1.3 (2026-03-23)
 
 ### Fixed

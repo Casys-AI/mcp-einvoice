@@ -100,14 +100,19 @@ async function main() {
     ? categoriesArg.split("=")[1].split(",")
     : undefined;
 
-  // HTTP mode
-  const httpFlag = args.includes("--http");
+  // HTTP mode — auto-enabled on Deno Deploy (no CLI args available)
+  const isDenoCloud = !!env("DENO_DEPLOYMENT_ID");
+  const httpFlag = isDenoCloud || args.includes("--http");
   const portArg = args.find((arg) => arg.startsWith("--port="));
   const httpPort = portArg
     ? parseInt(portArg.split("=")[1], 10)
-    : DEFAULT_HTTP_PORT;
+    : parseInt(env("PORT") || String(DEFAULT_HTTP_PORT), 10);
   const hostnameArg = args.find((arg) => arg.startsWith("--hostname="));
-  const hostname = hostnameArg ? hostnameArg.split("=")[1] : "localhost";
+  const hostname = hostnameArg
+    ? hostnameArg.split("=")[1]
+    : isDenoCloud
+      ? "0.0.0.0"
+      : "localhost";
 
   // Initialize adapter
   const adapter = createAdapter(adapterName);
