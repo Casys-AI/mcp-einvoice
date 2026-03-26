@@ -167,26 +167,29 @@ export class IopoleAdapter extends BaseAdapter {
   }
 
   override async getInvoice(id: string): Promise<InvoiceDetail> {
-    // Fetch invoice + status history in parallel (Iopole getInvoice has no state field)
-    const [raw, history] = await Promise.all([
+    // Fetch invoice data (v1.0) + current state (v1.1 search) in parallel.
+    // The v1.0 GET has no state field, and status-history can be empty,
+    // so we use the v1.1 search metadata.state as the reliable source.
+    // deno-lint-ignore no-explicit-any
+    const [raw, searchResult] = await Promise.all([
       this.client.get(`/invoice/${encodePathSegment(id)}`, {
         expand: "businessData",
       }),
-      this.getStatusHistory(id).catch(() => ({ entries: [] })),
+      this.client.getV11("/invoice/search", {
+        q: `invoice.invoiceId:"${id}"`,
+        limit: 1,
+      }).catch(() => ({ data: [] })) as Promise<any>,
     ]);
     // deno-lint-ignore no-explicit-any
     const inv = (Array.isArray(raw) ? raw[0] : raw) as any;
-    const latestStatus = history.entries.length > 0
-      ? [...history.entries].sort((a, b) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      )[0].code
-      : undefined;
+    const searchMatch = (searchResult.data ?? [])[0];
+    const status = searchMatch?.metadata?.state ?? inv?.state ?? "UNKNOWN";
 
     const bd = inv?.businessData;
     return {
       id: inv?.invoiceId ?? id,
       invoiceNumber: bd?.invoiceId,
-      status: latestStatus ?? inv?.state ?? inv?.status ?? "UNKNOWN",
+      status,
       direction: normalizeDirection(inv?.way ?? inv?.metadata?.direction),
       format: inv?.originalFormat,
       network: inv?.originalNetwork,
