@@ -15,7 +15,6 @@ import { STATUS_REGISTRY, getStatusLabel } from "~/shared/status";
 import { extractToolResultText } from "~/shared/refresh";
 import { useCompactMode } from "~/shared/useCompactMode";
 import { hoverRowHandlers } from "~/shared/useHoverRow";
-import { FullscreenButton } from "~/shared/FullscreenButton";
 import type { DoclistData, SortDir } from "./types";
 import {
   FILTERABLE_COLUMNS,
@@ -46,8 +45,7 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
 }
 
 export function DoclistContent(
-  { data, error, refreshing, onRefresh, onError, onExport, app,
-    isFullscreen, canFullscreen, onToggleFullscreen }: {
+  { data, error, refreshing, onRefresh, onError, onExport, app }: {
     data: DoclistData;
     error: string | null;
     refreshing: boolean;
@@ -55,9 +53,6 @@ export function DoclistContent(
     onError: (msg: string | null) => void;
     onExport: (columns: string[], rows: Record<string, unknown>[]) => void;
     app: App;
-    isFullscreen: boolean;
-    canFullscreen: boolean;
-    onToggleFullscreen: () => void;
   },
 ) {
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -469,12 +464,6 @@ export function DoclistContent(
                 />
               </svg>
             </button>
-            <FullscreenButton
-              isFullscreen={isFullscreen}
-              canFullscreen={canFullscreen}
-              onToggle={onToggleFullscreen}
-              compact={compact}
-            />
             {!compact && (
               <button
                 onClick={() => onExport(columns, sorted)}

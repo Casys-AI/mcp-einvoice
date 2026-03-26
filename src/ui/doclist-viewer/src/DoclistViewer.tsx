@@ -13,17 +13,13 @@ import {
   type ToolResultPayload,
 } from "~/shared/refresh";
 import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
-import { useDisplayMode } from "~/shared/useDisplayMode";
 import type { DoclistData } from "./types";
 import { formatCell } from "./formatCell";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { DoclistEmptyState } from "./DoclistEmptyState";
 import { DoclistContent } from "./DoclistContent";
 
-const app = new App(
-  { name: "Doclist Viewer", version: "1.0.0" },
-  { availableDisplayModes: ["inline", "fullscreen"] },
-);
+const app = new App({ name: "Doclist Viewer", version: "1.0.0" });
 const REFRESH_THROTTLE_MS = 15_000;
 
 async function exportCsv(
@@ -104,8 +100,6 @@ export function DoclistViewer() {
     minIntervalMs: REFRESH_THROTTLE_MS,
     parsePayload: parseDoclistPayload,
   });
-  const { isFullscreen, canFullscreen, toggleFullscreen } = useDisplayMode(app);
-
   return (
     <PageShell refreshing={refreshing}>
       {loading && <LoadingSkeleton />}
@@ -120,9 +114,6 @@ export function DoclistViewer() {
           onExport={(columns, rows) =>
             void exportCsv(columns, rows, data.doctype)}
           app={app}
-          isFullscreen={isFullscreen}
-          canFullscreen={canFullscreen}
-          onToggleFullscreen={toggleFullscreen}
         />
       )}
     </PageShell>
