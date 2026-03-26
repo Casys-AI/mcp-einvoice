@@ -328,7 +328,7 @@ export function DirectoryCard() {
   const hasNetworks = data.networks && data.networks.length > 0;
 
   return (
-    <PageShell>
+    <PageShell refreshing={refreshing}>
       <div style={{ padding: 16, fontFamily: fonts.sans }}>
         {/* ── Title + Type Badge ────────────────────────────────── */}
         <div

@@ -1,12 +1,3 @@
-/**
- * Unit tests for format.ts
- *
- * Tests address formatting logic.
- * Pure TypeScript — no DOM, no React rendering.
- *
- * @module src/ui/shared/format_test
- */
-
 import { assertEquals } from "jsr:@std/assert";
 import { formatAddress } from "./format.ts";
 

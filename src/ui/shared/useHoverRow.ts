@@ -1,15 +1,3 @@
-/**
- * hoverRowHandlers — shared hover handlers for table/card rows.
- *
- * Returns onMouseEnter / onMouseLeave handlers that toggle a hover background
- * on the target element. When `isExpanded` is true the background is left
- * unchanged (the expanded state owns the background colour).
- *
- * Usage:
- *   const hover = fhoverRowHandlers(colors.bg.surface, isExpanded);
- *   <tr onMouseEnter={hover.onMouseEnter} onMouseLeave={hover.onMouseLeave} />
- */
-
 import type { MouseEvent } from "react";
 import { colors } from "./theme";
 

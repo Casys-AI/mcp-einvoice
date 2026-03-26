@@ -640,6 +640,14 @@ export function DoclistContent(
                   const isDirChip = isDirectionField(col);
                   const isRecv = v === "received" || v === "Entrante";
                   const isSnt = v === "sent" || v === "Sortante";
+
+                  let dirChipTitle: string | undefined;
+                  if (compact && isDirChip) {
+                    if (isRecv) dirChipTitle = t("received");
+                    else if (isSnt) dirChipTitle = t("sent");
+                    else dirChipTitle = v;
+                  }
+
                   return (
                     <button
                       key={v}
@@ -654,14 +662,10 @@ export function DoclistContent(
                         });
                         setPage(0);
                       }}
-                      title={compact && isDirChip
-                        ? (isRecv ? t("received") : isSnt ? t("sent") : v)
-                        : undefined}
+                      title={dirChipTitle}
                       style={{
                         ...styles.button,
-                        padding: compact
-                          ? (isDirChip ? "3px 8px" : "3px 8px")
-                          : "4px 10px",
+                        padding: compact ? "3px 8px" : "4px 10px",
                         fontSize: compact ? 9 : 10,
                         borderRadius: compact ? 6 : 8,
                         border: "1px solid transparent",
@@ -691,9 +695,11 @@ export function DoclistContent(
                               d={isRecv
                                 ? "M7 2v10M7 12l-3-3M7 12l3-3"
                                 : "M7 12V2M7 2L4 5M7 2l3 3"}
-                              stroke={isActive
-                                ? (isRecv ? "#60a5fa" : "#fb923c")
-                                : "currentColor"}
+                              stroke={!isActive
+                                ? "currentColor"
+                                : isRecv
+                                ? "#60a5fa"
+                                : "#fb923c"}
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -886,6 +892,11 @@ export function DoclistContent(
                                 : isDirection
                                 ? <DirectionCell value={val as string} />
                                 : formatCell(val);
+
+                              let cellFontWeight = 400;
+                              if (isNum) cellFontWeight = 700;
+                              else if (col === "name" || col === "id") cellFontWeight = 500;
+
                               return (
                                 <td
                                   key={col}
@@ -902,11 +913,7 @@ export function DoclistContent(
                                       ? fonts.mono
                                       : fonts.sans,
                                     fontSize: isNum ? 11 : 12,
-                                    fontWeight: isNum
-                                      ? 700
-                                      : (col === "name" || col === "id"
-                                        ? 500
-                                        : 400),
+                                    fontWeight: cellFontWeight,
                                     color: isNum
                                       ? colors.text.primary
                                       : colors.text.secondary,

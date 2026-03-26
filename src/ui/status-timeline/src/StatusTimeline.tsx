@@ -212,7 +212,7 @@ export function StatusTimeline() {
   // ── Timeline ──────────────────────────────────────────────────────
 
   return (
-    <PageShell>
+    <PageShell refreshing={refreshing}>
       <div style={{ padding: 16, fontFamily: fonts.sans }}>
         {/* Header */}
         <div

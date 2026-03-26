@@ -1,12 +1,3 @@
-/**
- * Unit tests for columnUtils.ts
- *
- * Tests column classification and width logic.
- * Pure TypeScript — no DOM, no React rendering.
- *
- * @module src/ui/doclist-viewer/src/columnUtils_test
- */
-
 import { assertEquals } from "jsr:@std/assert";
 import {
   classifyColumns,

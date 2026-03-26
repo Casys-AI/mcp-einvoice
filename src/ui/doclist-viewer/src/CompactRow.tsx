@@ -19,12 +19,14 @@ export function CompactRow(
   const dirVal = cls.direction ? String(row[cls.direction] ?? "") : "";
   const isReceived = dirVal === "Entrante" || dirVal === "received";
   const isSent = dirVal === "Sortante" || dirVal === "sent";
-  const dirColor = isReceived
-    ? "#60a5fa"
-    : isSent
-    ? "#fb923c"
-    : colors.text.muted;
-  const sign = isReceived ? "+" : isSent ? "\u2212" : "";
+
+  let dirColor = colors.text.muted;
+  if (isReceived) dirColor = "#60a5fa";
+  else if (isSent) dirColor = "#fb923c";
+
+  let sign = "";
+  if (isReceived) sign = "+";
+  else if (isSent) sign = "\u2212";
 
   const nameVal = cls.name ? formatCell(row[cls.name]) : "";
   const idVal = cls.id ? formatCell(row[cls.id]) : "";

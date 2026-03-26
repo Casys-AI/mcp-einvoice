@@ -1,15 +1,5 @@
-/**
- * Unit tests for formatCell.ts
- *
- * Tests cell value formatting logic.
- * Pure TypeScript — no DOM, no React rendering.
- *
- * Note: Deno's navigator.language resolves to "en-US", so i18n defaults to
- * English and number formatting uses the "en-GB" locale.
- *
- * @module src/ui/doclist-viewer/src/formatCell_test
- */
-
+// Note: Deno's navigator.language resolves to "en-US", so i18n defaults to
+// English and number formatting uses the "en-GB" locale.
 import { assertEquals } from "jsr:@std/assert";
 import { formatCell } from "./formatCell.ts";
 
