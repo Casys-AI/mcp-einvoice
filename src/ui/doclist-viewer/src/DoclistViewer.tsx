@@ -3,8 +3,13 @@
  *
  * Auto-detects columns, sorting, filtering, pagination, CSV export.
  * French e-invoicing statuses (PPF lifecycle).
+ *
+ * On mobile (compact): "Détails complets" opens a fullscreen InvoiceDetail
+ * directly — no round-trip through Claude. On desktop, it still sends a
+ * message to open the InvoiceViewer as before.
  */
 
+import { useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { t } from "~/shared/i18n";
 import { PageShell } from "~/shared/PageShell";
@@ -13,14 +18,20 @@ import {
   type ToolResultPayload,
 } from "~/shared/refresh";
 import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
+import { useDisplayMode } from "~/shared/useDisplayMode";
+import { InvoiceDetail } from "~/shared/InvoiceDetail";
 import type { DoclistData } from "./types";
 import { formatCell } from "./formatCell";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { DoclistEmptyState } from "./DoclistEmptyState";
 import { DoclistContent } from "./DoclistContent";
 
-const app = new App({ name: "Doclist Viewer", version: "1.0.0" });
+const app = new App(
+  { name: "Doclist Viewer", version: "1.0.0" },
+  { availableDisplayModes: ["inline", "fullscreen"] },
+);
 const REFRESH_THROTTLE_MS = 15_000;
+const TOOL_CALL_TIMEOUT_MS = 10_000;
 
 async function exportCsv(
   columns: string[],
@@ -39,7 +50,6 @@ async function exportCsv(
 
   const csv = `${header}\n${body}`;
   const filename = `${doctype ?? "export"}.csv`;
-  // Use MCP Apps SDK downloadFile — works in sandboxed iframes
   try {
     await app.downloadFile({
       contents: [{
@@ -52,7 +62,6 @@ async function exportCsv(
       }],
     });
   } catch {
-    // Fallback to blob URL for non-MCP hosts (inspector, test harness)
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -71,14 +80,11 @@ function parseDoclistPayload(
   try {
     const parsed = JSON.parse(text);
     if (!parsed) return null;
-    // Detect doclist-shaped results vs drill-down results (invoice, entity).
-    // Doclist results have data[], or doclist markers (_title, _rowAction, count).
     if (!Array.isArray(parsed.data)) {
       if (parsed._title || parsed._rowAction) {
-        // Empty doclist (e.g. no unseen invoices) — ensure data is an array
         parsed.data = [];
       } else {
-        return null; // Not a doclist — drill-down result handled by InlineDetailPanel
+        return null;
       }
     }
     return { data: parsed as DoclistData };
@@ -88,6 +94,11 @@ function parseDoclistPayload(
 }
 
 export function DoclistViewer() {
+  const { isFullscreen, requestFullscreen } = useDisplayMode(app);
+  const [fullscreenDetailData, setFullscreenDetailData] = useState<
+    Record<string, unknown> | null
+  >(null);
+
   const {
     data,
     loading,
@@ -100,6 +111,48 @@ export function DoclistViewer() {
     minIntervalMs: REFRESH_THROTTLE_MS,
     parsePayload: parseDoclistPayload,
   });
+
+  function onOpenFullscreenDetail(detailData: Record<string, unknown>) {
+    setFullscreenDetailData(detailData);
+    requestFullscreen();
+  }
+
+  function onBack() {
+    setFullscreenDetailData(null);
+    // Exit fullscreen — requestDisplayMode back to inline
+    void app.requestDisplayMode({ mode: "inline" });
+  }
+
+  async function callDetailAction(
+    toolName: string,
+    args: Record<string, unknown>,
+  ): Promise<string | null> {
+    if (!app.getHostCapabilities()?.serverTools) return null;
+    try {
+      const result = await app.callServerTool({
+        name: toolName,
+        arguments: args,
+      }, { timeout: TOOL_CALL_TIMEOUT_MS });
+      if (result.isError) return null;
+      return extractToolResultText(result) ?? "";
+    } catch {
+      return null;
+    }
+  }
+
+  // Fullscreen detail view — shown when user tapped "Détails complets" on mobile
+  if (isFullscreen && fullscreenDetailData) {
+    return (
+      <PageShell>
+        <InvoiceDetail
+          data={fullscreenDetailData}
+          onBack={onBack}
+          onAction={callDetailAction}
+        />
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell refreshing={refreshing}>
       {loading && <LoadingSkeleton />}
@@ -114,6 +167,7 @@ export function DoclistViewer() {
           onExport={(columns, rows) =>
             void exportCsv(columns, rows, data.doctype)}
           app={app}
+          onOpenDetail={onOpenFullscreenDetail}
         />
       )}
     </PageShell>

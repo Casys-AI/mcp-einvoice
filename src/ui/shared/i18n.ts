@@ -102,6 +102,7 @@ const translations: Record<Locale, Record<string, string>> = {
     // ── Display mode ─────────────────────────────
     "fullscreen": "Plein écran",
     "exit_fullscreen": "Quitter le plein écran",
+    "back": "← Retour",
     // ── Brand ───────────────────────────────────
     "tagline": "facturation électronique",
     // ── Counts ──────────────────────────────────
@@ -192,6 +193,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "operation_ok": "Operation successful",
     "fullscreen": "Full screen",
     "exit_fullscreen": "Exit full screen",
+    "back": "← Back",
     "tagline": "e-invoicing",
     "item": "item",
     "items": "items",

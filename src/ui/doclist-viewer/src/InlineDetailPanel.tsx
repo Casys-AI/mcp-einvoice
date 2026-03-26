@@ -12,7 +12,7 @@ import { InfoCard } from "~/shared/InfoCard";
 import { formatCell } from "./formatCell";
 
 export function InlineDetailPanel(
-  { data, loading, onClose, onAction, onNavigate }: {
+  { data, loading, onClose, onAction, onNavigate, onOpenDetail, compact }: {
     data: Record<string, unknown> | null;
     loading: boolean;
     onClose: () => void;
@@ -21,6 +21,8 @@ export function InlineDetailPanel(
       args: Record<string, unknown>,
     ) => Promise<boolean>;
     onNavigate?: (invoiceId: string) => void;
+    onOpenDetail?: (data: Record<string, unknown>) => void;
+    compact?: boolean;
   },
 ) {
   const [actLoading, setActLoading] = useState<string | null>(null);
@@ -350,7 +352,11 @@ export function InlineDetailPanel(
             size="sm"
             label={t("full_details")}
             onClick={() => {
-              if (onNavigate) onNavigate(String(inv.id));
+              if (compact && onOpenDetail && data) {
+                onOpenDetail(data);
+              } else if (onNavigate) {
+                onNavigate(String(inv.id));
+              }
             }}
           />
         )}

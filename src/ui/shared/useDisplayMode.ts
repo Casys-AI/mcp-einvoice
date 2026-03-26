@@ -57,5 +57,11 @@ export function useDisplayMode(app: App): {
     void app.requestDisplayMode({ mode: target });
   }
 
-  return { isFullscreen, canFullscreen, toggleFullscreen };
+  function requestFullscreen() {
+    if (!canFullscreen || isFullscreen) return;
+    setDisplayMode("fullscreen");
+    void app.requestDisplayMode({ mode: "fullscreen" });
+  }
+
+  return { isFullscreen, canFullscreen, toggleFullscreen, requestFullscreen };
 }

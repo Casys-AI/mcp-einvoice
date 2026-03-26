@@ -45,7 +45,7 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
 }
 
 export function DoclistContent(
-  { data, error, refreshing, onRefresh, onError, onExport, app }: {
+  { data, error, refreshing, onRefresh, onError, onExport, app, onOpenDetail }: {
     data: DoclistData;
     error: string | null;
     refreshing: boolean;
@@ -53,6 +53,7 @@ export function DoclistContent(
     onError: (msg: string | null) => void;
     onExport: (columns: string[], rows: Record<string, unknown>[]) => void;
     app: App;
+    onOpenDetail?: (data: Record<string, unknown>) => void;
   },
 ) {
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -770,6 +771,8 @@ export function DoclistContent(
                             }}
                             onAction={handleDetailAction}
                             onNavigate={handleNavigate}
+                            onOpenDetail={onOpenDetail}
+                            compact={compact}
                           />
                         </div>
                       )}
@@ -990,6 +993,8 @@ export function DoclistContent(
                                   }}
                                   onAction={handleDetailAction}
                                   onNavigate={handleNavigate}
+                                  onOpenDetail={onOpenDetail}
+                                  compact={compact}
                                 />
                               </td>
                             </tr>
