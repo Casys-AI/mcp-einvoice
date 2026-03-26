@@ -6,7 +6,7 @@
   "tasks": {
     "serve": "deno run --allow-all server.ts --http --port=3015",
     "compile": "deno compile -A --output mcp-einvoice server.ts",
-    "test": "deno test --allow-all src/",
+    "test": "deno test --allow-all --sloppy-imports src/",
     "ui:build": "cd src/ui && node build-all.mjs",
     "build:node": "./scripts/build-node.sh",
     "inspect": "deno run --allow-all server.ts --inspect"
@@ -43,7 +43,10 @@
     "exclude": ["src/ui/dist/", "src/ui/node_modules/", ".cov/"]
   },
   "imports": {
-    "@casys/mcp-server": "jsr:@casys/mcp-server@^0.12.0"
+    "@casys/mcp-server": "jsr:@casys/mcp-server@^0.12.0",
+    "~/": "./src/ui/",
+    "react": "npm:react@^18.3.1",
+    "react-dom": "npm:react-dom@^18.3.1"
   },
   "deploy": {
     "org": "casys",

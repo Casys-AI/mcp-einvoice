@@ -1,5 +1,6 @@
 import { colors, fonts, formatCurrency } from "~/shared/theme";
 import { getStatus } from "~/shared/status";
+import { hoverRowHandlers } from "~/shared/useHoverRow";
 import type { ClassifiedColumns } from "./columnUtils";
 import { formatCell } from "./formatCell";
 import { DirectionArrow } from "./DirectionCell";
@@ -57,18 +58,12 @@ export function CompactRow(
           : colors.bg.root,
         transition: "background 0.15s",
       }}
-      onMouseEnter={(e) => {
-        if (!isExpanded && isClickable) {
-          (e.currentTarget as HTMLElement).style.background = colors.bg.hover;
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isExpanded) {
-          (e.currentTarget as HTMLElement).style.background = idx % 2 === 1
-            ? colors.bg.surface
-            : colors.bg.root;
-        }
-      }}
+      {...(isClickable
+        ? hoverRowHandlers(
+          idx % 2 === 1 ? colors.bg.surface : colors.bg.root,
+          isExpanded,
+        )
+        : {})}
     >
       {/* Direction arrow — spans both lines */}
       {cls.direction && (

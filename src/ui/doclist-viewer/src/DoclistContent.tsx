@@ -14,6 +14,7 @@ import { FeedbackBanner } from "~/shared/Feedback";
 import { STATUS_REGISTRY, getStatusLabel } from "~/shared/status";
 import { extractToolResultText } from "~/shared/refresh";
 import { useCompactMode } from "~/shared/useCompactMode";
+import { hoverRowHandlers } from "~/shared/useHoverRow";
 import type { DoclistData, SortDir } from "./types";
 import {
   FILTERABLE_COLUMNS,
@@ -861,20 +862,12 @@ export function DoclistContent(
                             onClick={isClickable
                               ? () => void onRowClick(row)
                               : undefined}
-                            onMouseEnter={(e) => {
-                              if (!isExpanded) {
-                                (e.currentTarget as HTMLElement).style
-                                  .background = colors.bg.hover;
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isExpanded) {
-                                (e.currentTarget as HTMLElement).style
-                                  .background = idx % 2 === 1
-                                    ? colors.bg.surface
-                                    : colors.bg.root;
-                              }
-                            }}
+                            {...hoverRowHandlers(
+                              idx % 2 === 1
+                                ? colors.bg.surface
+                                : colors.bg.root,
+                              isExpanded,
+                            )}
                           >
                             {columns.map((col, colIdx) => {
                               const val = row[col];

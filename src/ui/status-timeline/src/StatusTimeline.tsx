@@ -12,7 +12,7 @@ import { type CSSProperties, useEffect } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { dateLocale, t } from "~/shared/i18n";
-import { BrandFooter, BrandHeader } from "~/shared/Brand";
+import { PageShell } from "~/shared/PageShell";
 import { EmptyTimelineIcon, FeedbackBanner } from "~/shared/Feedback";
 import { getStatus } from "~/shared/status";
 import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
@@ -157,10 +157,7 @@ export function StatusTimeline() {
 
   if (loading) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <div style={{ padding: 24 }}>
           {[1, 2, 3, 4].map((i) => (
             <div
@@ -184,8 +181,7 @@ export function StatusTimeline() {
             </div>
           ))}
         </div>
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
@@ -193,10 +189,7 @@ export function StatusTimeline() {
 
   if (!entries || entries.length === 0) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <div
           style={{
             display: "flex",
@@ -206,25 +199,21 @@ export function StatusTimeline() {
             padding: "48px 24px",
             color: colors.text.muted,
             gap: 12,
-            flex: 1,
+            height: "100%",
           }}
         >
           <EmptyTimelineIcon />
           <div style={{ fontSize: 13 }}>{t("no_history")}</div>
         </div>
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
   // ── Timeline ──────────────────────────────────────────────────────
 
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-    >
-      <BrandHeader />
-      <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
+    <PageShell>
+      <div style={{ padding: 16, fontFamily: fonts.sans }}>
         {/* Header */}
         <div
           style={{
@@ -389,7 +378,6 @@ export function StatusTimeline() {
           })}
         </div>
       </div>
-      <BrandFooter />
-    </div>
+    </PageShell>
   );
 }

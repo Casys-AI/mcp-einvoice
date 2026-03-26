@@ -12,7 +12,8 @@ import { useMemo, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
-import { BrandFooter, BrandHeader } from "~/shared/Brand";
+import { PageShell } from "~/shared/PageShell";
+import { hoverRowHandlers } from "~/shared/useHoverRow";
 import { FeedbackBanner } from "~/shared/Feedback";
 import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
 import { extractToolResultText, type ToolResultPayload } from "~/shared/refresh";
@@ -235,15 +236,7 @@ function DirectoryEntryCard({ entry, expanded, onToggle }: {
           onToggle();
         }
       }}
-      onMouseEnter={(e) => {
-        if (!expanded) {(e.currentTarget as HTMLElement).style.background =
-            colors.bg.hover;}
-      }}
-      onMouseLeave={(e) => {
-        if (!expanded) {
-          (e.currentTarget as HTMLElement).style.background = colors.bg.surface;
-        }
-      }}
+      {...hoverRowHandlers(colors.bg.surface, expanded)}
     >
       {/* Collapsed header */}
       <div
@@ -451,22 +444,15 @@ export function DirectoryList() {
 
   if (loading) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <LoadingSkeleton />
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
   if (!data) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <div
           style={{
             display: "flex",
@@ -476,7 +462,7 @@ export function DirectoryList() {
             padding: "48px 24px",
             color: colors.text.muted,
             gap: 16,
-            flex: 1,
+            height: "100%",
           }}
         >
           <svg
@@ -511,17 +497,13 @@ export function DirectoryList() {
           </svg>
           <div style={{ fontSize: 13 }}>{error ?? t("no_company")}</div>
         </div>
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-    >
-      <BrandHeader />
-      <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
+    <PageShell>
+      <div style={{ padding: 16, fontFamily: fonts.sans }}>
         {/* Header */}
         <div
           style={{
@@ -609,7 +591,6 @@ export function DirectoryList() {
           );
         })}
       </div>
-      <BrandFooter />
-    </div>
+    </PageShell>
   );
 }

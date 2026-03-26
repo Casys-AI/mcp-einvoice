@@ -16,8 +16,8 @@ import { useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, formatCurrency, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
-import { BrandFooter, BrandHeader } from "~/shared/Brand";
 import { EmptyInvoiceIcon, FeedbackBanner } from "~/shared/Feedback";
+import { PageShell } from "~/shared/PageShell";
 import {
   canAcceptReject as canAccept,
   canReceivePayment as canReceivePay,
@@ -30,6 +30,7 @@ import {
   extractToolResultText,
   type ToolResultPayload,
 } from "~/shared/refresh";
+import { useCompactMode } from "~/shared/useCompactMode";
 
 const app = new App({ name: "Invoice Viewer", version: "1.0.0" });
 
@@ -139,6 +140,7 @@ export function InvoiceViewer() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [emitSuccess, setEmitSuccess] = useState(false);
+  const [compact, compactRef] = useCompactMode();
 
   const {
     data,
@@ -228,10 +230,7 @@ export function InvoiceViewer() {
 
   if (loading) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <div style={{ padding: 24 }}>
           {[1, 2, 3, 4, 5].map((i) => (
             <div
@@ -245,17 +244,13 @@ export function InvoiceViewer() {
             />
           ))}
         </div>
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
   if (!data) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <div
           style={{
             display: "flex",
@@ -265,14 +260,13 @@ export function InvoiceViewer() {
             padding: "48px 24px",
             color: colors.text.muted,
             gap: 12,
-            flex: 1,
+            height: "100%",
           }}
         >
           <EmptyInvoiceIcon />
           <div style={{ fontSize: 13 }}>{t("no_invoice")}</div>
         </div>
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
@@ -292,11 +286,8 @@ export function InvoiceViewer() {
   const showReceivePayment = canReceivePay(statusStr, dir);
 
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-    >
-      <BrandHeader />
-      <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
+    <PageShell refreshing={refreshing}>
+      <div ref={compactRef} style={{ padding: 16, fontFamily: fonts.sans }}>
         {/* Title + Status */}
         <div
           style={{
@@ -374,11 +365,11 @@ export function InvoiceViewer() {
           <FeedbackBanner type="success" message={actionMessage} />
         )}
 
-        {/* Parties — two columns */}
+        {/* Parties — two columns (stacks to one on narrow viewports) */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: compact ? "1fr" : "1fr 1fr",
             gap: 16,
             marginBottom: 16,
             borderBottom: `1px solid ${colors.border}`,
@@ -530,26 +521,30 @@ export function InvoiceViewer() {
                     >
                       {t("qty")}
                     </th>
-                    <th
-                      style={{
-                        ...styles.tableHeader,
-                        ...LINE_ITEM_COLUMN_WIDTHS.unitPrice,
-                        background: colors.bg.surface,
-                        textAlign: "right",
-                      }}
-                    >
-                      {t("unit_price")}
-                    </th>
-                    <th
-                      style={{
-                        ...styles.tableHeader,
-                        ...LINE_ITEM_COLUMN_WIDTHS.taxRate,
-                        background: colors.bg.surface,
-                        textAlign: "right",
-                      }}
-                    >
-                      {t("vat_pct")}
-                    </th>
+                    {!compact && (
+                      <th
+                        style={{
+                          ...styles.tableHeader,
+                          ...LINE_ITEM_COLUMN_WIDTHS.unitPrice,
+                          background: colors.bg.surface,
+                          textAlign: "right",
+                        }}
+                      >
+                        {t("unit_price")}
+                      </th>
+                    )}
+                    {!compact && (
+                      <th
+                        style={{
+                          ...styles.tableHeader,
+                          ...LINE_ITEM_COLUMN_WIDTHS.taxRate,
+                          background: colors.bg.surface,
+                          textAlign: "right",
+                        }}
+                      >
+                        {t("vat_pct")}
+                      </th>
+                    )}
                     <th
                       style={{
                         ...styles.tableHeader,
@@ -597,32 +592,36 @@ export function InvoiceViewer() {
                       >
                         {item.quantity ?? "—"}
                       </td>
-                      <td
-                        style={{
-                          ...styles.tableCell,
-                          ...LINE_ITEM_COLUMN_WIDTHS.unitPrice,
-                          textAlign: "right",
-                          fontFamily: fonts.mono,
-                          fontSize: 12,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.unit_price != null
-                          ? formatCurrency(item.unit_price, currency)
-                          : "—"}
-                      </td>
-                      <td
-                        style={{
-                          ...styles.tableCell,
-                          ...LINE_ITEM_COLUMN_WIDTHS.taxRate,
-                          textAlign: "right",
-                          fontFamily: fonts.mono,
-                          fontSize: 12,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.tax_rate != null ? `${item.tax_rate}%` : "—"}
-                      </td>
+                      {!compact && (
+                        <td
+                          style={{
+                            ...styles.tableCell,
+                            ...LINE_ITEM_COLUMN_WIDTHS.unitPrice,
+                            textAlign: "right",
+                            fontFamily: fonts.mono,
+                            fontSize: 12,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.unit_price != null
+                            ? formatCurrency(item.unit_price, currency)
+                            : "—"}
+                        </td>
+                      )}
+                      {!compact && (
+                        <td
+                          style={{
+                            ...styles.tableCell,
+                            ...LINE_ITEM_COLUMN_WIDTHS.taxRate,
+                            textAlign: "right",
+                            fontFamily: fonts.mono,
+                            fontSize: 12,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.tax_rate != null ? `${item.tax_rate}%` : "—"}
+                        </td>
+                      )}
                       <td
                         style={{
                           ...styles.tableCell,
@@ -925,8 +924,7 @@ export function InvoiceViewer() {
           </div>
         )}
       </div>
-      <BrandFooter />
-    </div>
+    </PageShell>
   );
 }
 

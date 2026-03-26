@@ -14,7 +14,7 @@ import { useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
-import { BrandFooter, BrandHeader } from "~/shared/Brand";
+import { PageShell } from "~/shared/PageShell";
 import { FeedbackBanner } from "~/shared/Feedback";
 import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
 import { extractToolResultText, type ToolResultPayload } from "~/shared/refresh";
@@ -244,10 +244,7 @@ export function DirectoryCard() {
 
   if (loading) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <div style={{ padding: 24 }}>
           <div
             className="skeleton"
@@ -265,8 +262,7 @@ export function DirectoryCard() {
             ))}
           </div>
         </div>
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
@@ -274,10 +270,7 @@ export function DirectoryCard() {
 
   if (!data) {
     return (
-      <div
-        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-      >
-        <BrandHeader />
+      <PageShell>
         <div
           style={{
             display: "flex",
@@ -287,7 +280,7 @@ export function DirectoryCard() {
             padding: "48px 24px",
             color: colors.text.muted,
             gap: 16,
-            flex: 1,
+            height: "100%",
           }}
         >
           <svg
@@ -322,8 +315,7 @@ export function DirectoryCard() {
           </svg>
           <div style={{ fontSize: 13 }}>{t("no_company")}</div>
         </div>
-        <BrandFooter />
-      </div>
+      </PageShell>
     );
   }
 
@@ -336,11 +328,8 @@ export function DirectoryCard() {
   const hasNetworks = data.networks && data.networks.length > 0;
 
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
-    >
-      <BrandHeader />
-      <div style={{ padding: 16, fontFamily: fonts.sans, flex: 1 }}>
+    <PageShell>
+      <div style={{ padding: 16, fontFamily: fonts.sans }}>
         {/* ── Title + Type Badge ────────────────────────────────── */}
         <div
           style={{
@@ -460,7 +449,6 @@ export function DirectoryCard() {
         {/* ── Extra fields ─────────────────────────────────────── */}
         <DetailsSection data={data} />
       </div>
-      <BrandFooter />
-    </div>
+    </PageShell>
   );
 }
