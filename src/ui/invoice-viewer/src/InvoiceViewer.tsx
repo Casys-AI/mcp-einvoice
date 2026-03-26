@@ -12,7 +12,7 @@
  * deposited → received → accepted/rejected/disputed → paid
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, formatCurrency, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
@@ -147,6 +147,11 @@ export function InvoiceViewer() {
   const [emitSuccess, setEmitSuccess] = useState(false);
   const [compact, compactRef] = useCompactMode();
   const { isFullscreen, canFullscreen, toggleFullscreen } = useDisplayMode(app);
+
+  // Auto-request fullscreen on mobile — invoice detail deserves the full screen
+  useEffect(() => {
+    if (compact && canFullscreen && !isFullscreen) toggleFullscreen();
+  }, [canFullscreen]);
 
   const {
     data,
