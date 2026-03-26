@@ -10,7 +10,7 @@
  * - Expandable "Details" for extra unknown fields
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { colors, fonts, styles } from "~/shared/theme";
 import { t } from "~/shared/i18n";
@@ -21,8 +21,13 @@ import { extractToolResultText, type ToolResultPayload } from "~/shared/refresh"
 import { formatAddress } from "~/shared/format";
 import { InfoField } from "~/shared/InfoField";
 import { ChevronIcon } from "~/shared/ChevronIcon";
+import { useCompactMode } from "~/shared/useCompactMode";
+import { useDisplayMode } from "~/shared/useDisplayMode";
 
-const app = new App({ name: "Directory Card", version: "1.0.0" });
+const app = new App(
+  { name: "Directory Card", version: "1.0.0" },
+  { availableDisplayModes: ["inline", "fullscreen"] },
+);
 const REFRESH_THROTTLE_MS = 15_000;
 
 // ============================================================================
@@ -227,6 +232,14 @@ function DetailsSection({ data }: { data: DirectoryResult }) {
 // ============================================================================
 
 export function DirectoryCard() {
+  const [compact] = useCompactMode();
+  const { isFullscreen, canFullscreen, toggleFullscreen } = useDisplayMode(app);
+
+  // Auto-fullscreen on mobile — entity details deserve the full screen
+  useEffect(() => {
+    if (compact && canFullscreen && !isFullscreen) toggleFullscreen();
+  }, [canFullscreen]);
+
   const {
     data,
     loading,

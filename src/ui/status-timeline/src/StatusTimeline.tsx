@@ -18,8 +18,13 @@ import { getStatus } from "~/shared/status";
 import { useViewerLifecycle } from "~/shared/useViewerLifecycle";
 import { extractToolResultText, type ToolResultPayload, type UiRefreshRequestData } from "~/shared/refresh";
 import { StatusBadge } from "~/shared/StatusBadge";
+import { useCompactMode } from "~/shared/useCompactMode";
+import { useDisplayMode } from "~/shared/useDisplayMode";
 
-const app = new App({ name: "Status Timeline", version: "1.0.0" });
+const app = new App(
+  { name: "Status Timeline", version: "1.0.0" },
+  { availableDisplayModes: ["inline", "fullscreen"] },
+);
 const REFRESH_THROTTLE_MS = 15_000;
 
 // ============================================================================
@@ -137,6 +142,14 @@ export function StatusTimeline() {
   useEffect(() => {
     injectPulseKeyframes();
   }, []);
+
+  const [compact] = useCompactMode();
+  const { isFullscreen, canFullscreen, toggleFullscreen } = useDisplayMode(app);
+
+  // Auto-fullscreen on mobile — status history deserves the full screen
+  useEffect(() => {
+    if (compact && canFullscreen && !isFullscreen) toggleFullscreen();
+  }, [canFullscreen]);
 
   const {
     data,
