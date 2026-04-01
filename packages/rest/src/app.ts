@@ -31,6 +31,14 @@ export function createApp(
     return c.json({ status: "ok", adapter: adapter.name });
   });
 
+  // ─── Capabilities ─────────────────────────────────────
+  app.get("/api/capabilities", (c) => {
+    return c.json({
+      adapter: adapter.name,
+      capabilities: [...adapter.capabilities].sort(),
+    });
+  });
+
   // ─── OpenAPI + Swagger ────────────────────────────────
   app.doc("/openapi.json", {
     openapi: "3.1.0",
