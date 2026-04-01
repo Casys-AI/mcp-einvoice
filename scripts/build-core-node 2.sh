@@ -35,8 +35,9 @@ cp "$DIST_DIR/src/runtime.node.ts" "$DIST_DIR/src/runtime.ts"
 rm -f "$DIST_DIR/src/runtime.node.ts"
 
 # Strip .ts extensions from relative imports -> .js (Node ESM)
-find "$DIST_DIR" -name "*.ts" -exec perl -i -pe \
-  's/from "(\.[^"]*?)\.ts"/from "$1.js"/g; s/import\("(\.[^"]*?)\.ts"\)/import("$1.js")/g' {} +
+find "$DIST_DIR" -name "*.ts" -exec perl -i'' \
+  -pe 's/from "(\.[^"]*?)\.ts"/from "$1.js"/g; s/import\("(\.[^"]*?)\.ts"\)/import("$1.js")/g' \
+  {} +
 
 # Generate package.json for the intermediate Node workspace
 cat > "$DIST_DIR/package.json" <<PKGJSON

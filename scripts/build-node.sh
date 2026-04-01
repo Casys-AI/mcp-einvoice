@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Build @casys/mcp-einvoice for Node.js distribution
 #
-# What this does:
-# 1. Copies packages/core/src/ and packages/mcp/ to dist-node/
-# 2. Replaces runtime.ts with runtime.node.ts (node:fs instead of Deno.*)
-# 3. Rewrites @casys/einvoice-core imports to relative paths
-# 4. Strips .ts extensions from relative imports (Node ESM convention)
-# 5. Installs the Node build dependencies in dist-node/
-# 6. Produces a publishable npm package in dist-node/bin/
+# Recreates the pre-monorepo flat layout in dist-node/:
+#   dist-node/src/adapter.ts        (from core)
+#   dist-node/src/adapters/...      (from core)
+#   dist-node/src/tools/...         (from mcp)
+#   dist-node/src/ui/...            (from mcp)
+#   dist-node/src/client.ts         (from mcp)
+#   dist-node/server.ts             (from mcp)
 #
-# Output: dist-node/ ready for npm publish
+# Then: swap runtime, esbuild bundle with --alias for @casys/einvoice-core.
 #
 set -euo pipefail
 
@@ -18,82 +18,55 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist-node"
 VERSION="$(grep '"version"' "$ROOT_DIR/packages/mcp/deno.json" | sed 's/.*"version": *"\([^"]*\)".*/\1/')"
 
-echo "[build-node] Building Node.js distribution for @casys/mcp-einvoice v$VERSION..."
+echo "[build-node] Building @casys/mcp-einvoice v$VERSION for Node.js..."
 
-# Clean
 rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 
-# Copy core (adapter layer) into dist-node/core/
-cp -r "$ROOT_DIR/packages/core/src" "$DIST_DIR/core-src"
-cp "$ROOT_DIR/packages/core/mod.ts" "$DIST_DIR/core-mod.ts"
-
-# Copy mcp source into dist-node/
-cp -r "$ROOT_DIR/packages/mcp/src" "$DIST_DIR/src"
+# ── Recreate flat src/ layout (core + mcp merged, like pre-monorepo) ──
+cp -r "$ROOT_DIR/packages/core/src" "$DIST_DIR/src"
+# Merge mcp on top, but skip testing/ (core has its own helpers.ts)
+rsync -a --exclude='node_modules' --exclude='testing' "$ROOT_DIR/packages/mcp/src/" "$DIST_DIR/src/"
 cp "$ROOT_DIR/packages/mcp/server.ts" "$DIST_DIR/server.ts"
 cp "$ROOT_DIR/packages/mcp/mod.ts" "$DIST_DIR/mod.ts" 2>/dev/null || true
 
-# Remove test files
-find "$DIST_DIR" -name "*_test.ts" -o -name "*.test.ts" -o -name "*.bench.ts" | xargs rm -f 2>/dev/null || true
-rm -rf "$DIST_DIR/src/ui/node_modules" 2>/dev/null || true
-# Keep src/ui/dist/ (built HTML) but remove source viewer folders
-find "$DIST_DIR/src/ui" -maxdepth 1 -type d ! -name "ui" ! -name "dist" ! -name "shared" ! -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
+# Core mod.ts as the @casys/einvoice-core alias target
+cp "$ROOT_DIR/packages/core/mod.ts" "$DIST_DIR/core-mod.ts"
+
+# ── Clean up ──
+find "$DIST_DIR" \( -name "*_test.ts" -o -name "*.test.ts" -o -name "*.bench.ts" \) -delete 2>/dev/null || true
+find "$DIST_DIR/src/ui" -maxdepth 1 -type d ! -name "ui" ! -name "dist" ! -name "shared" -exec rm -rf {} + 2>/dev/null || true
 rm -f "$DIST_DIR/src/ui/build-all.mjs" "$DIST_DIR/src/ui/vite.single.config.mjs" "$DIST_DIR/src/ui/package.json" "$DIST_DIR/src/ui/package-lock.json" 2>/dev/null || true
 
-# Replace runtime.ts with runtime.node.ts
+# ── Swap Deno runtime → Node runtime ──
 if [ -f "$DIST_DIR/src/runtime.node.ts" ]; then
   cp "$DIST_DIR/src/runtime.node.ts" "$DIST_DIR/src/runtime.ts"
   rm "$DIST_DIR/src/runtime.node.ts"
 fi
 
-# Rewrite @casys/einvoice-core imports to relative paths pointing at core-mod.ts
-# In server.ts (root level): @casys/einvoice-core → ./core-mod.ts
-sed -i 's|from "@casys/einvoice-core"|from "./core-mod.ts"|g' "$DIST_DIR/server.ts"
-sed -i 's|from "@casys/einvoice-core"|from "./core-mod.ts"|g' "$DIST_DIR/mod.ts"
-# In src/ files: @casys/einvoice-core → ../core-mod.ts
-find "$DIST_DIR/src" -name "*.ts" -exec sed -i 's|from "@casys/einvoice-core"|from "../core-mod.ts"|g' {} +
-
-# Strip .ts extensions from relative imports → .js (Node ESM)
-find "$DIST_DIR" -name "*.ts" -exec sed -i \
-  -e 's/from "\(\.[^"]*\)\.ts"/from "\1.js"/g' \
-  -e 's/import("\(\.[^"]*\)\.ts")/import("\1.js")/g' \
-  {} +
-
-# Generate package.json for the intermediate Node workspace
+# ── Intermediate workspace ──
 cat > "$DIST_DIR/package.json" <<PKGJSON
 {
   "name": "@casys/mcp-einvoice-build",
   "private": true,
   "version": "$VERSION",
-  "description": "Intermediate build workspace for @casys/mcp-einvoice",
   "type": "module",
-  "main": "server.ts",
-  "types": "server.ts",
-  "scripts": {
-    "start": "tsx server.ts",
-    "serve": "tsx server.ts --http --port=3015"
-  },
   "dependencies": {
     "@casys/mcp-server": "^0.9.0",
     "@modelcontextprotocol/sdk": "^1.15.1"
   },
   "devDependencies": {
-    "esbuild": "^0.25.12",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.2"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "license": "MIT"
+    "esbuild": "^0.25.12"
+  }
 }
 PKGJSON
 
-# Copy README into the intermediate workspace
 cp "$ROOT_DIR/README.md" "$DIST_DIR/README.md" 2>/dev/null || true
 
+# ── Bundle ──
 pushd "$DIST_DIR" >/dev/null
 npm install --no-fund --no-audit
+
 ./node_modules/.bin/esbuild server.ts \
   --bundle \
   --platform=node \
@@ -101,8 +74,10 @@ npm install --no-fund --no-audit
   --format=esm \
   --outfile=bin/mcp-einvoice.mjs \
   --external:node:* \
+  --alias:@casys/einvoice-core=./core-mod.ts \
   --banner:js='import { createRequire } from "node:module"; const require = createRequire(import.meta.url);'
-sed -i '1s/^/#!\/usr\/bin\/env node\n/' bin/mcp-einvoice.mjs
+
+printf '#!/usr/bin/env node\n' | cat - bin/mcp-einvoice.mjs > bin/tmp.mjs && mv bin/tmp.mjs bin/mcp-einvoice.mjs
 chmod +x bin/mcp-einvoice.mjs
 cp -r src/ui/dist bin/ui-dist 2>/dev/null || true
 cp README.md bin/README.md 2>/dev/null || true
@@ -113,41 +88,14 @@ cat > bin/package.json <<PKGJSON
   "version": "$VERSION",
   "description": "PA-agnostic MCP server for French e-invoicing (Iopole, Chorus Pro...)",
   "type": "module",
-  "bin": {
-    "mcp-einvoice": "mcp-einvoice.mjs"
-  },
-  "files": [
-    "mcp-einvoice.mjs",
-    "ui-dist/**/*",
-    "README.md"
-  ],
-  "keywords": [
-    "mcp",
-    "einvoice",
-    "e-invoicing",
-    "iopole",
-    "factur-x",
-    "chorus-pro",
-    "model-context-protocol",
-    "claude",
-    "ai",
-    "tools"
-  ],
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Casys-AI/mcp-einvoice"
-  },
+  "bin": { "mcp-einvoice": "mcp-einvoice.mjs" },
+  "files": ["mcp-einvoice.mjs", "ui-dist/**/*", "README.md"],
+  "keywords": ["mcp", "einvoice", "e-invoicing", "iopole", "factur-x", "model-context-protocol"],
+  "engines": { "node": ">=20.0.0" },
+  "repository": { "type": "git", "url": "https://github.com/Casys-AI/mcp-einvoice" },
   "license": "MIT"
 }
 PKGJSON
 popd >/dev/null
 
-echo "[build-node] Done! Intermediate workspace: $DIST_DIR"
-echo "[build-node] Publishable package: $DIST_DIR/bin"
-echo ""
-echo "Useful commands:"
-echo "  node $DIST_DIR/bin/mcp-einvoice.mjs --http --port=3015"
-echo "  cd $DIST_DIR/bin && npm pack"
+echo "[build-node] Done! Package: $DIST_DIR/bin"
