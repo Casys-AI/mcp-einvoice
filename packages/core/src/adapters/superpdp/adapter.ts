@@ -31,6 +31,7 @@ import { normalizeDirection } from "../shared/direction.ts";
 import { encodePathSegment } from "../shared/encoding.ts";
 import { createOAuth2TokenProvider } from "../shared/oauth2.ts";
 import { requireEnv } from "../shared/env.ts";
+import { env } from "../../runtime.ts";
 
 /**
  * Super PDP adapter — extends AfnorBaseAdapter.
@@ -367,9 +368,9 @@ export function createSuperPDPAdapter(): SuperPDPAdapter {
     "SUPERPDP_CLIENT_SECRET",
     "Get your client secret from the Super PDP dashboard.",
   );
-  const authUrl = Deno.env.get("SUPERPDP_AUTH_URL") ||
+  const authUrl = env("SUPERPDP_AUTH_URL") ||
     "https://api.superpdp.tech/oauth2/token";
-  const afnorUrl = Deno.env.get("SUPERPDP_AFNOR_URL") ||
+  const afnorUrl = env("SUPERPDP_AFNOR_URL") ||
     "https://api.superpdp.tech/afnor-flow";
 
   // Same OAuth2 token works for both native and AFNOR APIs

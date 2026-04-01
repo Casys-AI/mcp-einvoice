@@ -33,6 +33,7 @@ import { BaseAdapter } from "../base-adapter.ts";
 import { StorecoveClient } from "./client.ts";
 import { NotSupportedError } from "../shared/errors.ts";
 import { requireEnv } from "../shared/env.ts";
+import { env } from "../../runtime.ts";
 import { encodePathSegment, uint8ToBase64 } from "../shared/encoding.ts";
 
 /**
@@ -620,7 +621,7 @@ export function createStorecoveAdapter(): StorecoveAdapter {
     "STORECOVE_API_KEY",
     "Get your API key from the Storecove dashboard.",
   );
-  const defaultLegalEntityId = Deno.env.get("STORECOVE_LEGAL_ENTITY_ID") || undefined;
+  const defaultLegalEntityId = env("STORECOVE_LEGAL_ENTITY_ID") || undefined;
 
   const client = new StorecoveClient({ baseUrl, apiKey });
   return new StorecoveAdapter(client, defaultLegalEntityId);

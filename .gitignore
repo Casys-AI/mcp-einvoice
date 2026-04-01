@@ -4,3 +4,4 @@ deno.lock
 .mcp.json
 .stitch/
 .cov/
+dist-*/

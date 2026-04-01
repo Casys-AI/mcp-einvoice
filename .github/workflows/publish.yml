@@ -93,10 +93,47 @@ jobs:
           npm ci
           node build-all.mjs
 
-      - name: Build Node.js bundle
-        run: bash scripts/build-node.sh
+      - name: Build Node.js bundles
+        run: |
+          bash scripts/build-core-node.sh
+          bash scripts/build-rest-node.sh
+          bash scripts/build-node.sh
 
-      - name: Publish to npm
+      - name: Publish @casys/einvoice-core to npm
+        run: |
+          cd dist-core-node/pkg
+          set +e
+          PUBLISH_OUTPUT=$(npm publish --access public 2>&1)
+          PUBLISH_STATUS=$?
+          set -e
+          echo "$PUBLISH_OUTPUT"
+          if [ "$PUBLISH_STATUS" -eq 0 ]; then exit 0; fi
+          if echo "$PUBLISH_OUTPUT" | grep -qiE "cannot publish over the previously published versions|cannot publish over previously published version|you cannot publish over"; then
+            echo "Version already published, skipping"
+            exit 0
+          fi
+          exit "$PUBLISH_STATUS"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @casys/einvoice-rest to npm
+        run: |
+          cd dist-rest-node/pkg
+          set +e
+          PUBLISH_OUTPUT=$(npm publish --access public 2>&1)
+          PUBLISH_STATUS=$?
+          set -e
+          echo "$PUBLISH_OUTPUT"
+          if [ "$PUBLISH_STATUS" -eq 0 ]; then exit 0; fi
+          if echo "$PUBLISH_OUTPUT" | grep -qiE "cannot publish over the previously published versions|cannot publish over previously published version|you cannot publish over"; then
+            echo "Version already published, skipping"
+            exit 0
+          fi
+          exit "$PUBLISH_STATUS"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @casys/mcp-einvoice to npm
         run: |
           cd dist-node/bin
           set +e
