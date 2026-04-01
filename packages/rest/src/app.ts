@@ -8,6 +8,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { bearerAuth } from "hono/bearer-auth";
 import type { EInvoiceAdapter } from "@casys/einvoice-core";
+import { registerInvoiceRoutes } from "./routes/invoices.ts";
 
 export function createApp(
   adapter: EInvoiceAdapter,
@@ -37,6 +38,9 @@ export function createApp(
   });
 
   app.get("/docs", swaggerUI({ url: "/openapi.json" }));
+
+  // ─── Invoice Routes ───────────────────────────────────
+  registerInvoiceRoutes(app, adapter);
 
   return app;
 }
