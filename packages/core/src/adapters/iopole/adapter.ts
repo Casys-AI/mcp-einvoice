@@ -38,7 +38,6 @@ import { requireEnv } from "../shared/env.ts";
 import { encodePathSegment } from "../shared/encoding.ts";
 import { normalizeDirection } from "../shared/direction.ts";
 import type { NormalizeFn } from "../shared/types.ts";
-import { env } from "../../runtime.ts";
 
 const IOPOLE_DEFAULT_AUTH_URL =
   "https://auth.ppd.iopole.fr/realms/iopole/protocol/openid-connect/token";
@@ -743,7 +742,7 @@ export function createIopoleAdapter(): IopoleAdapter {
     "IOPOLE_CUSTOMER_ID",
     "Find it in Settings → Unique Identifier (sandbox) or admin console.",
   );
-  const authUrl = env("IOPOLE_AUTH_URL") || IOPOLE_DEFAULT_AUTH_URL;
+  const authUrl = Deno.env.get("IOPOLE_AUTH_URL") || IOPOLE_DEFAULT_AUTH_URL;
 
   const getToken = createOAuth2TokenProvider({
     authUrl,
