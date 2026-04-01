@@ -4,16 +4,25 @@
 
 MCP server for e-invoicing — PA-agnostic via the adapter pattern. 3 adapters
 (Iopole, Storecove, Super PDP), 39 tools, 6 viewers, BaseAdapter +
-AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
+AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.2.0.
+
+Monorepo with 3 packages:
+- `packages/core/` — `@casys/einvoice-core` (adapter layer, types, shared utils)
+- `packages/mcp/` — `@casys/mcp-einvoice` (MCP server, tools, viewers)
+- `packages/rest/` — `@casys/einvoice-rest` (Hono REST API)
 
 ## Commands
 
-- `deno task serve` — HTTP mode on port 3015 (localhost by default)
-- `deno task test` — run tests (369 tests, all must pass)
+- `deno task mcp:serve` — MCP HTTP mode on port 3015 (localhost by default)
+- `deno task rest:serve` — REST API on port 3016
+- `deno task test` — run all tests across all packages
+- `deno task test:core` — run tests for einvoice-core only
+- `deno task test:mcp` — run tests for mcp-einvoice only
+- `deno task test:rest` — run tests for einvoice-rest only
 - `deno task inspect` — launch MCP Inspector
-- `cd src/ui && node build-all.mjs` — rebuild all viewers (required after TSX
-  changes)
-- Run from project root, not src/ui/ (server.ts won't be found otherwise)
+- `cd packages/mcp/src/ui && node build-all.mjs` — rebuild all viewers (required
+  after TSX changes)
+- Run from project root (workspace root), not from a package directory
 
 ## Git
 
@@ -21,18 +30,43 @@ AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
 - Small fixes: `git commit` + `git push origin main`
 - Features: branch + `gh pr create` + `gh pr merge`
 - CI auto-publishes to JSR + npm on push to main
-- Version bump only in `deno.json`
+- Version bump in each `packages/*/deno.json`
+
+## Monorepo Structure
+
+```
+packages/
+├── core/           # @casys/einvoice-core — adapter layer, types, shared utils
+│   ├── mod.ts
+│   └── src/
+│       ├── adapter.ts          # EInvoiceAdapter interface + types
+│       ├── adapters/           # BaseAdapter, AfnorBaseAdapter, Iopole, Storecove, SuperPDP
+│       └── testing/helpers.ts  # createMockAdapter()
+├── mcp/            # @casys/mcp-einvoice — MCP server, tools, viewers
+│   ├── server.ts
+│   ├── mod.ts
+│   └── src/
+│       ├── client.ts           # Tools registry + capability filtering
+│       ├── tools/              # 39 tools (6 categories)
+│       ├── ui/                 # 6 viewers React (single-file HTML)
+│       └── testing/helpers.ts  # unwrapStructured()
+└── rest/           # @casys/einvoice-rest — Hono REST API
+    ├── server.ts
+    └── src/
+        └── routes/             # Hono routes (invoice, config, entity, etc.)
+```
 
 ## Architecture
 
-- `EInvoiceAdapter` interface (45 methods, 8 typed returns) in `src/adapter.ts`
-- `BaseAdapter` (abstract) in `src/adapters/base-adapter.ts` — NotSupportedError
-  stubs for all 45 methods
-- `AfnorBaseAdapter` extends BaseAdapter in `src/adapters/afnor/` — AFNOR XP
-  Z12-013 socle for French PAs with AFNOR
+- `EInvoiceAdapter` interface (45 methods, 8 typed returns) in
+  `packages/core/src/adapter.ts`
+- `BaseAdapter` (abstract) in `packages/core/src/adapters/base-adapter.ts` —
+  NotSupportedError stubs for all 45 methods
+- `AfnorBaseAdapter` extends BaseAdapter in `packages/core/src/adapters/afnor/`
+  — AFNOR XP Z12-013 socle for French PAs with AFNOR
 - `AdapterMethodName` type ensures compile-time safety for capabilities
-- `BaseHttpClient` in `src/adapters/shared/http-client.ts` — shared HTTP logic,
-  subclasses provide auth
+- `BaseHttpClient` in `packages/core/src/adapters/shared/http-client.ts` —
+  shared HTTP logic, subclasses provide auth
 - Shared: `errors.ts` (NotSupportedError, AdapterAPIError), `env.ts`
   (requireEnv), `encoding.ts` (uint8ToBase64, encodePathSegment), `oauth2.ts`
   (token provider, 15s timeout), `direction.ts` (normalizeDirection)
@@ -61,7 +95,8 @@ AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
 
 ## Iopole API
 
-- **Local API specs**: `src/adapters/iopole/api-specs/` — 6 OpenAPI JSON specs
+- **Local API specs**: `packages/core/src/adapters/iopole/api-specs/` — 6
+  OpenAPI JSON specs
 - Sandbox API: api.ppd.iopole.fr/v1, Auth: auth.ppd.iopole.fr (default, NOT
   auth.iopole.com)
 - Factur-X generate returns binary PDF — use `postBinary()` in IopoleClient
@@ -74,8 +109,8 @@ AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
 
 ## Super PDP API
 
-- **Local API specs**: `src/adapters/superpdp/api-specs/` — `superpdp.json`
-  (v1.13.0.beta), `afnor-flow.json` (v1.2.0)
+- **Local API specs**: `packages/core/src/adapters/superpdp/api-specs/` —
+  `superpdp.json` (v1.13.0.beta), `afnor-flow.json` (v1.2.0)
 - Sandbox API: api.superpdp.tech/v1.beta, Auth: api.superpdp.tech/oauth2/token
 - Invoice data lives in nested `en_invoice.*` (EN16931 model) — NOT flat fields
 - Status comes from `events[last].status_code` — NOT a top-level `status` field
@@ -97,11 +132,21 @@ AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
   `electronic_address` (French buyers only)
 - SuperPDP uses cursor-based pagination (starting_after_id), not offset-based
 
+## REST API
+
+- `deno task rest:serve` — Hono REST API on port 3016
+- Swagger UI available at `/docs`
+- API key auth via `EINVOICE_REST_API_KEY` env var
+- `--no-auth` flag for dev (skips auth middleware)
+- Consumes `@casys/einvoice-core` adapters — same adapter layer as MCP
+- Routes mirror MCP tools: invoice, config, entity, identifier, directory, status,
+  reporting, webhook
+
 ## Status Codes (CDAR)
 
 - Viewers use CDAR codes (PPF lifecycle, XP Z12-012)
-- `getStatus()` in `src/ui/shared/status.ts` resolves any format: CDAR numeric
-  ("205"), prefixed ("fr:205"), Iopole ("APPROVED"), AFNOR ("Ok")
+- `getStatus()` in `packages/mcp/src/ui/shared/status.ts` resolves any format:
+  CDAR numeric ("205"), prefixed ("fr:205"), Iopole ("APPROVED"), AFNOR ("Ok")
 - 4 obligatoires PPF: 200 (Déposée), 210 (Refusée), 212 (Encaissée), 213
   (Rejetée)
 - Lifecycle transition guards: `canAcceptReject()`, `canSendPayment()`,
@@ -109,10 +154,10 @@ AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
 
 ## Viewers (MCP Apps)
 
-- 6 React single-file HTML bundles in src/ui/dist/
+- 6 React single-file HTML bundles in `packages/mcp/src/ui/dist/`
 - After editing any TSX: must run `node build-all.mjs` AND rebuild dist
-- New viewers auto-discovered by build BUT must be registered in server.ts
-  registerViewers()
+- New viewers auto-discovered by build BUT must be registered in
+  `packages/mcp/server.ts` registerViewers()
 - callServerTool = actions + drill-down, sendMessage = navigation (new
   conversation turn)
 - Status badges: use `getStatus(code)` from shared/status.ts — never hardcode
@@ -148,15 +193,17 @@ AfnorBaseAdapter hierarchy. Deno + TypeScript + React viewers. v0.1.2.
 
 ## Testing
 
-- 369 tests total (unit + E2E)
+- Unit + E2E tests across all packages
 - E2E tests per adapter: `e2e_test.ts` (Iopole), `e2e_superpdp_test.ts`
   (SuperPDP) — both need .env credentials
 - Unit tests: all tools (invoice, directory, status, reporting, webhook,
   config), all adapters, AFNOR client/base-adapter
 - `.env` at project root (gitignored) loads credentials for E2E — same vars as
   Claude Desktop config
-- MCP Inspector: `deno task serve` + inspector on http://localhost:6274, connect
-  Streamable HTTP to localhost:3015/mcp (Direct, not Via Proxy)
+- MCP Inspector: `deno task mcp:serve` + inspector on http://localhost:6274,
+  connect Streamable HTTP to localhost:3015/mcp (Direct, not Via Proxy)
 - generated-store: 10min TTL, in-memory only, lost on restart
-- Mock adapter in `src/testing/helpers.ts` — use `createMockAdapter()` and
-  `unwrapStructured()` for structuredContent
+- Mock adapter in `packages/core/src/testing/helpers.ts` —
+  use `createMockAdapter()` for adapter mocks
+- `unwrapStructured()` for structuredContent in
+  `packages/mcp/src/testing/helpers.ts`

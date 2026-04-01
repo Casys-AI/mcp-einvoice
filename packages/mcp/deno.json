@@ -1,13 +1,13 @@
 {
   "name": "@casys/mcp-einvoice",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "PA-agnostic MCP tools for e-invoicing.",
   "exports": {
     ".": "./mod.ts",
     "./server": "./server.ts"
   },
   "imports": {
-    "@casys/einvoice-core": "jsr:@casys/einvoice-core@^0.1.0",
+    "@casys/einvoice-core": "jsr:@casys/einvoice-core@^0.2.0",
     "@casys/mcp-server": "jsr:@casys/mcp-server@^0.12.0",
     "~/": "./src/ui/",
     "react": "npm:react@^18.3.1",

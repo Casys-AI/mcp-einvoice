@@ -1,5 +1,12 @@
 # mcp-einvoice
 
+[![@casys/einvoice-core on JSR](https://jsr.io/badges/@casys/einvoice-core)](https://jsr.io/@casys/einvoice-core)
+[![@casys/mcp-einvoice on JSR](https://jsr.io/badges/@casys/mcp-einvoice)](https://jsr.io/@casys/mcp-einvoice)
+[![@casys/einvoice-rest on JSR](https://jsr.io/badges/@casys/einvoice-rest)](https://jsr.io/@casys/einvoice-rest)
+[![@casys/einvoice-core on npm](https://img.shields.io/npm/v/@casys/einvoice-core?label=einvoice-core&color=cb3837)](https://www.npmjs.com/package/@casys/einvoice-core)
+[![@casys/mcp-einvoice on npm](https://img.shields.io/npm/v/@casys/mcp-einvoice?label=mcp-einvoice&color=cb3837)](https://www.npmjs.com/package/@casys/mcp-einvoice)
+[![@casys/einvoice-rest on npm](https://img.shields.io/npm/v/@casys/einvoice-rest?label=einvoice-rest&color=cb3837)](https://www.npmjs.com/package/@casys/einvoice-rest)
+
 Serveur MCP pour la facturation électronique — agnostique plateforme via le
 pattern adapter.
 
@@ -15,6 +22,39 @@ La réforme de la facturation électronique en France (sept. 2026) impose
 l'utilisation de Plateformes Agréées (PA). Il en existe 106+, chacune avec sa
 propre API. Ce serveur MCP expose **une interface unique** pour toutes, avec 39
 tools et 6 viewers interactifs.
+
+## Monorepo
+
+Ce dépôt est un Deno workspaces monorepo avec 3 packages :
+
+| Package | Description |
+| ------- | ----------- |
+| [`@casys/einvoice-core`](packages/core/) | Couche adapter PA-agnostique — types, adapters (Iopole, Storecove, SuperPDP), utils partagés |
+| [`@casys/mcp-einvoice`](packages/mcp/) | Serveur MCP — 39 tools, 6 viewers React |
+| [`@casys/einvoice-rest`](packages/rest/) | REST API Hono + Swagger UI |
+
+## Installation
+
+### Deno / JSR
+
+```bash
+# Adapter layer seul
+deno add jsr:@casys/einvoice-core
+
+# Serveur MCP complet
+deno add jsr:@casys/mcp-einvoice
+
+# REST API
+deno add jsr:@casys/einvoice-rest
+```
+
+### Node / npm
+
+```bash
+npm install @casys/einvoice-core
+npm install @casys/mcp-einvoice
+npm install @casys/einvoice-rest
+```
 
 ## Adapters
 
@@ -50,7 +90,7 @@ supportée :
 ```bash
 cp .env.example .env
 # Remplir les variables de l'adapter choisi, puis :
-deno task serve          # HTTP mode (port 3015)
+deno task mcp:serve     # MCP HTTP mode (port 3015)
 ```
 
 ### MCP config (Claude Desktop / stdio)
@@ -60,7 +100,7 @@ deno task serve          # HTTP mode (port 3015)
   "mcpServers": {
     "einvoice": {
       "command": "deno",
-      "args": ["run", "--allow-all", "server.ts"],
+      "args": ["run", "--allow-all", "packages/mcp/server.ts"],
       "env": {
         "EINVOICE_ADAPTER": "iopole",
         "IOPOLE_API_URL": "https://api.ppd.iopole.fr/v1",
@@ -76,7 +116,7 @@ deno task serve          # HTTP mode (port 3015)
 Remplacer `EINVOICE_ADAPTER` par `storecove` ou `superpdp` avec les variables
 correspondantes (voir `.env.example`).
 
-### Options serveur
+### Options serveur MCP
 
 ```
 --http                   Mode HTTP (default: stdio)
@@ -84,6 +124,30 @@ correspondantes (voir `.env.example`).
 --hostname=localhost     Bind address (default: localhost)
 --adapter=iopole         Override adapter (default: env EINVOICE_ADAPTER)
 --categories=invoice     Filtrer les catégories de tools
+```
+
+## REST API
+
+```bash
+deno task rest:serve     # REST API (port 3016)
+```
+
+- Swagger UI disponible sur `http://localhost:3016/docs`
+- Auth via header `X-API-Key` (env `EINVOICE_REST_API_KEY`)
+- `--no-auth` pour désactiver l'auth en dev
+- Même couche adapter que le serveur MCP — mêmes credentials `.env`
+
+## Commands
+
+```bash
+deno task mcp:serve      # MCP HTTP mode (port 3015)
+deno task rest:serve     # REST API (port 3016)
+deno task test           # Tous les tests (tous packages)
+deno task test:core      # Tests einvoice-core
+deno task test:mcp       # Tests mcp-einvoice
+deno task test:rest      # Tests einvoice-rest
+deno task inspect        # MCP Inspector
+cd packages/mcp/src/ui && node build-all.mjs   # Rebuild viewers après modif TSX
 ```
 
 ## Architecture
@@ -143,7 +207,7 @@ ceux supportés par l'adapter actif sont exposés au LLM.
 | **action-result**   | Feedback visuel d'action (enroll, register)                |
 
 ```bash
-cd src/ui && node build-all.mjs   # Rebuild après modification TSX
+cd packages/mcp/src/ui && node build-all.mjs   # Rebuild après modification TSX
 ```
 
 ## Ajouter un adapter
@@ -173,24 +237,36 @@ méthodes avec l'API native, comme Iopole).
 **Plateforme non-française** → `extends BaseAdapter` directement (comme
 Storecove).
 
-Guide complet : `src/adapters/README.md`.
+Guide complet : `packages/core/src/adapters/README.md`.
 
 ## Structure
 
 ```
-server.ts                    # MCP server (stdio + HTTP)
-src/
-├── adapter.ts               # EInvoiceAdapter (45 methods + capabilities)
-├── client.ts                # Tools registry + capability filtering
-├── adapters/
-│   ├── base-adapter.ts      # BaseAdapter (abstract, NotSupported stubs)
-│   ├── afnor/               # Socle AFNOR XP Z12-013 (shared)
-│   │   ├── base-adapter.ts  # AfnorBaseAdapter (extends BaseAdapter)
-│   │   └── client.ts        # AfnorClient (3 flow endpoints)
-│   ├── shared/oauth2.ts     # OAuth2 token provider (shared)
-│   ├── iopole/              # PA française — extends BaseAdapter
-│   ├── storecove/           # Peppol AP — extends BaseAdapter
-│   └── superpdp/            # PA française — extends AfnorBaseAdapter
-├── tools/                   # 39 tools (6 catégories)
-└── ui/                      # 6 viewers React (single-file HTML)
+packages/
+├── core/                        # @casys/einvoice-core
+│   ├── mod.ts
+│   └── src/
+│       ├── adapter.ts           # EInvoiceAdapter (45 methods + capabilities)
+│       ├── adapters/
+│       │   ├── base-adapter.ts  # BaseAdapter (abstract, NotSupported stubs)
+│       │   ├── afnor/           # Socle AFNOR XP Z12-013 (shared)
+│       │   │   ├── base-adapter.ts  # AfnorBaseAdapter (extends BaseAdapter)
+│       │   │   └── client.ts        # AfnorClient (3 flow endpoints)
+│       │   ├── shared/oauth2.ts # OAuth2 token provider (shared)
+│       │   ├── iopole/          # PA française — extends BaseAdapter
+│       │   ├── storecove/       # Peppol AP — extends BaseAdapter
+│       │   └── superpdp/        # PA française — extends AfnorBaseAdapter
+│       └── testing/helpers.ts   # createMockAdapter()
+├── mcp/                         # @casys/mcp-einvoice
+│   ├── server.ts                # MCP server (stdio + HTTP)
+│   ├── mod.ts
+│   └── src/
+│       ├── client.ts            # Tools registry + capability filtering
+│       ├── tools/               # 39 tools (6 catégories)
+│       ├── ui/                  # 6 viewers React (single-file HTML)
+│       └── testing/helpers.ts   # unwrapStructured()
+└── rest/                        # @casys/einvoice-rest
+    ├── server.ts                # Hono REST server
+    └── src/
+        └── routes/              # Routes (invoice, config, entity, etc.)
 ```
