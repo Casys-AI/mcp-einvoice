@@ -2,14 +2,12 @@
 # Build @casys/mcp-einvoice for Node.js distribution
 #
 # What this does:
-# 1. Copies src/ and server.ts to dist-node/
+# 1. Copies packages/core/src/ and packages/mcp/ to dist-node/
 # 2. Replaces runtime.ts with runtime.node.ts (node:fs instead of Deno.*)
-# 3. Strips .ts extensions from relative imports (Node ESM convention)
-# 4. Installs the Node build dependencies in dist-node/
-# 5. Produces a publishable npm package in dist-node/bin/
-#
-# Usage:
-#   cd lib/einvoice && ./scripts/build-node.sh
+# 3. Rewrites @casys/einvoice-core imports to relative paths
+# 4. Strips .ts extensions from relative imports (Node ESM convention)
+# 5. Installs the Node build dependencies in dist-node/
+# 6. Produces a publishable npm package in dist-node/bin/
 #
 # Output: dist-node/ ready for npm publish
 #
@@ -18,20 +16,24 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist-node"
-VERSION="$(grep '"version"' "$ROOT_DIR/deno.json" | sed 's/.*"version": *"\([^"]*\)".*/\1/')"
+VERSION="$(grep '"version"' "$ROOT_DIR/packages/mcp/deno.json" | sed 's/.*"version": *"\([^"]*\)".*/\1/')"
 
-echo "[build-node] Building Node.js distribution for @casys/mcp-einvoice..."
+echo "[build-node] Building Node.js distribution for @casys/mcp-einvoice v$VERSION..."
 
 # Clean
 rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 
-# Copy source files (exclude tests, UI source, and runtime.node.ts)
-cp -r "$ROOT_DIR/src" "$DIST_DIR/src"
-cp "$ROOT_DIR/server.ts" "$DIST_DIR/server.ts"
-cp "$ROOT_DIR/mod.ts" "$DIST_DIR/mod.ts" 2>/dev/null || true
+# Copy core (adapter layer) into dist-node/core/
+cp -r "$ROOT_DIR/packages/core/src" "$DIST_DIR/core-src"
+cp "$ROOT_DIR/packages/core/mod.ts" "$DIST_DIR/core-mod.ts"
 
-# Remove test files, UI source dirs (keep dist/), and node_modules from dist
+# Copy mcp source into dist-node/
+cp -r "$ROOT_DIR/packages/mcp/src" "$DIST_DIR/src"
+cp "$ROOT_DIR/packages/mcp/server.ts" "$DIST_DIR/server.ts"
+cp "$ROOT_DIR/packages/mcp/mod.ts" "$DIST_DIR/mod.ts" 2>/dev/null || true
+
+# Remove test files
 find "$DIST_DIR" -name "*_test.ts" -o -name "*.test.ts" -o -name "*.bench.ts" | xargs rm -f 2>/dev/null || true
 rm -rf "$DIST_DIR/src/ui/node_modules" 2>/dev/null || true
 # Keep src/ui/dist/ (built HTML) but remove source viewer folders
@@ -43,6 +45,13 @@ if [ -f "$DIST_DIR/src/runtime.node.ts" ]; then
   cp "$DIST_DIR/src/runtime.node.ts" "$DIST_DIR/src/runtime.ts"
   rm "$DIST_DIR/src/runtime.node.ts"
 fi
+
+# Rewrite @casys/einvoice-core imports to relative paths pointing at core-mod.ts
+# In server.ts (root level): @casys/einvoice-core → ./core-mod.ts
+sed -i 's|from "@casys/einvoice-core"|from "./core-mod.ts"|g' "$DIST_DIR/server.ts"
+sed -i 's|from "@casys/einvoice-core"|from "./core-mod.ts"|g' "$DIST_DIR/mod.ts"
+# In src/ files: @casys/einvoice-core → ../core-mod.ts
+find "$DIST_DIR/src" -name "*.ts" -exec sed -i 's|from "@casys/einvoice-core"|from "../core-mod.ts"|g' {} +
 
 # Strip .ts extensions from relative imports → .js (Node ESM)
 find "$DIST_DIR" -name "*.ts" -exec sed -i \
