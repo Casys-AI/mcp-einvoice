@@ -8,6 +8,11 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { bearerAuth } from "hono/bearer-auth";
 import type { EInvoiceAdapter } from "@casys/einvoice-core";
+import { registerStatusRoutes } from "./routes/status.ts";
+import { registerDirectoryRoutes } from "./routes/directory.ts";
+import { registerReportingRoutes } from "./routes/reporting.ts";
+import { registerWebhookRoutes } from "./routes/webhooks.ts";
+import { registerConfigRoutes } from "./routes/config.ts";
 import { registerInvoiceRoutes } from "./routes/invoices.ts";
 
 export function createApp(
@@ -39,7 +44,17 @@ export function createApp(
 
   app.get("/docs", swaggerUI({ url: "/openapi.json" }));
 
+  // ─── Routes (status/directory/reporting/webhooks/config before invoices) ───
+  // Status routes must precede invoice routes — /api/invoices/{id} would
+  // otherwise swallow /api/invoices/{id}/status and /api/invoices/{id}/status-history.
+  registerStatusRoutes(app, adapter);
+  registerDirectoryRoutes(app, adapter);
+  registerReportingRoutes(app, adapter);
+  registerWebhookRoutes(app, adapter);
+  registerConfigRoutes(app, adapter);
+
   // ─── Invoice Routes ───────────────────────────────────
+  // Registered last so /{id} catch-all does not shadow sub-routes above.
   registerInvoiceRoutes(app, adapter);
 
   return app;
