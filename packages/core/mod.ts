@@ -38,9 +38,21 @@ export type {
 // ─── Adapters ───────────────────────────────────────────────
 export { BaseAdapter } from "./src/adapters/base-adapter.ts";
 export { createAdapter, listAdapterNames } from "./src/adapters/registry.ts";
-export { createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
+export {
+  createIopoleAdapter,
+  IopoleAdapter,
+} from "./src/adapters/iopole/adapter.ts";
 export { createStorecoveAdapter } from "./src/adapters/storecove/adapter.ts";
 export { createSuperPDPAdapter } from "./src/adapters/superpdp/adapter.ts";
+
+// ─── Iopole Client (for direct use or DI in tests) ──────────
+export {
+  IopoleAPIError,
+  IopoleClient,
+} from "./src/adapters/iopole/client.ts";
+export type {
+  IopoleClientConfig,
+} from "./src/adapters/iopole/client.ts";
 
 // ─── Errors ─────────────────────────────────────────────────
 export {

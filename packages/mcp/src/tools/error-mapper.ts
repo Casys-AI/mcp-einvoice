@@ -13,7 +13,7 @@
 import {
   AdapterAPIError,
   NotSupportedError,
-} from "../adapters/shared/errors.ts";
+} from "@casys/einvoice-core";
 
 /**
  * Map tool errors to user-friendly messages.

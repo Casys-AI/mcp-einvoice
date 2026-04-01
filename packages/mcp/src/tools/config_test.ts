@@ -10,7 +10,7 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { configTools } from "./config.ts";
 import { createMockAdapter, unwrapStructured } from "../testing/helpers.ts";
-import { NotSupportedError } from "../adapters/shared/errors.ts";
+import { NotSupportedError } from "@casys/einvoice-core";
 
 function findTool(name: string) {
   const tool = configTools.find((t) => t.name === name);

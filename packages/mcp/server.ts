@@ -39,10 +39,12 @@
 import { ConcurrentMCPServer, launchInspector } from "@casys/mcp-server";
 import { einvoiceErrorMapper } from "./src/tools/error-mapper.ts";
 import { EInvoiceToolsClient } from "./src/client.ts";
-import type { EInvoiceAdapter } from "./src/adapter.ts";
-import { createIopoleAdapter } from "./src/adapters/iopole/adapter.ts";
-import { createStorecoveAdapter } from "./src/adapters/storecove/adapter.ts";
-import { createSuperPDPAdapter } from "./src/adapters/superpdp/adapter.ts";
+import type { EInvoiceAdapter } from "@casys/einvoice-core";
+import {
+  createIopoleAdapter,
+  createStorecoveAdapter,
+  createSuperPDPAdapter,
+} from "@casys/einvoice-core";
 import {
   env,
   exit,

@@ -17,7 +17,7 @@
  * @module lib/einvoice
  */
 
-// Adapter interface
+// Adapter interface & types (from core)
 export type {
   CreateWebhookRequest,
   DirectoryFrSearchFilters,
@@ -31,13 +31,13 @@ export type {
   PaginatedRequest,
   SendStatusRequest,
   UpdateWebhookRequest,
-} from "./src/adapter.ts";
+} from "@casys/einvoice-core";
 
-// Adapters
+// Adapters (from core)
 export {
   createIopoleAdapter,
   IopoleAdapter,
-} from "./src/adapters/iopole/adapter.ts";
+} from "@casys/einvoice-core";
 
 // Tools registry
 export {
@@ -57,12 +57,11 @@ export type {
 
 // Low-level Iopole client (for direct use or DI in tests)
 export {
-  createOAuth2TokenProvider,
   IopoleAPIError,
   IopoleClient,
-} from "./src/adapters/iopole/client.ts";
+} from "@casys/einvoice-core";
 
 export type {
   IopoleClientConfig,
   OAuth2Config,
-} from "./src/adapters/iopole/client.ts";
+} from "@casys/einvoice-core";

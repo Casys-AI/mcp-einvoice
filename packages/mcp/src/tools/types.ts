@@ -7,7 +7,7 @@
  * @module lib/einvoice/src/tools/types
  */
 
-import type { AdapterMethodName, EInvoiceAdapter } from "../adapter.ts";
+import type { AdapterMethodName, EInvoiceAdapter } from "@casys/einvoice-core";
 
 /** Available tool categories */
 export type EInvoiceToolCategory =

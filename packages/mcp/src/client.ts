@@ -20,7 +20,7 @@ import type {
   JSONSchema,
   MCPToolWireFormat,
 } from "./tools/types.ts";
-import type { EInvoiceAdapter } from "./adapter.ts";
+import type { EInvoiceAdapter } from "@casys/einvoice-core";
 
 // Re-export from tools
 export {

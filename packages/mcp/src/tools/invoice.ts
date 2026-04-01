@@ -9,7 +9,7 @@
 
 import type { EInvoiceTool } from "./types.ts";
 import { getGenerated, storeGenerated } from "../generated-store.ts";
-import { uint8ToBase64 } from "../adapters/shared/encoding.ts";
+import { uint8ToBase64 } from "@casys/einvoice-core";
 
 /**
  * Map invoice input to invoice-viewer preview format.

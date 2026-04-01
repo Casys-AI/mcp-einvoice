@@ -1,0 +1,6 @@
+{
+  "deploy": {
+    "org": "casys",
+    "app": "mcp-einvoice"
+  }
+}
