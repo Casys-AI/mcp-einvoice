@@ -1,0 +1,28 @@
+{
+  "name": "@casys/einvoice-rest",
+  "version": "0.1.0",
+  "description": "REST API for e-invoicing — Hono + Zod OpenAPI, consumes einvoice-core adapters.",
+  "exports": {
+    ".": "./server.ts"
+  },
+  "imports": {
+    "@casys/einvoice-core": "jsr:@casys/einvoice-core@^0.1.0",
+    "hono": "npm:hono@^4",
+    "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18",
+    "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.5",
+    "zod": "npm:zod@^3"
+  },
+  "tasks": {
+    "serve": "deno run --allow-all server.ts --port=3016"
+  },
+  "publish": {
+    "include": [
+      "server.ts",
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "**/*_test.ts",
+      "**/*.test.ts"
+    ]
+  }
+}

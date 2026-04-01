@@ -1,0 +1,31 @@
+{
+  "name": "@casys/mcp-einvoice",
+  "version": "0.1.6",
+  "description": "PA-agnostic MCP tools for e-invoicing.",
+  "exports": {
+    ".": "./mod.ts",
+    "./server": "./server.ts"
+  },
+  "imports": {
+    "@casys/einvoice-core": "jsr:@casys/einvoice-core@^0.1.0",
+    "@casys/mcp-server": "jsr:@casys/mcp-server@^0.12.0",
+    "~/": "./src/ui/"
+  },
+  "publish": {
+    "include": [
+      "mod.ts",
+      "server.ts",
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "**/*_test.ts",
+      "**/*.test.ts"
+    ]
+  },
+  "tasks": {
+    "serve": "deno run --allow-all server.ts --http --port=3015",
+    "compile": "deno compile -A --output mcp-einvoice server.ts",
+    "ui:build": "cd src/ui && node build-all.mjs",
+    "inspect": "deno run --allow-all server.ts --inspect"
+  }
+}
