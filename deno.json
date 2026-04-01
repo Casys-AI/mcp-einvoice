@@ -1,5 +1,5 @@
 {
-  "workspaces": ["packages/core", "packages/mcp", "packages/rest"],
+  "workspace": ["packages/core", "packages/mcp", "packages/rest"],
   "tasks": {
     "test": "deno test --allow-all packages/",
     "test:core": "deno test --allow-all packages/core/",
