@@ -5,3 +5,4 @@ deno.lock
 .stitch/
 .cov/
 dist-*/
+.claude/worktrees/
