@@ -1,9 +1,9 @@
 {
   "workspace": ["packages/core", "packages/mcp", "packages/rest"],
   "tasks": {
-    "test": "deno test --allow-all packages/",
+    "test": "deno test --allow-all --sloppy-imports packages/",
     "test:core": "deno test --allow-all packages/core/",
-    "test:mcp": "deno test --allow-all packages/mcp/",
+    "test:mcp": "deno test --allow-all --sloppy-imports packages/mcp/",
     "test:rest": "deno test --allow-all packages/rest/",
     "mcp:serve": "deno run --allow-all packages/mcp/server.ts --http --port=3015",
     "rest:serve": "deno run --allow-all packages/rest/server.ts --port=3016"

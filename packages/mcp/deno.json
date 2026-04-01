@@ -9,7 +9,9 @@
   "imports": {
     "@casys/einvoice-core": "jsr:@casys/einvoice-core@^0.1.0",
     "@casys/mcp-server": "jsr:@casys/mcp-server@^0.12.0",
-    "~/": "./src/ui/"
+    "~/": "./src/ui/",
+    "react": "npm:react@^18.3.1",
+    "react-dom": "npm:react-dom@^18.3.1"
   },
   "publish": {
     "include": [

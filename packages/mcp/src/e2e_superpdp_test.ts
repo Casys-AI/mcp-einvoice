@@ -10,14 +10,14 @@
  */
 
 import { assert, assertEquals } from "jsr:@std/assert";
-import { createSuperPDPAdapter } from "./adapters/superpdp/adapter.ts";
+import { createSuperPDPAdapter } from "@casys/einvoice-core";
 import { getToolByName } from "./tools/mod.ts";
-import type { EInvoiceAdapter } from "./adapter.ts";
+import type { EInvoiceAdapter } from "@casys/einvoice-core";
 import type { EInvoiceToolContext } from "./tools/types.ts";
 import { unwrapStructured } from "./testing/helpers.ts";
 
 // Load .env from project root (best-effort)
-const envPath = new URL("../.env", import.meta.url).pathname;
+const envPath = new URL("../../../.env", import.meta.url).pathname;
 try {
   const text = await Deno.readTextFile(envPath);
   for (const line of text.split("\n")) {
