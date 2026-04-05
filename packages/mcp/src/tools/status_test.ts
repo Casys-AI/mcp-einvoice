@@ -95,3 +95,35 @@ Deno.test("einvoice_status_history - returns empty entries when adapter has none
 // ── _meta.ui ─────────────────────────────────────────────
 
 // einvoice_status_not_seen UI test removed — tool removed in v0.2.0
+
+// ── status_send structuredContent ─────────────────────────
+
+Deno.test("einvoice_status_send - returns action-result structuredContent", async () => {
+  const { adapter } = createMockAdapter({ ok: true });
+  const tool = findTool("einvoice_status_send");
+
+  const result = await tool.handler(
+    { invoice_id: "inv-1", code: "APPROVED" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  assertEquals((result.content as string).includes("APPROVED"), true);
+  assertEquals((result.content as string).includes("inv-1"), true);
+
+  const sc = unwrapStructured(result);
+  assertEquals(sc.action, "Envoi statut");
+  assertEquals(sc.status, "success");
+  assertEquals(sc.title, "APPROVED → facture inv-1");
+  assertEquals(typeof sc.details, "object");
+
+  // nextAction
+  const next = sc.nextAction as Record<string, unknown>;
+  assertEquals(next.toolName, "einvoice_status_history");
+  assertEquals((next.arguments as Record<string, unknown>).invoice_id, "inv-1");
+});
+
+Deno.test("einvoice_status_send has action-result UI", () => {
+  const tool = findTool("einvoice_status_send");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});

@@ -16,6 +16,7 @@ export const webhookTools: EInvoiceTool[] = [
   {
     name: "einvoice_webhook_list",
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    annotations: { readOnlyHint: true },
     description: "List all configured webhooks for your account.",
     category: "webhook",
     requires: ["listWebhooks"],
@@ -62,11 +63,18 @@ export const webhookTools: EInvoiceTool[] = [
       },
       required: ["id"],
     },
+    annotations: { readOnlyHint: true },
     handler: async (input, ctx) => {
       if (!input.id) {
         throw new Error("[einvoice_webhook_get] 'id' is required");
       }
-      return await ctx.adapter.getWebhook(input.id as string);
+      // deno-lint-ignore no-explicit-any
+      const webhook = await ctx.adapter.getWebhook(input.id as string) as any;
+      const name = webhook?.name ?? webhook?.id ?? input.id;
+      return {
+        content: `Webhook : ${name}`,
+        structuredContent: webhook,
+      };
     },
   },
 
@@ -103,18 +111,28 @@ export const webhookTools: EInvoiceTool[] = [
       },
       required: ["url", "events"],
     },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
       if (!input.url || !input.events) {
         throw new Error(
           "[einvoice_webhook_create] 'url' and 'events' are required",
         );
       }
-      return await ctx.adapter.createWebhook({
+      const result = await ctx.adapter.createWebhook({
         url: input.url as string,
         events: input.events as string[],
         name: input.name as string | undefined,
         active: input.active as boolean | undefined,
       });
+      return {
+        content: `Webhook créé : ${input.name ?? input.url}`,
+        structuredContent: {
+          action: "Création webhook",
+          status: "success",
+          title: `Webhook créé : ${input.name ?? input.url}`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -140,16 +158,26 @@ export const webhookTools: EInvoiceTool[] = [
       },
       required: ["id"],
     },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
       if (!input.id) {
         throw new Error("[einvoice_webhook_update] 'id' is required");
       }
-      return await ctx.adapter.updateWebhook(input.id as string, {
+      const result = await ctx.adapter.updateWebhook(input.id as string, {
         url: input.url as string | undefined,
         events: input.events as string[] | undefined,
         name: input.name as string | undefined,
         active: input.active as boolean | undefined,
       });
+      return {
+        content: `Webhook ${input.id} mis à jour`,
+        structuredContent: {
+          action: "Mise à jour webhook",
+          status: "success",
+          title: `Webhook ${input.id} mis à jour`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -157,6 +185,7 @@ export const webhookTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_webhook_delete",
+    annotations: { destructiveHint: true },
     description: "Delete a webhook configuration.",
     category: "webhook",
     requires: ["deleteWebhook"],
@@ -167,11 +196,21 @@ export const webhookTools: EInvoiceTool[] = [
       },
       required: ["id"],
     },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
       if (!input.id) {
         throw new Error("[einvoice_webhook_delete] 'id' is required");
       }
-      return await ctx.adapter.deleteWebhook(input.id as string);
+      const result = await ctx.adapter.deleteWebhook(input.id as string);
+      return {
+        content: `Webhook ${input.id} supprimé`,
+        structuredContent: {
+          action: "Suppression webhook",
+          status: "success",
+          title: `Webhook ${input.id} supprimé`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 ];

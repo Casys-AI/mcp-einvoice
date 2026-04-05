@@ -773,3 +773,282 @@ Deno.test("einvoice_config_entity_configure has action-result UI", () => {
   const tool = findTool("einvoice_config_entity_configure");
   assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
 });
+
+Deno.test("einvoice_config_entity_create_legal has action-result UI", () => {
+  const tool = findTool("einvoice_config_entity_create_legal");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+Deno.test("einvoice_config_entity_create_office has action-result UI", () => {
+  const tool = findTool("einvoice_config_entity_create_office");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+Deno.test("einvoice_config_entity_claim has action-result UI", () => {
+  const tool = findTool("einvoice_config_entity_claim");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+Deno.test("einvoice_config_entity_delete has action-result UI", () => {
+  const tool = findTool("einvoice_config_entity_delete");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+Deno.test("einvoice_config_identifier_delete has action-result UI", () => {
+  const tool = findTool("einvoice_config_identifier_delete");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+Deno.test("einvoice_config_claim_delete has action-result UI", () => {
+  const tool = findTool("einvoice_config_claim_delete");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+Deno.test("einvoice_config_network_unregister has action-result UI", () => {
+  const tool = findTool("einvoice_config_network_unregister");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+// ── structuredContent shape ──────────────────────────────
+
+Deno.test("einvoice_config_customer_id - returns { content, structuredContent: { customerId } }", async () => {
+  const { adapter } = createMockAdapter({ customerId: "op-123" });
+  const tool = findTool("einvoice_config_customer_id");
+
+  const raw = await tool.handler({}, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(sc.customerId, "op-123");
+});
+
+Deno.test("einvoice_config_entity_get - returns { content, structuredContent: entity }", async () => {
+  const { adapter } = createMockAdapter({ name: "ACME", entityId: "e-1" });
+  const tool = findTool("einvoice_config_entity_get");
+
+  const raw = await tool.handler({ id: "e-1" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(sc.name, "ACME");
+  assertEquals(sc.entityId, "e-1");
+});
+
+Deno.test("einvoice_config_entity_create_legal - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ id: "new-lu" });
+  const tool = findTool("einvoice_config_entity_create_legal");
+
+  const raw = await tool.handler({ siren: "123456789" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(sc.action, "Cr\u00e9ation entit\u00e9 juridique");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_entity_create_office - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ id: "new-office" });
+  const tool = findTool("einvoice_config_entity_create_office");
+
+  const raw = await tool.handler(
+    { siret: "12345678901234", legalUnitId: "lu-1" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(sc.action, "Cr\u00e9ation \u00e9tablissement");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_enroll_fr - returns action-result shape with nextAction", async () => {
+  const { adapter } = createMockAdapter({ enrolled: true });
+  const tool = findTool("einvoice_config_enroll_fr");
+
+  const raw = await tool.handler({ siret: "12345678901234" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(sc.action, "Enrollment PPF");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+  const next = sc.nextAction as Record<string, unknown>;
+  assertEquals(typeof next.label, "string");
+  assertEquals(next.toolName, "einvoice_config_network_register_by_id");
+  const args = next.arguments as Record<string, unknown>;
+  assertEquals(args.scheme, "0009");
+  assertEquals(args.value, "12345678901234");
+  assertEquals(args.network, "DOMESTIC_FR");
+});
+
+Deno.test("einvoice_config_entity_claim - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ claimed: true });
+  const tool = findTool("einvoice_config_entity_claim");
+
+  const raw = await tool.handler(
+    { scheme: "0009", value: "12345678901234" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_entity_delete - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ deleted: true });
+  const tool = findTool("einvoice_config_entity_delete");
+
+  const raw = await tool.handler({ id: "ent-del" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_network_register - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ registered: true });
+  const tool = findTool("einvoice_config_network_register");
+
+  const raw = await tool.handler(
+    { identifier_id: "id-uuid", network: "DOMESTIC_FR" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_network_register_by_id - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ registered: true });
+  const tool = findTool("einvoice_config_network_register_by_id");
+
+  const raw = await tool.handler(
+    { scheme: "0009", value: "12345678901234", network: "DOMESTIC_FR" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_identifier_create - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ id: "new-id" });
+  const tool = findTool("einvoice_config_identifier_create");
+
+  const raw = await tool.handler(
+    { entity_id: "ent-1", scheme: "0009", value: "12345678901234", type: "ROUTING_CODE" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_identifier_create_by_scheme - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ id: "new-id" });
+  const tool = findTool("einvoice_config_identifier_create_by_scheme");
+
+  const raw = await tool.handler(
+    { lookup_scheme: "0009", lookup_value: "12345678901234", new_scheme: "0225", new_value: "val" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_identifier_delete - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ deleted: true });
+  const tool = findTool("einvoice_config_identifier_delete");
+
+  const raw = await tool.handler(
+    { identifier_id: "id-uuid-123" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_entity_configure - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ configured: true });
+  const tool = findTool("einvoice_config_entity_configure");
+
+  const raw = await tool.handler(
+    { entity_id: "ent-1", vat_regime: "REAL_MONTHLY_TAX_REGIME" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_claim_delete - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ deleted: true });
+  const tool = findTool("einvoice_config_claim_delete");
+
+  const raw = await tool.handler(
+    { entity_id: "ent-1" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_config_network_unregister - returns action-result shape", async () => {
+  const { adapter } = createMockAdapter({ unregistered: true });
+  const tool = findTool("einvoice_config_network_unregister");
+
+  const raw = await tool.handler(
+    { directory_id: "dir-uuid" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof raw.content, "string");
+  const sc = raw.structuredContent as Record<string, unknown>;
+  assertEquals(typeof sc.action, "string");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});

@@ -22,6 +22,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_customer_id",
+    annotations: { readOnlyHint: true },
     requires: ["getCustomerId"],
     description: "Get the current operator customer ID. " +
       "This is your unique operator identifier on the e-invoicing platform.",
@@ -31,7 +32,13 @@ export const configTools: EInvoiceTool[] = [
       properties: {},
     },
     handler: async (_input, ctx) => {
-      return await ctx.adapter.getCustomerId();
+      const result = await ctx.adapter.getCustomerId();
+      const customerId = (result as Record<string, unknown>)?.customerId ??
+        result;
+      return {
+        content: `Identifiant opérateur : ${customerId}`,
+        structuredContent: { customerId },
+      };
     },
   },
 
@@ -95,7 +102,13 @@ export const configTools: EInvoiceTool[] = [
       if (!input.id) {
         throw new Error("[einvoice_config_entity_get] 'id' is required");
       }
-      return await ctx.adapter.getBusinessEntity(input.id as string);
+      const entity = await ctx.adapter.getBusinessEntity(input.id as string);
+      const e = (entity ?? {}) as Record<string, unknown>;
+      const name = e.name ?? e.entityId ?? input.id;
+      return {
+        content: `Entité ${name}`,
+        structuredContent: e,
+      };
     },
   },
 
@@ -103,6 +116,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_create_legal",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     requires: ["createLegalUnit"],
     description:
       "Create a new legal unit (company) under your operator account. " +
@@ -127,7 +141,7 @@ export const configTools: EInvoiceTool[] = [
         },
         scope: {
           type: "string",
-          description: "Entity scope",
+          description: "Entity scope (default: PRIMARY)",
           enum: ["PRIVATE_TAX_PAYER", "PUBLIC", "PRIMARY", "SECONDARY"],
         },
       },
@@ -139,13 +153,22 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_entity_create_legal] 'siren' is required",
         );
       }
-      return await ctx.adapter.createLegalUnit({
+      const result = await ctx.adapter.createLegalUnit({
         identifierScheme: "0002",
         identifierValue: input.siren as string,
         name: input.name as string | undefined,
         country: (input.country as string) ?? "FR",
         scope: (input.scope as string) ?? "PRIMARY",
       });
+      return {
+        content: `Entité juridique créée — SIREN ${input.siren}`,
+        structuredContent: {
+          action: "Création entité juridique",
+          status: "success",
+          title: `SIREN ${input.siren} enregistré`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -153,6 +176,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_create_office",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     requires: ["createOffice"],
     description:
       "Create a new office (establishment) for an existing legal unit. " +
@@ -177,7 +201,7 @@ export const configTools: EInvoiceTool[] = [
         },
         scope: {
           type: "string",
-          description: "Entity scope",
+          description: "Entity scope (default: PRIMARY)",
           enum: ["PRIVATE_TAX_PAYER", "PUBLIC", "PRIMARY", "SECONDARY"],
         },
       },
@@ -189,13 +213,22 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_entity_create_office] 'siret' and 'legalUnitId' are required",
         );
       }
-      return await ctx.adapter.createOffice({
+      const result = await ctx.adapter.createOffice({
         identifierScheme: "0009",
         identifierValue: input.siret as string,
         legalBusinessEntityId: input.legalUnitId as string,
         name: input.name as string | undefined,
         scope: (input.scope as string) ?? "PRIMARY",
       });
+      return {
+        content: `Établissement créé — SIRET ${input.siret}`,
+        structuredContent: {
+          action: "Création établissement",
+          status: "success",
+          title: `SIRET ${input.siret} enregistré`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -233,7 +266,21 @@ export const configTools: EInvoiceTool[] = [
       }
       const siret = input.siret as string;
       const siren = (input.siren as string) ?? siret.slice(0, 9);
-      return await ctx.adapter.enrollFrench({ siret, siren });
+      const result = await ctx.adapter.enrollFrench({ siret, siren });
+      return {
+        content: `Entité ${siret} enrollée sur le PPF`,
+        structuredContent: {
+          action: "Enrollment PPF",
+          status: "success",
+          title: `SIRET ${siret} enrollé`,
+          details: result as Record<string, unknown>,
+          nextAction: {
+            label: "Enregistrer sur le réseau DOMESTIC_FR",
+            toolName: "einvoice_config_network_register_by_id",
+            arguments: { scheme: "0009", value: siret, network: "DOMESTIC_FR" },
+          },
+        },
+      };
     },
   },
 
@@ -241,6 +288,7 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_claim",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     requires: ["claimBusinessEntityByIdentifier"],
     description:
       "Claim management of a business entity by its identifier (SIRET scheme 0009). " +
@@ -267,11 +315,20 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_entity_claim] 'scheme' and 'value' are required",
         );
       }
-      return await ctx.adapter.claimBusinessEntityByIdentifier(
+      const result = await ctx.adapter.claimBusinessEntityByIdentifier(
         input.scheme as string,
         input.value as string,
         {},
       );
+      return {
+        content: `Entité ${input.scheme}:${input.value} revendiquée`,
+        structuredContent: {
+          action: "Revendication entité",
+          status: "success",
+          title: `${input.scheme}:${input.value} revendiqué`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -279,6 +336,8 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_entity_delete",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    annotations: { destructiveHint: true },
     requires: ["deleteBusinessEntity"],
     description: "Remove a business entity from your operator account. " +
       "This does not delete the entity from the national directory, " +
@@ -295,7 +354,18 @@ export const configTools: EInvoiceTool[] = [
       if (!input.id) {
         throw new Error("[einvoice_config_entity_delete] 'id' is required");
       }
-      return await ctx.adapter.deleteBusinessEntity(input.id as string);
+      const result = await ctx.adapter.deleteBusinessEntity(
+        input.id as string,
+      );
+      return {
+        content: `Entité ${input.id} supprimée`,
+        structuredContent: {
+          action: "Suppression entité",
+          status: "success",
+          title: `Entité ${input.id} supprimée`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -334,10 +404,19 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_network_register] 'identifier_id' and 'network' are required",
         );
       }
-      return await ctx.adapter.registerNetwork(
+      const result = await ctx.adapter.registerNetwork(
         input.identifier_id as string,
         input.network as string,
       );
+      return {
+        content: `Identifiant ${input.identifier_id} enregistré sur ${input.network}`,
+        structuredContent: {
+          action: "Enregistrement réseau",
+          status: "success",
+          title: `Enregistré sur ${input.network}`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -379,11 +458,20 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_network_register_by_id] 'scheme', 'value', and 'network' are required",
         );
       }
-      return await ctx.adapter.registerNetworkByScheme(
+      const result = await ctx.adapter.registerNetworkByScheme(
         input.scheme as string,
         input.value as string,
         input.network as string,
       );
+      return {
+        content: `${input.scheme}:${input.value} enregistré sur ${input.network}`,
+        structuredContent: {
+          action: "Enregistrement réseau",
+          status: "success",
+          title: `${input.scheme}:${input.value} enregistré sur ${input.network}`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -428,11 +516,23 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_identifier_create] 'entity_id', 'scheme', 'value', and 'type' are required",
         );
       }
-      return await ctx.adapter.createIdentifier(input.entity_id as string, {
-        scheme: input.scheme as string,
-        value: input.value as string,
-        type: input.type as string,
-      });
+      const result = await ctx.adapter.createIdentifier(
+        input.entity_id as string,
+        {
+          scheme: input.scheme as string,
+          value: input.value as string,
+          type: input.type as string,
+        },
+      );
+      return {
+        content: `Identifiant ${input.scheme}:${input.value} ajouté à l'entité ${input.entity_id}`,
+        structuredContent: {
+          action: "Création identifiant",
+          status: "success",
+          title: `Identifiant ${input.scheme}:${input.value} créé`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -477,7 +577,7 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_identifier_create_by_scheme] all fields are required",
         );
       }
-      return await ctx.adapter.createIdentifierByScheme(
+      const result = await ctx.adapter.createIdentifierByScheme(
         input.lookup_scheme as string,
         input.lookup_value as string,
         {
@@ -485,6 +585,15 @@ export const configTools: EInvoiceTool[] = [
           value: input.new_value as string,
         },
       );
+      return {
+        content: `Identifiant ${input.new_scheme}:${input.new_value} ajouté via ${input.lookup_scheme}:${input.lookup_value}`,
+        structuredContent: {
+          action: "Création identifiant",
+          status: "success",
+          title: `Identifiant ${input.new_scheme}:${input.new_value} créé`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -492,6 +601,8 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_identifier_delete",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    annotations: { destructiveHint: true },
     requires: ["deleteIdentifier"],
     description: "Remove an identifier from a business entity. " +
       "WARNING: if the identifier is registered on a network, unregister it first. " +
@@ -513,7 +624,18 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_identifier_delete] 'identifier_id' is required",
         );
       }
-      return await ctx.adapter.deleteIdentifier(input.identifier_id as string);
+      const result = await ctx.adapter.deleteIdentifier(
+        input.identifier_id as string,
+      );
+      return {
+        content: `Identifiant ${input.identifier_id} supprimé`,
+        structuredContent: {
+          action: "Suppression identifiant",
+          status: "success",
+          title: `Identifiant ${input.identifier_id} supprimé`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -552,10 +674,19 @@ export const configTools: EInvoiceTool[] = [
       }
       const config: Record<string, unknown> = {};
       if (input.vat_regime) config.vatRegime = input.vat_regime;
-      return await ctx.adapter.configureBusinessEntity(
+      const result = await ctx.adapter.configureBusinessEntity(
         input.entity_id as string,
         config,
       );
+      return {
+        content: `Entité ${input.entity_id} configurée`,
+        structuredContent: {
+          action: "Configuration entité",
+          status: "success",
+          title: `Entité ${input.entity_id} configurée`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -563,6 +694,8 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_claim_delete",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    annotations: { destructiveHint: true },
     requires: ["deleteClaim"],
     description: "Remove your operator's claim on a business entity. " +
       "The entity remains in the national directory but is no longer managed by your operator. " +
@@ -585,7 +718,18 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_claim_delete] 'entity_id' is required",
         );
       }
-      return await ctx.adapter.deleteClaim(input.entity_id as string);
+      const result = await ctx.adapter.deleteClaim(
+        input.entity_id as string,
+      );
+      return {
+        content: `Revendication sur ${input.entity_id} supprimée`,
+        structuredContent: {
+          action: "Suppression revendication",
+          status: "success",
+          title: `Revendication sur ${input.entity_id} supprimée`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -593,6 +737,8 @@ export const configTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_config_network_unregister",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    annotations: { destructiveHint: true },
     requires: ["unregisterNetwork"],
     description:
       "Unregister an entity from a network. Removes the directory entry. " +
@@ -616,7 +762,18 @@ export const configTools: EInvoiceTool[] = [
           "[einvoice_config_network_unregister] 'directory_id' is required",
         );
       }
-      return await ctx.adapter.unregisterNetwork(input.directory_id as string);
+      const result = await ctx.adapter.unregisterNetwork(
+        input.directory_id as string,
+      );
+      return {
+        content: `Entrée annuaire ${input.directory_id} désinscrite`,
+        structuredContent: {
+          action: "Désinscription réseau",
+          status: "success",
+          title: `Entrée ${input.directory_id} désinscrite`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 ];

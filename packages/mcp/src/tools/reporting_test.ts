@@ -6,7 +6,7 @@
 
 import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { reportingTools } from "./reporting.ts";
-import { createMockAdapter } from "../testing/helpers.ts";
+import { createMockAdapter, unwrapStructured } from "../testing/helpers.ts";
 
 function findTool(name: string) {
   const tool = reportingTools.find((t) => t.name === name);
@@ -63,4 +63,51 @@ Deno.test("einvoice_reporting_transaction - throws without required fields", asy
     Error,
     "'business_entity_id' and 'transaction' are required",
   );
+});
+
+// ── structuredContent tests ─────────────────────────────
+
+Deno.test("einvoice_reporting_invoice_transaction - returns action-result structuredContent", async () => {
+  const { adapter } = createMockAdapter({ guid: "abc-123" });
+  const tool = findTool("einvoice_reporting_invoice_transaction");
+
+  const result = await tool.handler(
+    { transaction: { amount: 1000 } },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  const sc = unwrapStructured(result);
+  assertEquals(sc.action, "Déclaration e-reporting");
+  assertEquals(sc.status, "success");
+  assertEquals(typeof sc.title, "string");
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_reporting_invoice_transaction has action-result UI", () => {
+  const tool = findTool("einvoice_reporting_invoice_transaction");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+Deno.test("einvoice_reporting_transaction - returns action-result structuredContent", async () => {
+  const { adapter } = createMockAdapter({ guid: "def-456" });
+  const tool = findTool("einvoice_reporting_transaction");
+
+  const result = await tool.handler({
+    business_entity_id: "be-1",
+    transaction: { type: "b2c" },
+  }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  assertEquals((result.content as string).includes("be-1"), true);
+  const sc = unwrapStructured(result);
+  assertEquals(sc.action, "Déclaration e-reporting");
+  assertEquals(sc.status, "success");
+  assertEquals((sc.title as string).includes("be-1"), true);
+  assertEquals(typeof sc.details, "object");
+});
+
+Deno.test("einvoice_reporting_transaction has action-result UI", () => {
+  const tool = findTool("einvoice_reporting_transaction");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
 });

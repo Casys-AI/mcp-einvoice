@@ -119,11 +119,45 @@ export const directoryTools: EInvoiceTool[] = [
       if (!input.value) {
         throw new Error("[einvoice_directory_int_search] 'value' is required");
       }
-      return await ctx.adapter.searchDirectoryInt({
+      // deno-lint-ignore no-explicit-any
+      const raw = await ctx.adapter.searchDirectoryInt({
         value: input.value as string,
         offset: input.offset as number | undefined,
         limit: input.limit as number | undefined,
-      });
+      }) as any;
+
+      // Normalize: adapter may return { rows, count } or array or other shapes
+      const rows = Array.isArray(raw)
+        ? raw
+        : (raw?.rows ?? raw?.data ?? []);
+      const count = raw?.count ?? rows.length;
+
+      // deno-lint-ignore no-explicit-any
+      const data = rows.map((r: any) => ({
+        _id: r.entityId ?? r.id ?? r.identifier,
+        _detail: {
+          name: r.name,
+          identifier: r.identifier ?? r.value,
+          scheme: r.scheme,
+          country: r.country,
+          directory: r.directory,
+          status: r.status,
+          identifiers: r.identifiers,
+        },
+        "Identifiant": r.identifier ?? r.value ?? "—",
+        "Schéma": r.scheme ?? "—",
+        "Pays": r.country ?? "—",
+        "Nom": r.name ?? "—",
+      }));
+
+      return {
+        content: `${data.length} participant(s) trouvé(s) pour "${input.value}"`,
+        structuredContent: {
+          data,
+          count,
+          _title: "Annuaire international (Peppol)",
+        },
+      };
     },
   },
 
@@ -151,16 +185,32 @@ export const directoryTools: EInvoiceTool[] = [
       },
       required: ["scheme", "value"],
     },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
+    annotations: { readOnlyHint: true },
     handler: async (input, ctx) => {
       if (!input.scheme || !input.value) {
         throw new Error(
           "[einvoice_directory_peppol_check] 'scheme' and 'value' are required",
         );
       }
-      return await ctx.adapter.checkPeppolParticipant(
+      const result = await ctx.adapter.checkPeppolParticipant(
         input.scheme as string,
         input.value as string,
-      );
+      ) as Record<string, unknown> | null;
+      const found = result?.exists !== false && result?.found !== false;
+      return {
+        content: `Participant ${input.value} ${
+          found ? "trouvé" : "non trouvé"
+        } sur Peppol`,
+        structuredContent: {
+          action: "Vérification Peppol",
+          status: found ? "success" : "error",
+          title: found
+            ? `${input.value} est inscrit sur Peppol`
+            : `${input.value} non trouvé sur Peppol`,
+          details: result ?? { scheme: input.scheme, value: input.value },
+        },
+      };
     },
   },
 ];

@@ -55,18 +55,33 @@ export const statusTools: EInvoiceTool[] = [
       },
       required: ["invoice_id", "code"],
     },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
       if (!input.invoice_id || !input.code) {
         throw new Error(
           "[einvoice_status_send] 'invoice_id' and 'code' are required",
         );
       }
-      return await ctx.adapter.sendStatus({
+      const result = await ctx.adapter.sendStatus({
         invoiceId: input.invoice_id as string,
         code: input.code as string,
         message: input.message as string | undefined,
         payment: input.payment as Record<string, unknown> | undefined,
       });
+      return {
+        content: `Statut ${input.code} envoyé pour la facture ${input.invoice_id}`,
+        structuredContent: {
+          action: "Envoi statut",
+          status: "success",
+          title: `${input.code} → facture ${input.invoice_id}`,
+          details: result as Record<string, unknown>,
+          nextAction: {
+            label: "Voir l'historique des statuts",
+            toolName: "einvoice_status_history",
+            arguments: { invoice_id: input.invoice_id },
+          },
+        },
+      };
     },
   },
 

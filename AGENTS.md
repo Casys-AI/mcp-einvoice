@@ -336,6 +336,33 @@ contract — read it before modifying.
   chemins non testés, les régressions de comportement. Ce que la review
   trouve, tu aurais dû le trouver avant.
 
+### AX (Agent Experience) — Design for Agent Consumption
+
+Ce serveur MCP est consommé par des agents IA. Appliquer ces principes :
+
+- **Fast Fail Early.** Rejeter les inputs invalides avant les opérations
+  coûteuses. Valider à la frontière, pas au fond du call stack.
+- **Outputs déterministes.** Mêmes inputs → mêmes outputs. Pas de dépendance
+  à `Date.now()` ou `Math.random()` dans les chemins déterministes. Isoler et
+  rendre injectable quand nécessaire (UUIDs, timestamps).
+- **Erreurs machine-readable.** Erreurs structurées avec codes, pas juste des
+  messages string. Les agents parsent des codes, pas de la prose. Préfixes
+  standards : `INVALID_*`, `MISSING_*`, `ORPHAN_*`, `CONFLICT_*`,
+  `UNSUPPORTED_*`.
+- **Explicit over implicit.** Pas de defaults magiques qui changent le
+  comportement silencieusement. Chaque configuration a un default visible.
+- **Primitives composables.** Chaque fonction fait une chose. Les étapes du
+  pipeline sont indépendantes et recombinables. Les agents peuvent utiliser
+  chaque étape séparément.
+- **Contrats étroits.** Inputs minimaux requis, type safety maximale.
+  Accepter uniquement ce qui est nécessaire. Éviter les God objects.
+- **Documentation colocalisée.** Les docs vivent à côté du code. Chaque
+  module a son propre contrat (`contract.md` pour les viewers). Les agents
+  trouvent les docs en explorant l'arbre de fichiers.
+- **Tests-first invariants.** Chaque comportement a un test. Les tests sont
+  la spécification exécutable. Prioriser les tests de bordure sur le
+  happy-path.
+
 ### What NOT to Do
 
 - Do not add local try/catch in tool handlers — use `einvoiceErrorMapper`.

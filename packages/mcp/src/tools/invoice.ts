@@ -11,6 +11,27 @@ import type { EInvoiceTool } from "./types.ts";
 import { getGenerated, storeGenerated } from "../generated-store.ts";
 import { uint8ToBase64 } from "@casys/einvoice-core";
 
+/** Normalize adapter file list response (array, { files: [...] }, or unknown). */
+// deno-lint-ignore no-explicit-any
+function normalizeFileList(raw: unknown): Array<Record<string, unknown>> {
+  const r = raw as any;
+  if (Array.isArray(r)) return r;
+  if (Array.isArray(r?.files)) return r.files;
+  return [];
+}
+
+/** Map a file entry to doclist-viewer row. */
+function fileToRow(f: Record<string, unknown>) {
+  return {
+    _id: f.id ?? f.fileId ?? f.file_id,
+    "Nom": f.name ?? f.filename ?? "—",
+    "Type": f.contentType ?? f.content_type ?? f.mimeType ?? f.type ?? "—",
+    "Taille": f.size != null
+      ? `${Number(f.size).toLocaleString("fr-FR")} octets`
+      : "—",
+  };
+}
+
 /**
  * Map invoice input to invoice-viewer preview format.
  * PA-agnostic: handles multiple input structures (nested Iopole-style,
@@ -107,6 +128,9 @@ export const invoiceTools: EInvoiceTool[] = [
       },
     },
     handler: async (input, ctx) => {
+      // deno-lint-ignore no-explicit-any
+      let emitResult: any;
+
       // Path 1: retrieve from temp store
       if (input.generated_id) {
         const stored = getGenerated(input.generated_id as string);
@@ -116,36 +140,44 @@ export const invoiceTools: EInvoiceTool[] = [
               "Regenerate the invoice first.",
           );
         }
-        return await ctx.adapter.emitInvoice(stored);
+        emitResult = await ctx.adapter.emitInvoice(stored);
+      } else {
+        // Path 2: direct base64 upload (existing behavior)
+        if (!input.file_base64 || !input.filename) {
+          throw new Error(
+            "[einvoice_invoice_submit] Provide either 'generated_id' or both 'file_base64' and 'filename'",
+          );
+        }
+        const filename = input.filename as string;
+        const lower = filename.toLowerCase();
+        if (!lower.endsWith(".pdf") && !lower.endsWith(".xml")) {
+          throw new Error(
+            "[einvoice_invoice_submit] filename must end in .pdf or .xml",
+          );
+        }
+        // Decode base64 to Uint8Array
+        let binaryString: string;
+        try {
+          binaryString = atob(input.file_base64 as string);
+        } catch {
+          throw new Error(
+            "[einvoice_invoice_submit] 'file_base64' is not valid base64",
+          );
+        }
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        emitResult = await ctx.adapter.emitInvoice({ file: bytes, filename });
       }
 
-      // Path 2: direct base64 upload (existing behavior)
-      if (!input.file_base64 || !input.filename) {
-        throw new Error(
-          "[einvoice_invoice_submit] Provide either 'generated_id' or both 'file_base64' and 'filename'",
-        );
-      }
-      const filename = input.filename as string;
-      const lower = filename.toLowerCase();
-      if (!lower.endsWith(".pdf") && !lower.endsWith(".xml")) {
-        throw new Error(
-          "[einvoice_invoice_submit] filename must end in .pdf or .xml",
-        );
-      }
-      // Decode base64 to Uint8Array
-      let binaryString: string;
-      try {
-        binaryString = atob(input.file_base64 as string);
-      } catch {
-        throw new Error(
-          "[einvoice_invoice_submit] 'file_base64' is not valid base64",
-        );
-      }
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return await ctx.adapter.emitInvoice({ file: bytes, filename });
+      // structuredContent = raw emit result (not action-result wrapped).
+      // The invoice-viewer reads emitResponse.id from this to update the invoice ID
+      // after emit. Wrapping in { action, details } would break that flow.
+      return {
+        content: "Facture émise avec succès",
+        structuredContent: emitResult,
+      };
     },
   },
 
@@ -378,6 +410,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_download",
+    annotations: { readOnlyHint: true },
     requires: ["downloadInvoice"],
     description:
       "Download the source file of an invoice (original CII/UBL/Factur-X XML). " +
@@ -413,6 +446,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_download_readable",
+    annotations: { readOnlyHint: true },
     requires: ["downloadReadable"],
     description:
       "Download a human-readable PDF version of an invoice. Returns base64-encoded PDF.",
@@ -448,6 +482,8 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_files",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    annotations: { readOnlyHint: true },
     requires: ["getInvoiceFiles"],
     description:
       "Get metadata of ALL related files for an invoice (source XML, readable PDF, attachments). Use einvoice_invoice_attachments for only business attachments.",
@@ -463,7 +499,22 @@ export const invoiceTools: EInvoiceTool[] = [
       if (!input.id) {
         throw new Error("[einvoice_invoice_files] 'id' is required");
       }
-      return await ctx.adapter.getInvoiceFiles(input.id as string);
+      const id = input.id as string;
+      const files = normalizeFileList(await ctx.adapter.getInvoiceFiles(id));
+      const data = files.map(fileToRow);
+      return {
+        content: `${files.length} fichier(s) pour la facture ${id}`,
+        structuredContent: {
+          data,
+          count: files.length,
+          _title: `Fichiers — Facture ${id}`,
+          _rowAction: {
+            toolName: "einvoice_invoice_download_file",
+            idField: "_id",
+            argName: "file_id",
+          },
+        },
+      };
     },
   },
 
@@ -471,6 +522,8 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_attachments",
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/doclist-viewer" } },
+    annotations: { readOnlyHint: true },
     requires: ["getAttachments"],
     description:
       "Get only business attachments (supporting documents, purchase orders, etc.) for an invoice. Use einvoice_invoice_files for ALL related files including source XML and PDF.",
@@ -486,7 +539,22 @@ export const invoiceTools: EInvoiceTool[] = [
       if (!input.id) {
         throw new Error("[einvoice_invoice_attachments] 'id' is required");
       }
-      return await ctx.adapter.getAttachments(input.id as string);
+      const id = input.id as string;
+      const files = normalizeFileList(await ctx.adapter.getAttachments(id));
+      const data = files.map(fileToRow);
+      return {
+        content: `${files.length} pièce(s) jointe(s) pour la facture ${id}`,
+        structuredContent: {
+          data,
+          count: files.length,
+          _title: `Pièces jointes — Facture ${id}`,
+          _rowAction: {
+            toolName: "einvoice_invoice_download_file",
+            idField: "_id",
+            argName: "file_id",
+          },
+        },
+      };
     },
   },
 
@@ -494,6 +562,7 @@ export const invoiceTools: EInvoiceTool[] = [
 
   {
     name: "einvoice_invoice_download_file",
+    annotations: { readOnlyHint: true },
     requires: ["downloadFile"],
     description:
       "Download a specific file by its file ID. Returns base64-encoded content.",

@@ -39,15 +39,25 @@ export const reportingTools: EInvoiceTool[] = [
       },
       required: ["transaction"],
     },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
       if (!input.transaction) {
         throw new Error(
           "[einvoice_reporting_invoice_transaction] 'transaction' is required",
         );
       }
-      return await ctx.adapter.reportInvoiceTransaction(
+      const result = await ctx.adapter.reportInvoiceTransaction(
         input.transaction as Record<string, unknown>,
       );
+      return {
+        content: "Déclaration e-reporting (facture) envoyée",
+        structuredContent: {
+          action: "Déclaration e-reporting",
+          status: "success",
+          title: "Transaction facture déclarée",
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 
@@ -83,16 +93,26 @@ export const reportingTools: EInvoiceTool[] = [
       },
       required: ["business_entity_id", "transaction"],
     },
+    _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
       if (!input.business_entity_id || !input.transaction) {
         throw new Error(
           "[einvoice_reporting_transaction] 'business_entity_id' and 'transaction' are required",
         );
       }
-      return await ctx.adapter.reportTransaction(
+      const result = await ctx.adapter.reportTransaction(
         input.business_entity_id as string,
         input.transaction as Record<string, unknown>,
       );
+      return {
+        content: `Déclaration e-reporting (transaction) envoyée pour ${input.business_entity_id}`,
+        structuredContent: {
+          action: "Déclaration e-reporting",
+          status: "success",
+          title: `Transaction déclarée pour ${input.business_entity_id}`,
+          details: result as Record<string, unknown>,
+        },
+      };
     },
   },
 ];

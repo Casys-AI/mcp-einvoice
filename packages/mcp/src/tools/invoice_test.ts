@@ -436,3 +436,190 @@ Deno.test("einvoice_invoice_get has invoice-viewer UI", () => {
 });
 
 // einvoice_invoice_not_seen UI test removed — tool removed in v0.2.0
+
+// ── Submit structuredContent ────────────────────────────
+
+Deno.test("einvoice_invoice_submit - returns { content, structuredContent } for file_base64 path", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_submit");
+
+  const result = await tool.handler(
+    { file_base64: "aGVsbG8=", filename: "invoice.pdf" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  assertEquals(result.content, "Facture émise avec succès");
+  // structuredContent is raw emit result (not action-result wrapped)
+  // because invoice-viewer reads emitResponse.id from it after emit
+  assertEquals(typeof result.structuredContent, "object");
+});
+
+Deno.test("einvoice_invoice_submit - returns { content, structuredContent } for generated_id path", async () => {
+  _clearStore();
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_submit");
+
+  const file = new Uint8Array([10, 20, 30]);
+  const id = storeGenerated(file, "test.xml");
+
+  const result = await tool.handler(
+    { generated_id: id },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(result.content, "Facture émise avec succès");
+  assertEquals(typeof result.structuredContent, "object");
+});
+
+Deno.test("einvoice_invoice_submit has action-result UI", () => {
+  const tool = findTool("einvoice_invoice_submit");
+  assertEquals(tool._meta, undefined); // no standalone viewer — consumed by invoice-viewer
+});
+
+Deno.test("einvoice_invoice_submit - throws for invalid base64", async () => {
+  const { adapter } = createMockAdapter();
+  const tool = findTool("einvoice_invoice_submit");
+  await assertRejects(
+    () => tool.handler({ file_base64: "!!!not-base64!!!", filename: "invoice.pdf" }, { adapter }),
+    Error,
+    "'file_base64' is not valid base64",
+  );
+});
+
+// ── Files structuredContent ─────────────────────────────
+
+Deno.test("einvoice_invoice_files - returns doclist structuredContent with array response", async () => {
+  const { adapter } = createMockAdapter();
+  // Override to return array of files
+  adapter.getInvoiceFiles = async () => [
+    { id: "f-1", name: "source.xml", contentType: "application/xml", size: 1024 },
+    { id: "f-2", name: "readable.pdf", contentType: "application/pdf", size: 50000 },
+  ];
+  const tool = findTool("einvoice_invoice_files");
+
+  const result = await tool.handler({ id: "inv-42" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  assertEquals(result.content, "2 fichier(s) pour la facture inv-42");
+  const sc = result.structuredContent as Record<string, unknown>;
+  assertEquals(sc._title, "Fichiers — Facture inv-42");
+  assertEquals(sc.count, 2);
+  const data = sc.data as Record<string, unknown>[];
+  assertEquals(data.length, 2);
+  assertEquals(data[0]._id, "f-1");
+  assertEquals(data[0]["Nom"], "source.xml");
+  assertEquals(data[0]["Type"], "application/xml");
+  assertEquals(data[1]._id, "f-2");
+  const rowAction = sc._rowAction as Record<string, string>;
+  assertEquals(rowAction.toolName, "einvoice_invoice_download_file");
+  assertEquals(rowAction.idField, "_id");
+  assertEquals(rowAction.argName, "file_id");
+});
+
+Deno.test("einvoice_invoice_files - handles { files: [...] } response shape", async () => {
+  const { adapter } = createMockAdapter();
+  // Override to return { files: [...] } shape
+  adapter.getInvoiceFiles = async () => ({
+    files: [
+      { id: "f-10", filename: "invoice.xml", type: "text/xml", size: 512 },
+    ],
+  });
+  const tool = findTool("einvoice_invoice_files");
+
+  const sc = unwrapStructured(
+    await tool.handler({ id: "inv-99" }, { adapter }),
+  ) as Record<string, unknown>;
+
+  assertEquals(sc.count, 1);
+  const data = sc.data as Record<string, unknown>[];
+  assertEquals(data[0]._id, "f-10");
+  assertEquals(data[0]["Nom"], "invoice.xml");
+  assertEquals(data[0]["Type"], "text/xml");
+});
+
+Deno.test("einvoice_invoice_files - handles non-array/non-files response gracefully", async () => {
+  const { adapter } = createMockAdapter();
+  // Default mock returns { ok: true } — neither array nor { files: [...] }
+  const tool = findTool("einvoice_invoice_files");
+
+  const sc = unwrapStructured(
+    await tool.handler({ id: "inv-empty" }, { adapter }),
+  ) as Record<string, unknown>;
+
+  assertEquals(sc.count, 0);
+  assertEquals((sc.data as unknown[]).length, 0);
+  assertEquals(sc._title, "Fichiers — Facture inv-empty");
+});
+
+Deno.test("einvoice_invoice_files has doclist-viewer UI", () => {
+  const tool = findTool("einvoice_invoice_files");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
+});
+
+// ── Attachments structuredContent ───────────────────────
+
+Deno.test("einvoice_invoice_attachments - returns doclist structuredContent with array response", async () => {
+  const { adapter } = createMockAdapter();
+  // Override to return array of attachments
+  adapter.getAttachments = async () => [
+    { id: "a-1", name: "bon-commande.pdf", contentType: "application/pdf", size: 2048 },
+  ];
+  const tool = findTool("einvoice_invoice_attachments");
+
+  const result = await tool.handler({ id: "inv-42" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  assertEquals(result.content, "1 pièce(s) jointe(s) pour la facture inv-42");
+  const sc = result.structuredContent as Record<string, unknown>;
+  assertEquals(sc._title, "Pièces jointes — Facture inv-42");
+  assertEquals(sc.count, 1);
+  const data = sc.data as Record<string, unknown>[];
+  assertEquals(data[0]._id, "a-1");
+  assertEquals(data[0]["Nom"], "bon-commande.pdf");
+  assertEquals(data[0]["Type"], "application/pdf");
+  const rowAction = sc._rowAction as Record<string, string>;
+  assertEquals(rowAction.toolName, "einvoice_invoice_download_file");
+  assertEquals(rowAction.idField, "_id");
+  assertEquals(rowAction.argName, "file_id");
+});
+
+Deno.test("einvoice_invoice_attachments - handles { files: [...] } response shape", async () => {
+  const { adapter } = createMockAdapter();
+  adapter.getAttachments = async () => ({
+    files: [
+      { id: "a-5", filename: "devis.pdf", mimeType: "application/pdf", size: 4096 },
+    ],
+  });
+  const tool = findTool("einvoice_invoice_attachments");
+
+  const sc = unwrapStructured(
+    await tool.handler({ id: "inv-77" }, { adapter }),
+  ) as Record<string, unknown>;
+
+  assertEquals(sc.count, 1);
+  assertEquals(sc._title, "Pièces jointes — Facture inv-77");
+  const data = sc.data as Record<string, unknown>[];
+  assertEquals(data[0]._id, "a-5");
+  assertEquals(data[0]["Nom"], "devis.pdf");
+  assertEquals(data[0]["Type"], "application/pdf");
+});
+
+Deno.test("einvoice_invoice_attachments - handles non-array/non-files response gracefully", async () => {
+  const { adapter } = createMockAdapter();
+  // Default mock returns { ok: true }
+  const tool = findTool("einvoice_invoice_attachments");
+
+  const sc = unwrapStructured(
+    await tool.handler({ id: "inv-empty" }, { adapter }),
+  ) as Record<string, unknown>;
+
+  assertEquals(sc.count, 0);
+  assertEquals((sc.data as unknown[]).length, 0);
+  assertEquals(sc._title, "Pièces jointes — Facture inv-empty");
+});
+
+Deno.test("einvoice_invoice_attachments has doclist-viewer UI", () => {
+  const tool = findTool("einvoice_invoice_attachments");
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/doclist-viewer");
+});

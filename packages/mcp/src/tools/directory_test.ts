@@ -152,7 +152,91 @@ Deno.test("einvoice_directory_int_search has directory-list UI", () => {
   assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/directory-list");
 });
 
-Deno.test("einvoice_directory_peppol_check has no UI viewer", () => {
+Deno.test("einvoice_directory_peppol_check has action-result UI", () => {
   const tool = findTool("einvoice_directory_peppol_check");
-  assertEquals(tool._meta, undefined);
+  assertEquals(tool._meta?.ui?.resourceUri, "ui://mcp-einvoice/action-result");
+});
+
+// ── structuredContent tests ─────────────────────────────
+
+Deno.test("einvoice_directory_int_search - returns content + structuredContent with normalized rows", async () => {
+  const mockResponse = {
+    rows: [
+      { entityId: "p-1", name: "Acme Corp", identifier: "FR12345", scheme: "0009", country: "FR" },
+      { entityId: "p-2", name: "Beta Ltd", identifier: "DE67890", scheme: "0088", country: "DE" },
+    ],
+    count: 2,
+  };
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_directory_int_search");
+
+  const result = await tool.handler({ value: "FR12345" }, { adapter }) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  assertEquals((result.content as string).includes("2"), true);
+
+  const sc = unwrapStructured(result);
+  assertEquals(sc._title, "Annuaire international (Peppol)");
+  assertEquals(sc.count, 2);
+
+  const data = sc.data as Record<string, unknown>[];
+  assertEquals(data.length, 2);
+  assertEquals(data[0]["_id"], "p-1");
+  assertEquals(data[0]["Identifiant"], "FR12345");
+  assertEquals(data[0]["Schéma"], "0009");
+  assertEquals(data[0]["Pays"], "FR");
+  assertEquals(data[0]["Nom"], "Acme Corp");
+  assertEquals(typeof data[0]["_detail"], "object");
+});
+
+Deno.test("einvoice_directory_int_search - handles array response", async () => {
+  const mockResponse = [
+    { id: "x-1", name: "Solo", identifier: "GB999", scheme: "0088", country: "GB" },
+  ];
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_directory_int_search");
+
+  const result = unwrapStructured(
+    await tool.handler({ value: "GB999" }, { adapter }),
+  );
+  assertEquals(result._title, "Annuaire international (Peppol)");
+  assertEquals(result.count, 1);
+  const data = result.data as Record<string, unknown>[];
+  assertEquals(data[0]["_id"], "x-1");
+});
+
+Deno.test("einvoice_directory_peppol_check - returns action-result structuredContent", async () => {
+  const mockResponse = { exists: true, scheme: "iso6523-actorid-upis", value: "0208:FR123" };
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_directory_peppol_check");
+
+  const result = await tool.handler(
+    { scheme: "iso6523-actorid-upis", value: "0208:FR123" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals(typeof result.content, "string");
+  assertEquals((result.content as string).includes("trouvé"), true);
+
+  const sc = result.structuredContent as Record<string, unknown>;
+  assertEquals(sc.action, "Vérification Peppol");
+  assertEquals(sc.status, "success");
+  assertEquals((sc.details as Record<string, unknown>).exists, true);
+});
+
+Deno.test("einvoice_directory_peppol_check - not found returns error status", async () => {
+  const mockResponse = { exists: false };
+  const { adapter } = createMockAdapter(mockResponse);
+  const tool = findTool("einvoice_directory_peppol_check");
+
+  const result = await tool.handler(
+    { scheme: "iso6523-actorid-upis", value: "0000:UNKNOWN" },
+    { adapter },
+  ) as Record<string, unknown>;
+
+  assertEquals((result.content as string).includes("non trouvé"), true);
+  const sc = result.structuredContent as Record<string, unknown>;
+  assertEquals(sc.action, "Vérification Peppol");
+  assertEquals(sc.status, "error");
+  assertEquals((sc.title as string).includes("non trouvé"), true);
 });
