@@ -180,6 +180,32 @@ Deno.test("IopoleClient.post() - works without body", async () => {
   }
 });
 
+// ── postWithQuery ────────────────────────────────────────
+
+Deno.test("IopoleClient.postWithQuery() - sends POST with body and query params", async () => {
+  const { restore, captured } = mockFetch([
+    { status: 200, body: { xml: "<CII>generated</CII>" } },
+  ]);
+
+  try {
+    const client = makeClient();
+    await client.postWithQuery(
+      "/tools/cii/generate",
+      { invoice: { number: "F-001" } },
+      { flavor: "EN16931", language: "fr" },
+    );
+
+    assertEquals(captured.length, 1);
+    assertEquals(captured[0].method, "POST");
+    assertEquals(captured[0].body, { invoice: { number: "F-001" } });
+    const url = new URL(captured[0].url);
+    assertEquals(url.searchParams.get("flavor"), "EN16931");
+    assertEquals(url.searchParams.get("language"), "fr");
+  } finally {
+    restore();
+  }
+});
+
 // ── PUT ──────────────────────────────────────────────────
 
 Deno.test("IopoleClient.put() - sends PUT with body", async () => {

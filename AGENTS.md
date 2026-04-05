@@ -1,10 +1,13 @@
 # Repository Guidelines
 
-- Package: `@casys/mcp-einvoice` (JSR + npm).
+- Monorepo: 3 packages — `@casys/einvoice-core`, `@casys/mcp-einvoice`,
+  `@casys/einvoice-rest` (JSR + npm).
 - In chat replies, file references must be repo-root relative only (example:
-  `src/adapters/iopole/adapter.ts:42`); never absolute paths or `~/...`.
+  `packages/core/src/adapters/iopole/adapter.ts:42`); never absolute paths or
+  `~/...`.
 - Do not edit files that another adapter owns unless the change is explicitly
-  cross-cutting. Treat each `src/adapters/<name>/` as a separate surface.
+  cross-cutting. Treat each `packages/core/src/adapters/<name>/` as a separate
+  surface.
 - Language: TypeScript (Deno). Prefer strict typing; avoid `any`. All source
   uses `.ts` extensions in imports (Deno convention).
 
@@ -14,39 +17,73 @@ PA-agnostic MCP server for e-invoicing via the adapter pattern. Multiple
 adapters (Iopole, Storecove, Super PDP), tools across 6 categories, React
 viewers (MCP Apps). Deno runtime + Node.js bundle for npm.
 
+## Monorepo Structure
+
+```
+packages/
+├── core/           # @casys/einvoice-core — adapter layer, types, shared utils
+│   ├── mod.ts      # Public JSR API surface
+│   └── src/
+│       ├── adapter.ts          # EInvoiceAdapter interface + types
+│       ├── adapters/           # BaseAdapter, AfnorBaseAdapter, Iopole, Storecove, SuperPDP
+│       │   └── shared/         # BaseHttpClient, errors, oauth2, encoding, env
+│       └── testing/helpers.ts  # createMockAdapter(), mockFetch()
+├── mcp/            # @casys/mcp-einvoice — MCP server, tools, viewers
+│   ├── server.ts
+│   ├── mod.ts
+│   └── src/
+│       ├── client.ts           # Tools registry + capability filtering
+│       ├── tools/              # 39 tools (6 categories)
+│       ├── ui/                 # 6 viewers React (single-file HTML)
+│       └── testing/helpers.ts  # unwrapStructured() + re-exports core helpers
+└── rest/           # @casys/einvoice-rest — Hono REST API
+    ├── server.ts
+    └── src/
+        └── routes/             # Hono routes (invoice, config, entity, etc.)
+```
+
+Inter-package dependencies:
+- `packages/mcp` depends on `@casys/einvoice-core` (via JSR import)
+- `packages/rest` depends on `@casys/einvoice-core` (via JSR import)
+- `packages/mcp` and `packages/rest` do NOT depend on each other
+
 ## Import Boundaries
 
-- Dependency graph is strictly layered:
-  `adapter.ts` ← `adapters/*` ← `tools/*` ← `client.ts` ← `server.ts`
+- Dependency graph within `packages/core`:
+  `adapter.ts` ← `adapters/*` ← `adapters/shared/*`
+- Dependency graph within `packages/mcp`:
+  `tools/*` ← `client.ts` ← `server.ts`
 - Tools must NEVER import adapter internals (client, normalize, api-specs). They
   consume only the typed returns from `EInvoiceAdapter` methods.
 - Adapters must NOT import from `tools/` or `client.ts`.
-- Cross-adapter code goes in `adapters/shared/`. Do not import one adapter from
-  another.
+- Cross-adapter code goes in `packages/core/src/adapters/shared/`. Do not import
+  one adapter from another.
 - UI viewers import shared code via `~/shared/*` path alias (Vite-resolved). Do
   not import from `src/` proper.
 - Deno runtime server has a single external dependency: `@casys/mcp-server` (via
   import map in `deno.json`). UI has its own `package.json` with React, Vite,
   etc. Do not add server dependencies without explicit approval.
-- `mod.ts` is the public JSR API surface — only re-export what library consumers
-  need.
+- `mod.ts` in each package is the public JSR API surface — only re-export what
+  library consumers need.
 
 ## Build, Test & Development Commands
 
+All commands run from **workspace root** (not from a package directory).
+
 | Command | Purpose |
 | --- | --- |
-| `deno task serve` | HTTP mode on port 3015 (localhost) |
-| `deno task test` | Run all tests (unit + E2E) |
-| `deno task inspect` | Launch MCP Inspector (spawns server internally) |
-| `deno task compile` | Compile to standalone binary |
-| `deno task build:node` | Build Node.js bundle (esbuild → `dist-node/`) |
-| `deno task ui:build` | Rebuild all viewers |
+| `deno task mcp:serve` | MCP HTTP mode on port 3015 (localhost) |
+| `deno task rest:serve` | REST API on port 3016 |
+| `deno task test` | Run all tests across all packages |
+| `deno task test:core` | Run tests for einvoice-core only |
+| `deno task test:mcp` | Run tests for mcp-einvoice only |
+| `deno task test:rest` | Run tests for einvoice-rest only |
+| `deno task inspect` | Launch MCP Inspector |
+| `cd packages/mcp/src/ui && node build-all.mjs` | Rebuild all viewers |
 
-- **Always run from project root** — `server.ts` resolution depends on it.
-- After editing any TSX file: rebuild viewers before testing (`deno task
-  ui:build`).
+- After editing any TSX file: rebuild viewers before testing.
 - `deno task inspect` launches the MCP Inspector AND spawns the server — no need
-  to run `deno task serve` separately. Connect Streamable HTTP to
+  to run `deno task mcp:serve` separately. Connect Streamable HTTP to
   `localhost:3015/mcp` (Direct mode, NOT Via Proxy).
 - E2E tests require `.env` at project root with real credentials — they skip
   gracefully without them.
@@ -68,8 +105,10 @@ viewers (MCP Apps). Deno runtime + Node.js bundle for npm.
 - Features: branch + `gh pr create` + `gh pr merge`.
 - CI auto-publishes to JSR + npm on every push to `main`
   (`.github/workflows/publish.yml`). CI builds UI viewers before publishing.
-- Version is managed **only** in `deno.json` `version` field.
-  `scripts/build-node.sh` reads it from there.
+- Version is managed in `deno.json` `version` field in each package
+  (`packages/core/deno.json`, `packages/mcp/deno.json`, `packages/rest/deno.json`).
+  Keep all three in sync. `scripts/build-node.sh` reads from
+  `packages/mcp/deno.json`.
 - Do not bump version unless explicitly asked — CI gracefully skips if version
   is already published.
 - Commit messages: concise, action-oriented (e.g. `fix: wrap config response in
@@ -81,7 +120,7 @@ viewers (MCP Apps). Deno runtime + Node.js bundle for npm.
 ### Adapter Hierarchy
 
 ```
-EInvoiceAdapter (interface — see src/adapter.ts for current method count)
+EInvoiceAdapter (interface — see packages/core/src/adapter.ts)
 └── BaseAdapter (abstract — all methods throw NotSupportedError)
     ├── IopoleAdapter    — all caps, OAuth2, extends BaseAdapter directly
     ├── StorecoveAdapter — partial caps, API key, extends BaseAdapter directly
@@ -90,8 +129,8 @@ EInvoiceAdapter (interface — see src/adapter.ts for current method count)
 ```
 
 Check each adapter's `capabilities` Set for the current list of supported
-methods. The `src/tools/mod_test.ts` assertion is the source of truth for total
-tool count.
+methods. The `packages/mcp/src/tools/mod_test.ts` assertion is the source of
+truth for total tool count.
 
 - `AdapterMethodName` type = `Exclude<keyof EInvoiceAdapter, "name" |
   "capabilities">` — compile-time safety for capabilities and tool `requires`.
@@ -109,17 +148,29 @@ tool count.
 | French PA without AFNOR | `BaseAdapter` | Override all needed methods (like Iopole) |
 | Non-French platform | `BaseAdapter` | Override all needed methods (like Storecove) |
 
-After adding: register in BOTH `src/adapters/registry.ts` AND the
-`createAdapter()` switch in `server.ts` (the logic is duplicated), add env vars
-to `.env.example`, add factory function in the adapter module.
+After adding: register in BOTH `packages/core/src/adapters/registry.ts` AND the
+`createAdapter()` switch in `packages/mcp/server.ts` (the logic is duplicated),
+add env vars to `.env.example`, add factory function in the adapter module.
 
 ### HTTP Clients
 
-- `BaseHttpClient` (abstract) in `shared/http-client.ts` — shared HTTP logic
-  with `get`, `post`, `put`, `patch`, `delete`. Subclasses provide auth headers.
+All 4 HTTP clients (Iopole, Storecove, SuperPDP, AFNOR) extend `BaseHttpClient`
+in `packages/core/src/adapters/shared/http-client.ts`.
+
+- `BaseHttpClient` (abstract) — provides `request()`, `get()`, `post()`,
+  `put()`, `patch()`, `delete()`, `download()`. Subclasses implement
+  `getAuthHeaders()` for authentication.
+- `requestWithBase(baseUrl, method, path, options)` — `protected` method that
+  `request()` delegates to. Subclasses call it directly when they need a
+  different base URL (e.g. IopoleClient.getV11 uses a v1.1 URL). Concurrent-safe
+  — no state mutation.
 - All clients use `AbortController` + `setTimeout` (30s default). `clearTimeout`
   always in `finally`. Only `IopoleClient.postBinary()` uses 60s for PDF
   generation — all other operations including binary downloads use 30s.
+- Iopole-specific methods that bypass `request()` because they need non-JSON
+  responses or multipart uploads: `postBinary()` (binary PDF), `upload()`
+  (FormData), `postWithQuery()` (POST with query params). These still use
+  `getAuthHeaders()` and `AdapterAPIError` for consistency.
 
 ### Tool System
 
@@ -157,13 +208,14 @@ to preview before sending.
 
 ## Iopole API
 
-- **Local API specs**: `src/adapters/iopole/api-specs/` — OpenAPI JSON specs.
+- **Local API specs**: `packages/core/src/adapters/iopole/api-specs/` — OpenAPI
+  JSON specs.
 - Sandbox: `api.ppd.iopole.fr/v1`, Auth: `auth.ppd.iopole.fr` (default — NOT
   `auth.iopole.com`).
 - Factur-X generate returns binary PDF — use `postBinary()` in IopoleClient.
 - Status enrichment: `searchInvoices` does N+1 `getStatusHistory` (capped at 5
   concurrent).
-- `getInvoice`: parallel fetch (invoice + statusHistory).
+- `getInvoice`: parallel fetch (invoice + statusHistory via `Promise.all`).
 - `normalizeForIopole()` auto-fills: `postalAddress`, `electronicAddress 0225`,
   `payableAmount` (from `invoiceAmount`), `lines[].taxDetail.categoryCode`
   (`"S"` default).
@@ -172,7 +224,7 @@ to preview before sending.
 
 ## Super PDP API
 
-- **Local API specs**: `src/adapters/superpdp/api-specs/`.
+- **Local API specs**: `packages/core/src/adapters/superpdp/api-specs/`.
 - Sandbox: `api.superpdp.tech/v1.beta`, Auth:
   `api.superpdp.tech/oauth2/token`.
 - Invoice data lives in nested `en_invoice.*` (EN16931 model) — NOT flat fields.
@@ -196,9 +248,9 @@ to preview before sending.
 ## Status Codes (CDAR)
 
 - Viewers use CDAR codes (PPF lifecycle, XP Z12-012).
-- `getStatus()` in `src/ui/shared/status.ts` resolves any format: CDAR numeric
-  (`"205"`), prefixed (`"fr:205"`), Iopole label (`"APPROVED"`), AFNOR
-  (`"Ok"`). Never hardcode status colors — always use `getStatus()`.
+- `getStatus()` in `packages/mcp/src/ui/shared/status.ts` resolves any format:
+  CDAR numeric (`"205"`), prefixed (`"fr:205"`), Iopole label (`"APPROVED"`),
+  AFNOR (`"Ok"`). Never hardcode status colors — always use `getStatus()`.
 - 4 obligatoires PPF: 200 (Déposée), 210 (Refusée), 212 (Encaissée), 213
   (Rejetée).
 - Lifecycle transition guards: `canAcceptReject()`, `canSendPayment()`,
@@ -206,15 +258,15 @@ to preview before sending.
 
 ## Viewers (MCP Apps)
 
-React single-file HTML bundles in `src/ui/dist/`, built via
+React single-file HTML bundles in `packages/mcp/src/ui/dist/`, built via
 `vite-plugin-singlefile`. Each viewer has a `contract.md` describing its data
 contract — read it before modifying.
 
 ### Viewer Development Rules
 
-- After editing any TSX: run `deno task ui:build` to rebuild dist. New viewers
-  are auto-discovered by the build BUT must also be registered in `server.ts`
-  `registerViewers()`.
+- After editing any TSX: run `cd packages/mcp/src/ui && node build-all.mjs` to
+  rebuild dist. New viewers are auto-discovered by the build BUT must also be
+  registered in `packages/mcp/server.ts` `registerViewers()`.
 - `callServerTool` = actions + drill-down. `sendMessage` = navigation (new
   conversation turn).
 - `ActionButton` `confirm` prop = double-click pattern for destructive actions.
@@ -223,8 +275,8 @@ contract — read it before modifying.
   (`RECEIVED_STATUSES` / `SENT_STATUSES`).
 - Doclist implicit click (no chevron), expandable panel, auto-detects invoice vs
   generic data.
-- CSS `border-radius` on iframe: apply `overflow: hidden` to `html` only — NOT
-  `body` (kills scroll).
+- CSS `border-radius` on iframe: `border-radius` on `html`, `overflow: hidden`
+  on `#app` — NOT on `html` (kills vertical scroll on mobile WebView).
 - UI uses `@modelcontextprotocol/ext-apps` (`App` class).
 - Refresh behavior varies by viewer: `invoice-viewer` has a 15s auto-refresh
   interval; `doclist-viewer`, `status-timeline`, `directory-list`, and
@@ -263,6 +315,27 @@ contract — read it before modifying.
 - Binary responses (PDFs): read as `arrayBuffer()` directly — never coerce
   through text encoding.
 
+### Architecture Discipline
+
+- **Utilise l'abstraction dont tu hérites.** Si tu extends une classe, utilise
+  ses méthodes. Si tu te retrouves à réécrire la même logique (auth, timeout,
+  erreurs, parsing) dans une sous-classe — c'est que tu bypasses l'abstraction
+  au lieu de l'étendre. Ajoute une méthode protégée à la base si elle manque.
+- **>10 lignes dupliquées = problème de design.** Pas un problème
+  d'implémentation. Refactorise avant de commit, pas après.
+- **Pas de mutation temporaire d'état partagé.** Ne change jamais un champ
+  d'instance pour un seul appel puis restore en `finally`. C'est une race
+  condition dès qu'il y a de la concurrence (`Promise.all`). Passe la valeur
+  en paramètre.
+- **Chaque méthode publique ajoutée ou modifiée a un test.** Le test fait
+  partie du changement, pas d'une passe ultérieure.
+- **Pas de suppression silencieuse d'assertions.** Si un test vérifiait un
+  comportement et que tu retires l'assertion, justifie dans le commit message.
+  Si le comportement a changé, le test change — il ne disparaît pas.
+- **Self-review avant de commit.** Relis le diff. Cherche la duplication, les
+  chemins non testés, les régressions de comportement. Ce que la review
+  trouve, tu aurais dû le trouver avant.
+
 ### What NOT to Do
 
 - Do not add local try/catch in tool handlers — use `einvoiceErrorMapper`.
@@ -273,19 +346,21 @@ contract — read it before modifying.
 - Do not use offset-based pagination with SuperPDP (it's cursor-based).
 - Do not put PA-specific logic in tools (Lucene wrapping, N+1 enrichment,
   normalization all belong in the adapter).
-- Do not use `Deno.*` APIs outside `src/runtime.ts` — always go through the
-  runtime abstraction. If you need a new platform API, add it to both
-  `runtime.ts` and `runtime.node.ts`.
+- Do not use `Deno.*` APIs outside `packages/mcp/src/runtime.ts` — always go
+  through the runtime abstraction. If you need a new platform API, add it to
+  both `runtime.ts` and `runtime.node.ts`.
 
 ## Testing
 
-- Run: `deno task test` (all tests, unit + E2E).
+- Run: `deno task test` (all tests, unit + E2E, across all packages).
 - Tests colocated as `*_test.ts` next to source files.
-- E2E: `src/e2e_test.ts` (Iopole), `src/e2e_superpdp_test.ts` (SuperPDP) —
-  both need `.env` credentials, skip gracefully without them.
-- Use `createMockAdapter()` and `unwrapStructured()` from
-  `src/testing/helpers.ts` for unit tests.
-- Use `mockFetch(responses)` to mock HTTP calls in adapter tests.
+- E2E: `packages/mcp/src/e2e_test.ts` (Iopole),
+  `packages/mcp/src/e2e_superpdp_test.ts` (SuperPDP) — both need `.env`
+  credentials, skip gracefully without them.
+- Core test helpers: `packages/core/src/testing/helpers.ts` —
+  `createMockAdapter()`, `mockFetch()`.
+- MCP test helpers: `packages/mcp/src/testing/helpers.ts` —
+  `unwrapStructured()` + re-exports core helpers.
 - `generated-store`: 10min TTL, in-memory only, lost on restart.
 - All tests must pass before pushing to `main`.
 
@@ -312,11 +387,12 @@ See `.env.example` for the full list with descriptions. Key variables:
 
 ## Publishing
 
-- **JSR**: `@casys/mcp-einvoice` — published directly from source.
+- **JSR**: `@casys/einvoice-core`, `@casys/mcp-einvoice`, `@casys/einvoice-rest`
+  — published directly from source.
 - **npm**: `@casys/mcp-einvoice` — published from `dist-node/bin/` (esbuild
-  bundle). Binary: `mcp-einvoice`.
-- CI handles both. Version bump only in `deno.json`. Do not manually publish
-  unless CI is broken.
+  bundle). Binary: `mcp-einvoice`. `@casys/einvoice-core` also published to npm.
+- CI handles both. Version bump in each `packages/*/deno.json` (keep in sync).
+  Do not manually publish unless CI is broken.
 - `scripts/build-node.sh` swaps `runtime.ts` → `runtime.node.ts`, strips `.ts`
   extensions, bundles via esbuild, copies UI dist.
 
