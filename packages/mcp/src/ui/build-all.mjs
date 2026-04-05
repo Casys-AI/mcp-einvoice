@@ -1,5 +1,5 @@
 /**
- * Build all Iopole UI viewers individually.
+ * Build all einvoice UI viewers individually.
  *
  * vite-plugin-singlefile doesn't support multiple inputs,
  * so we build each UI separately.
@@ -27,7 +27,7 @@ const uis = readdirSync(__dirname).filter((entry) => {
   }
 });
 
-console.log(`\nBuilding ${uis.length} Iopole UIs: ${uis.join(", ")}\n`);
+console.log(`\nBuilding ${uis.length} einvoice UIs: ${uis.join(", ")}\n`);
 
 rmSync(resolve(__dirname, "dist"), { recursive: true, force: true });
 mkdirSync(resolve(__dirname, "dist"), { recursive: true });
@@ -48,4 +48,4 @@ for (const ui of uis) {
   }
 }
 
-console.log(`\nAll ${uis.length} Iopole UIs built successfully!`);
+console.log(`\nAll ${uis.length} einvoice UIs built successfully!`);
