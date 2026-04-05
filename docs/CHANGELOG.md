@@ -1,5 +1,74 @@
 # Changelog
 
+## 0.3.0 (2026-04-05)
+
+### Breaking changes
+
+- **Iopole reporting endpoints replaced**: Iopole removed
+  `/v1/reporting/fr/invoice/transaction` and
+  `/v1/reporting/fr/transaction/{businessEntityId}`. New endpoints use
+  `scheme/{identifierScheme}/value/{identifierValue}` pattern. Both
+  `reportInvoiceTransaction` and `reportTransaction` adapter methods need
+  migration. **Pending — see plan.**
+
+### Refactoring
+
+- **IopoleClient extends BaseHttpClient**: was the only standalone HTTP client
+  (340 lines). Now all 4 clients extend BaseHttpClient. `requestWithBase()`
+  added for concurrent-safe URL overrides (used by `getV11()`).
+- **IopoleAPIError removed**: replaced by `AdapterAPIError("Iopole", ...)`
+  everywhere. `error.name` is still `"IopoleAPIError"` via convention.
+- **All 34 `Promise<unknown>` typed**: 4 new types (`FileEntry`,
+  `WebhookDetail`, `SearchDirectoryIntResult`, `DirectoryIntRow`), 27 methods
+  → `Promise<Record<string, unknown>>`, `getCustomerId` → `Promise<string>`.
+  Zero `as any` in tool files.
+- **Adapter normalization**: Iopole `getInvoiceFiles`, `getAttachments`,
+  `listWebhooks`, `getWebhook`, `createWebhook`, `updateWebhook`,
+  `searchDirectoryInt` — all normalize native API fields to typed interfaces.
+  SuperPDP `getCustomerId` returns `String(company.id)`.
+
+### Features
+
+- **structuredContent on all 39 tools**: every tool returns
+  `{ content, structuredContent }`. 19 mutation tools use `action-result`
+  viewer, 4 list tools use `doclist-viewer`/`directory-list`, 4 detail/simple
+  tools pass through raw data.
+- **Workflow chaining**: `enroll_fr` suggests `network_register_by_id`,
+  `status_send` suggests `status_history` via `nextAction`.
+- **annotations**: `readOnlyHint` on all read tools, `destructiveHint` on all
+  delete tools.
+
+### Fixes
+
+- **Viewer titles**: 4 HTML files + build script changed from `mcp-iopole` to
+  `mcp-einvoice`.
+- **CSS overflow claim**: AGENTS.md corrected (`overflow: hidden` on `#app`,
+  not `html`).
+
+### Documentation
+
+- **CLAUDE.md → AGENTS.md**: single source of truth, CLAUDE.md is a pointer.
+- **AGENTS.md updated for monorepo**: all paths, commands, publishing, version
+  management corrected for 3-package structure.
+- **Architecture Discipline section**: 6 rules (no duplication, no state
+  mutation, tests required, no silent assertion removal, self-review).
+- **AX (Agent Experience) section**: 8 rules for agent-consumable design.
+
+### API specs
+
+- **Iopole specs updated** (2026-04-05): invoicing (new `type`/`processType`
+  descriptions, 1 new rejection reason), config (3 new onboarding stages,
+  `vatRegime` on enrollment, new webhook callback fields), reporting (**breaking
+  — new path scheme**), edi (unchanged).
+
+### Tests
+
+- 501 tests (was 441), 0 failures.
+- New: `getV11` URL/immutability, `postBinary` success/error, `upload`
+  FormData/error, `postWithQuery`, `atob` invalid, peppol not-found status.
+- All 27 structuredContent tools have shape + viewer tests.
+- Config assertions strengthened (exact `action`/`title` values, not `typeof`).
+
 ## 0.2.0 (2026-03-19)
 
 ### Breaking changes

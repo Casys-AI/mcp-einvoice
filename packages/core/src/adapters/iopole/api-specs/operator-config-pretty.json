@@ -5531,6 +5531,15 @@
                       "readonly": {
                         "type": "boolean"
                       },
+                      "vatRegime": {
+                        "type": "string",
+                        "enum": [
+                          "REAL_MONTHLY_TAX_REGIME",
+                          "REAL_QUARTERLY_TAX_REGIME",
+                          "SIMPLIFIED_TAX_REGIME",
+                          "VAT_EXEMPTION_REGIME"
+                        ]
+                      },
                       "contactEmail": {
                         "type": "string",
                         "minLength": 1,
@@ -5767,6 +5776,7 @@
                     "siren": "922304308",
                     "businessEntityDetails": {
                       "readonly": true,
+                      "vatRegime": "REAL_MONTHLY_TAX_REGIME",
                       "contactEmail": "your-email@yourcompany.com",
                       "address": "company address"
                     },
@@ -6268,6 +6278,15 @@
                       "readonly": {
                         "type": "boolean"
                       },
+                      "vatRegime": {
+                        "type": "string",
+                        "enum": [
+                          "REAL_MONTHLY_TAX_REGIME",
+                          "REAL_QUARTERLY_TAX_REGIME",
+                          "SIMPLIFIED_TAX_REGIME",
+                          "VAT_EXEMPTION_REGIME"
+                        ]
+                      },
                       "contactEmail": {
                         "type": "string",
                         "minLength": 1,
@@ -6660,10 +6679,13 @@
                                       "IDENTITY_CHECK_SUBMITTED",
                                       "IDENTITY_CHECK_ACTION_REQUIRED",
                                       "IDENTITY_CHECK_ACCEPTED",
+                                      "BUSINESS_VERIFICATION_STARTED",
+                                      "BUSINESS_VERIFICATION_ACTION_REQUIRED",
+                                      "BUSINESS_VERIFICATION_ACCEPTED",
                                       "MANDATE_SIGNED",
-                                      "ACCEPTED",
                                       "REGISTERING",
-                                      "REGISTERED"
+                                      "REGISTERED",
+                                      "COMPLETED"
                                     ]
                                   },
                                   "description": "the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED and IDENTITY_CHECK_SUBMITTED are deprecated but still sent)"
@@ -6979,10 +7001,13 @@
                                     "IDENTITY_CHECK_SUBMITTED",
                                     "IDENTITY_CHECK_ACTION_REQUIRED",
                                     "IDENTITY_CHECK_ACCEPTED",
+                                    "BUSINESS_VERIFICATION_STARTED",
+                                    "BUSINESS_VERIFICATION_ACTION_REQUIRED",
+                                    "BUSINESS_VERIFICATION_ACCEPTED",
                                     "MANDATE_SIGNED",
-                                    "ACCEPTED",
                                     "REGISTERING",
-                                    "REGISTERED"
+                                    "REGISTERED",
+                                    "COMPLETED"
                                   ]
                                 },
                                 "description": "the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED and IDENTITY_CHECK_SUBMITTED are deprecated but still sent)"
@@ -7546,10 +7571,13 @@
                                         "IDENTITY_CHECK_SUBMITTED",
                                         "IDENTITY_CHECK_ACTION_REQUIRED",
                                         "IDENTITY_CHECK_ACCEPTED",
+                                        "BUSINESS_VERIFICATION_STARTED",
+                                        "BUSINESS_VERIFICATION_ACTION_REQUIRED",
+                                        "BUSINESS_VERIFICATION_ACCEPTED",
                                         "MANDATE_SIGNED",
-                                        "ACCEPTED",
                                         "REGISTERING",
-                                        "REGISTERED"
+                                        "REGISTERED",
+                                        "COMPLETED"
                                       ]
                                     },
                                     "description": "the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED and IDENTITY_CHECK_SUBMITTED are deprecated but still sent)"
@@ -8464,7 +8492,7 @@
                               "sender": {
                                 "name": "Test Seller",
                                 "country": "FR",
-                                "roleCode": "SU",
+                                "roleCode": "SE",
                                 "vatNumber": "FR61922304308",
                                 "identifiers": [
                                   {
@@ -8490,7 +8518,7 @@
                                     "issuer": {
                                       "name": "Test Seller",
                                       "country": "FR",
-                                      "roleCode": "SU",
+                                      "roleCode": "SE",
                                       "vatNumber": "FR61922304308",
                                       "identifiers": [
                                         {
@@ -8518,7 +8546,7 @@
                                 {
                                   "name": "Test Seller",
                                   "country": "FR",
-                                  "roleCode": "SU",
+                                  "roleCode": "SE",
                                   "vatNumber": "FR61922304308",
                                   "identifiers": [
                                     {
@@ -8558,7 +8586,7 @@
                               "sender": {
                                 "name": "Test Seller",
                                 "country": "FR",
-                                "roleCode": "SU",
+                                "roleCode": "SE",
                                 "vatNumber": "FR61922304308",
                                 "identifiers": [
                                   {
@@ -8584,7 +8612,7 @@
                                     "issuer": {
                                       "name": "Test Seller",
                                       "country": "FR",
-                                      "roleCode": "SU",
+                                      "roleCode": "SE",
                                       "vatNumber": "FR61922304308",
                                       "identifiers": [
                                         {
@@ -8612,7 +8640,7 @@
                                 {
                                   "name": "Test Seller",
                                   "country": "FR",
-                                  "roleCode": "SU",
+                                  "roleCode": "SE",
                                   "vatNumber": "FR61922304308",
                                   "identifiers": [
                                     {
@@ -8735,7 +8763,7 @@
                                 "siren": "017410945",
                                 "siret": "01741094500012",
                                 "electronicAddress": "0225:017410945_01741094500012",
-                                "roleCode": "SU"
+                                "roleCode": "SE"
                               },
                               "issuer": null,
                               "recipients": [
@@ -8744,7 +8772,7 @@
                                   "siren": "017410945",
                                   "siret": "01741094500012",
                                   "electronicAddress": "0225:017410945_01741094500012",
-                                  "roleCode": "SU"
+                                  "roleCode": "SE"
                                 }
                               ],
                               "responses": [
@@ -8759,7 +8787,7 @@
                                       "siren": "017410945",
                                       "siret": "01741094500012",
                                       "electronicAddress": "0225:017410945_01741094500012",
-                                      "roleCode": "SU"
+                                      "roleCode": "SE"
                                     }
                                   },
                                   "documentStatus": {
@@ -8925,11 +8953,94 @@
                               "IDENTITY_CHECK_SUBMITTED",
                               "IDENTITY_CHECK_ACTION_REQUIRED",
                               "IDENTITY_CHECK_ACCEPTED",
+                              "BUSINESS_VERIFICATION_STARTED",
+                              "BUSINESS_VERIFICATION_ACTION_REQUIRED",
+                              "BUSINESS_VERIFICATION_ACCEPTED",
                               "MANDATE_SIGNED",
-                              "ACCEPTED",
                               "REGISTERING",
-                              "REGISTERED"
+                              "REGISTERED",
+                              "COMPLETED"
                             ]
+                          },
+                          "entity": {
+                            "type": "object",
+                            "properties": {
+                              "contactEmail": {
+                                "type": "string"
+                              },
+                              "address": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "description": "Business entity details. Only present in COMPLETED events for white-label operators."
+                          },
+                          "legalRepresentative": {
+                            "type": "object",
+                            "properties": {
+                              "lastName": {
+                                "type": "string"
+                              },
+                              "firstName": {
+                                "type": "string"
+                              },
+                              "position": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "description": "Legal representative details. Only present in COMPLETED events for white-label operators."
+                          },
+                          "mandate": {
+                            "type": "object",
+                            "properties": {
+                              "number": {
+                                "type": "string"
+                              },
+                              "signingDate": {
+                                "type": "string"
+                              },
+                              "effectiveDate": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "description": "Mandate details. Only present in COMPLETED events for white-label operators."
+                          },
+                          "eInvoicingAddresses": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "addressType": {
+                                  "type": "string"
+                                },
+                                "electronicAddress": {
+                                  "type": "string"
+                                },
+                                "migrationKey": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "addressType",
+                                "electronicAddress"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "description": "E-invoicing addresses. Only present in COMPLETED events for white-label operators."
+                          },
+                          "registrationNetworks": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Registration networks. Only present in COMPLETED events for white-label operators."
+                          },
+                          "evidencesLink": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL to retrieve enrollment evidences. Present in COMPLETED events."
                           }
                         },
                         "required": [
@@ -9694,10 +9805,13 @@
                                     "IDENTITY_CHECK_SUBMITTED",
                                     "IDENTITY_CHECK_ACTION_REQUIRED",
                                     "IDENTITY_CHECK_ACCEPTED",
+                                    "BUSINESS_VERIFICATION_STARTED",
+                                    "BUSINESS_VERIFICATION_ACTION_REQUIRED",
+                                    "BUSINESS_VERIFICATION_ACCEPTED",
                                     "MANDATE_SIGNED",
-                                    "ACCEPTED",
                                     "REGISTERING",
-                                    "REGISTERED"
+                                    "REGISTERED",
+                                    "COMPLETED"
                                   ]
                                 },
                                 "description": "the onboarding stages to subscribe to for callback events (ACTION_REQUIRED is available; ACCEPTED and IDENTITY_CHECK_SUBMITTED are deprecated but still sent)"
@@ -10006,9 +10120,13 @@
                             "IDENTITY_CHECK_SUBMITTED",
                             "IDENTITY_CHECK_ACTION_REQUIRED",
                             "IDENTITY_CHECK_ACCEPTED",
+                            "BUSINESS_VERIFICATION_STARTED",
+                            "BUSINESS_VERIFICATION_ACTION_REQUIRED",
+                            "BUSINESS_VERIFICATION_ACCEPTED",
                             "MANDATE_SIGNED",
                             "REGISTERING",
-                            "REGISTERED"
+                            "REGISTERED",
+                            "COMPLETED"
                           ]
                         }
                       }
@@ -10036,9 +10154,13 @@
                             "IDENTITY_CHECK_SUBMITTED",
                             "IDENTITY_CHECK_ACTION_REQUIRED",
                             "IDENTITY_CHECK_ACCEPTED",
+                            "BUSINESS_VERIFICATION_STARTED",
+                            "BUSINESS_VERIFICATION_ACTION_REQUIRED",
+                            "BUSINESS_VERIFICATION_ACCEPTED",
                             "MANDATE_SIGNED",
                             "REGISTERING",
-                            "REGISTERED"
+                            "REGISTERED",
+                            "COMPLETED"
                           ]
                         },
                         "authentication": {

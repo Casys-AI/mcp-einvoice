@@ -388,7 +388,8 @@
                             {
                               "type": "number"
                             }
-                          ]
+                          ],
+                          "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                         },
                         "processType": {
                           "type": "string",
@@ -407,7 +408,8 @@
                             "S6",
                             "B7",
                             "S7"
-                          ]
+                          ],
+                          "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                         },
                         "invoiceDueDate": {
                           "type": "string",
@@ -5232,7 +5234,8 @@
                       {
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                   },
                   "processType": {
                     "type": "string",
@@ -5251,7 +5254,8 @@
                       "S6",
                       "B7",
                       "S7"
-                    ]
+                    ],
+                    "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                   },
                   "invoiceDueDate": {
                     "type": "string",
@@ -11643,7 +11647,8 @@
                       {
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                   },
                   "processType": {
                     "type": "string",
@@ -11662,7 +11667,8 @@
                       "S6",
                       "B7",
                       "S7"
-                    ]
+                    ],
+                    "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                   },
                   "invoiceDueDate": {
                     "type": "string",
@@ -17026,7 +17032,8 @@
                       {
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                   },
                   "processType": {
                     "type": "string",
@@ -17045,7 +17052,8 @@
                       "S6",
                       "B7",
                       "S7"
-                    ]
+                    ],
+                    "description": "{\"valueDescription\":\"3 digits max\",\"more\":\"BT-3 - Commercial invoices corresponds to code 380 and credit note to 381\",\"link\":{\"placeholder\":\"UNTDID 1001 list\",\"link\":\"https://service.unece.org/trade/untdid/d99a/uncl/uncl1001.htm\"},\"text\":\"Code specifying the functional type of the invoice.\"}"
                   },
                   "invoiceDueDate": {
                     "type": "string",
@@ -22679,9 +22687,10 @@
                           "DELIVERY_ISSUE",
                           "PAYMENT_TERMS_INCORRECT",
                           "BANK_DETAILS_INCORRECT",
-                          "OTHER"
+                          "OTHER",
+                          "MISSING_DOCUMENTS"
                         ],
-                        "description": "| Iopole reason | Allowed status | DomesticFr reason | Peppol International reason |\n|---|---|---|---|\n| `LEGAL_INFORMATION_MISSING` | REFUSED, DISPUTED | NON_CONFORME | LEG |\n| `INCORRECT_RECIPIENT` | REFUSED, DISPUTED | DEST_ERR | REC |\n| `EINVOICING_ADDRESS_INCORRECT` | REFUSED, DISPUTED | ADR_ERR | REC |\n| `UNKNOWN_TRANSACTION` | REFUSED, DISPUTED | TRANSAC_INC | UNR |\n| `PO_REFERENCE_INCORRECT_OR_MISSING` | REFUSED, DISPUTED | CMD_ERR | REF |\n| `CONTRACT_REFERENCE_MISSING` | REFUSED, DISPUTED | REF_CT_ABSENT | REF |\n| `VAT_RATE_INCORRECT` | REFUSED, DISPUTED | TX_TVA_ERR | Not allowed |\n| `TOTAL_AMOUNT_INCORRECT` | REFUSED, DISPUTED | MONTANTTOTAL_ERR | Not allowed |\n| `CALCULATION_ERROR` | REFUSED, DISPUTED | CALCUL_ERR | Not allowed |\n| `DUPLICATE_INVOICE` | REFUSED, DISPUTED | DOUBLON | Not allowed |\n| `DOUBLE_INVOICING` | REFUSED, DISPUTED | DOUBLE_FACT | Not allowed |\n| `CONTRACT_TERMINATED` | REFUSED, DISPUTED | CONTRAT_TERM | Not allowed |\n| `UNKNOWN_ISSUER` | REFUSED, DISPUTED | EMMET_INC | Not allowed |\n| `FINANCE_TERMS_INCORRECT` | REFUSED, DISPUTED | Not allowed | FIN |\n| `PRICES_INCORRECT` | REFUSED, DISPUTED | Not allowed | PRI |\n| `SIRET_INCORRECT_OR_MISSING` | DISPUTED | SIRET_ERR | REC |\n| `ROUTING_CODE_INCORRECT` | DISPUTED | CODE_ROUTAGE_ERR | REC |\n| `REFERENCE_INCORRECT` | DISPUTED | REF_ERR | REF |\n| `QUANTITY_INCORRECT` | DISPUTED | QTE_ERR | QTY |\n| `ITEM_INCORRECT` | DISPUTED | ART_ERR | ITM |\n| `ITEM_QUALITY_INSUFFICIENT` | DISPUTED | QUALITE_ERR | QUA |\n| `DELIVERY_ISSUE` | DISPUTED | LIVR_INCOMP | DEL |\n| `PAYMENT_TERMS_INCORRECT` | DISPUTED | MODPAI_ERR | PAY |\n| `OTHER` | DISPUTED | AUTRE | OTH  |\n| `UNIT_PRICE_INCORRECT` | DISPUTED | PU_ERR | Not allowed |\n| `DISCOUNT_INCORRECT` | DISPUTED | REM_ERR | Not allowed |\n| `BANK_DETAILS_INCORRECT` | DISPUTED | COORD_BANC_ERR | Not allowed |"
+                        "description": "| Iopole reason | Allowed status | DomesticFr reason | Peppol International reason |\n|---|---|---|---|\n| `LEGAL_INFORMATION_MISSING` | REFUSED, DISPUTED | NON_CONFORME | LEG |\n| `INCORRECT_RECIPIENT` | REFUSED, DISPUTED | DEST_ERR | REC |\n| `EINVOICING_ADDRESS_INCORRECT` | REFUSED, DISPUTED | ADR_ERR | REC |\n| `UNKNOWN_TRANSACTION` | REFUSED, DISPUTED | TRANSAC_INC | UNR |\n| `PO_REFERENCE_INCORRECT_OR_MISSING` | REFUSED, DISPUTED, SUSPENDED | CMD_ERR | REF |\n| `CONTRACT_REFERENCE_MISSING` | REFUSED, DISPUTED, SUSPENDED | REF_CT_ABSENT | REF |\n| `VAT_RATE_INCORRECT` | REFUSED, DISPUTED | TX_TVA_ERR | Not allowed |\n| `TOTAL_AMOUNT_INCORRECT` | REFUSED, DISPUTED | MONTANTTOTAL_ERR | Not allowed |\n| `CALCULATION_ERROR` | REFUSED, DISPUTED | CALCUL_ERR | Not allowed |\n| `DUPLICATE_INVOICE` | REFUSED, DISPUTED | DOUBLON | Not allowed |\n| `DOUBLE_INVOICING` | REFUSED, DISPUTED | DOUBLE_FACT | Not allowed |\n| `CONTRACT_TERMINATED` | REFUSED, DISPUTED | CONTRAT_TERM | Not allowed |\n| `UNKNOWN_ISSUER` | REFUSED, DISPUTED | EMMET_INC | Not allowed |\n| `FINANCE_TERMS_INCORRECT` | REFUSED, DISPUTED | Not allowed | FIN |\n| `PRICES_INCORRECT` | REFUSED, DISPUTED | Not allowed | PRI |\n| `SIRET_INCORRECT_OR_MISSING` | DISPUTED, SUSPENDED | SIRET_ERR | REC |\n| `ROUTING_CODE_INCORRECT` | DISPUTED, SUSPENDED | CODE_ROUTAGE_ERR | REC |\n| `REFERENCE_INCORRECT` | DISPUTED, SUSPENDED | REF_ERR | REF |\n| `QUANTITY_INCORRECT` | DISPUTED | QTE_ERR | QTY |\n| `ITEM_INCORRECT` | DISPUTED | ART_ERR | ITM |\n| `ITEM_QUALITY_INSUFFICIENT` | DISPUTED | QUALITE_ERR | QUA |\n| `DELIVERY_ISSUE` | DISPUTED | LIVR_INCOMP | DEL |\n| `PAYMENT_TERMS_INCORRECT` | DISPUTED | MODPAI_ERR | PAY |\n| `OTHER` | DISPUTED | AUTRE | OTH  |\n| `UNIT_PRICE_INCORRECT` | DISPUTED | PU_ERR | Not allowed |\n| `DISCOUNT_INCORRECT` | DISPUTED | REM_ERR | Not allowed |\n| `BANK_DETAILS_INCORRECT` | DISPUTED, SUSPENDED | COORD_BANC_ERR | Not allowed |\n| `MISSING_DOCUMENTS` | SUSPENDED | JUSTIF_ABS | Not allowed |"
                       },
                       "message": {
                         "type": "string"
