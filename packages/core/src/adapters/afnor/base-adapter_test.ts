@@ -110,7 +110,7 @@ Deno.test("AfnorBaseAdapter (null) - getStatusHistory throws NotSupportedError",
 Deno.test("AfnorBaseAdapter (null) - reportInvoiceTransaction throws NotSupportedError", async () => {
   const adapter = makeAdapterNullAfnor();
   await assertRejects(
-    () => adapter.reportInvoiceTransaction({ amount: 1000 }),
+    () => adapter.reportInvoiceTransaction("0009", "12345678901234", { amount: 1000 }),
     NotSupportedError,
   );
 });
@@ -118,7 +118,7 @@ Deno.test("AfnorBaseAdapter (null) - reportInvoiceTransaction throws NotSupporte
 Deno.test("AfnorBaseAdapter (null) - reportTransaction throws NotSupportedError", async () => {
   const adapter = makeAdapterNullAfnor();
   await assertRejects(
-    () => adapter.reportTransaction("entity-1", { amount: 500 }),
+    () => adapter.reportTransaction("0009", "entity-1", { amount: 500 }),
     NotSupportedError,
   );
 });
@@ -602,7 +602,7 @@ Deno.test("AfnorBaseAdapter.reportInvoiceTransaction() - submits FRR flow", asyn
 
   try {
     const adapter = makeAdapterWithClient();
-    await adapter.reportInvoiceTransaction({ amount: 1000, type: "B2C" });
+    await adapter.reportInvoiceTransaction("0009", "12345678901234", { amount: 1000, type: "B2C" });
 
     const body = captured[0].body as Record<string, string>;
     const flowInfo = JSON.parse(body["flowInfo"]);
@@ -623,7 +623,7 @@ Deno.test("AfnorBaseAdapter.reportTransaction() - submits FRR flow with business
 
   try {
     const adapter = makeAdapterWithClient();
-    await adapter.reportTransaction("entity-99", { amount: 500 });
+    await adapter.reportTransaction("0009", "entity-99", { amount: 500 });
 
     const body = captured[0].body as Record<string, string>;
     const flowInfo = JSON.parse(body["flowInfo"]);

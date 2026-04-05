@@ -409,20 +409,27 @@ export class IopoleAdapter extends BaseAdapter {
   // ─── Reporting ────────────────────────────────────────
 
   override async reportInvoiceTransaction(
+    identifierScheme: string,
+    identifierValue: string,
     transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return await this.client.post(
-      "/reporting/fr/invoice/transaction",
+      `/reporting/transaction/invoice/scheme/${
+        encodePathSegment(identifierScheme)
+      }/value/${encodePathSegment(identifierValue)}`,
       transaction,
     ) as Record<string, unknown>;
   }
 
   override async reportTransaction(
-    businessEntityId: string,
+    identifierScheme: string,
+    identifierValue: string,
     transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return await this.client.post(
-      `/reporting/fr/transaction/${encodePathSegment(businessEntityId)}`,
+      `/reporting/transaction/scheme/${
+        encodePathSegment(identifierScheme)
+      }/value/${encodePathSegment(identifierValue)}`,
       transaction,
     ) as Record<string, unknown>;
   }

@@ -330,6 +330,8 @@ export class StorecoveAdapter extends BaseAdapter {
   // ─── Reporting ────────────────────────────────────────
 
   override async reportInvoiceTransaction(
+    _identifierScheme: string,
+    _identifierValue: string,
     _transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
@@ -340,7 +342,8 @@ export class StorecoveAdapter extends BaseAdapter {
   }
 
   override async reportTransaction(
-    _businessEntityId: string,
+    _identifierScheme: string,
+    _identifierValue: string,
     _transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(

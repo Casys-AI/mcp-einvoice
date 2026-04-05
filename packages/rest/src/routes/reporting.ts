@@ -15,13 +15,14 @@ export function registerReportingRoutes(
   app: OpenAPIHono,
   adapter: EInvoiceAdapter,
 ): void {
-  // ─── POST /api/reporting/invoice-transaction ─────────────
+  // ─── POST /api/reporting/scheme/{scheme}/value/{value}/invoice-transaction ──
   if (adapter.capabilities.has("reportInvoiceTransaction")) {
     const reportInvoiceTransactionRoute = createRoute({
       method: "post",
-      path: "/api/reporting/invoice-transaction",
+      path: "/api/reporting/scheme/{scheme}/value/{value}/invoice-transaction",
       tags: ["Reporting"],
       request: {
+        params: z.object({ scheme: z.string(), value: z.string() }),
         body: {
           content: {
             "application/json": {
@@ -34,20 +35,21 @@ export function registerReportingRoutes(
     });
 
     app.openapi(reportInvoiceTransactionRoute, async (c) => {
+      const { scheme, value } = c.req.valid("param");
       const body = c.req.valid("json");
-      const result = await adapter.reportInvoiceTransaction(body);
+      const result = await adapter.reportInvoiceTransaction(scheme, value, body);
       return c.json(result, 200);
     });
   }
 
-  // ─── POST /api/reporting/entities/{entityId}/transaction ──
+  // ─── POST /api/reporting/scheme/{scheme}/value/{value}/transaction ──
   if (adapter.capabilities.has("reportTransaction")) {
     const reportTransactionRoute = createRoute({
       method: "post",
-      path: "/api/reporting/entities/{entityId}/transaction",
+      path: "/api/reporting/scheme/{scheme}/value/{value}/transaction",
       tags: ["Reporting"],
       request: {
-        params: z.object({ entityId: z.string() }),
+        params: z.object({ scheme: z.string(), value: z.string() }),
         body: {
           content: {
             "application/json": {
@@ -60,9 +62,9 @@ export function registerReportingRoutes(
     });
 
     app.openapi(reportTransactionRoute, async (c) => {
-      const { entityId } = c.req.valid("param");
+      const { scheme, value } = c.req.valid("param");
       const body = c.req.valid("json");
-      const result = await adapter.reportTransaction(entityId, body);
+      const result = await adapter.reportTransaction(scheme, value, body);
       return c.json(result, 200);
     });
   }

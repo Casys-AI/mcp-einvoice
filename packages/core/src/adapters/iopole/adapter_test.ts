@@ -494,45 +494,44 @@ Deno.test("IopoleAdapter.markStatusSeen() - PUT /invoice/status/{statusId}/markA
 
 // ── Reporting ────────────────────────────────────────────
 
-Deno.test("IopoleAdapter.reportInvoiceTransaction() - POST /reporting/fr/invoice/transaction", async () => {
+Deno.test("IopoleAdapter.reportInvoiceTransaction() - POST /reporting/transaction/invoice/scheme/{s}/value/{v}", async () => {
   const { restore, captured } = mockFetch([
     { status: 200, body: { guid: "report-guid" } },
   ]);
 
   try {
     const adapter = makeAdapter();
-    await adapter.reportInvoiceTransaction({
-      amount: 1000,
-      date: "2026-01-01",
+    await adapter.reportInvoiceTransaction("0009", "43446637100011", {
+      invoice: { number: "F-001" },
     });
 
     assertEquals(
       new URL(captured[0].url).pathname,
-      "/v1/reporting/fr/invoice/transaction",
+      "/v1/reporting/transaction/invoice/scheme/0009/value/43446637100011",
     );
   } finally {
     restore();
   }
 });
 
-Deno.test("IopoleAdapter.reportTransaction() - POST /reporting/fr/transaction/{businessEntityId}", async () => {
+Deno.test("IopoleAdapter.reportTransaction() - POST /reporting/transaction/scheme/{s}/value/{v}", async () => {
   const { restore, captured } = mockFetch([
     { status: 200, body: { guid: "report-guid" } },
   ]);
 
   try {
     const adapter = makeAdapter();
-    await adapter.reportTransaction("be-123", {
-      amount: 500,
-      date: "2026-03-01",
+    await adapter.reportTransaction("0009", "43446637100011", {
+      transactionDate: "2026-04-01",
+      transactions: [],
     });
 
     assertEquals(captured[0].method, "POST");
     assertEquals(
       new URL(captured[0].url).pathname,
-      "/v1/reporting/fr/transaction/be-123",
+      "/v1/reporting/transaction/scheme/0009/value/43446637100011",
     );
-    assertEquals(captured[0].body, { amount: 500, date: "2026-03-01" });
+    assertEquals(captured[0].body, { transactionDate: "2026-04-01", transactions: [] });
   } finally {
     restore();
   }

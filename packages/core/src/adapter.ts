@@ -293,10 +293,13 @@ export interface EInvoiceAdapter {
   // ─── Reporting ────────────────────────────────────────
 
   reportInvoiceTransaction(
+    identifierScheme: string,
+    identifierValue: string,
     transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>>;
   reportTransaction(
-    businessEntityId: string,
+    identifierScheme: string,
+    identifierValue: string,
     transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>>;
 

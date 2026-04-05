@@ -18,35 +18,43 @@ Deno.test("einvoice_reporting_invoice_transaction - calls adapter", async () => 
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_reporting_invoice_transaction");
 
-  await tool.handler({ transaction: { amount: 1000 } }, { adapter });
+  await tool.handler({
+    identifier_scheme: "0009",
+    identifier_value: "43446637100011",
+    transaction: { amount: 1000 },
+  }, { adapter });
 
   assertEquals(calls[0].method, "reportInvoiceTransaction");
-  assertEquals(calls[0].args[0], { amount: 1000 });
+  assertEquals(calls[0].args[0], "0009");
+  assertEquals(calls[0].args[1], "43446637100011");
+  assertEquals(calls[0].args[2], { amount: 1000 });
 });
 
-Deno.test("einvoice_reporting_invoice_transaction - throws without transaction", async () => {
+Deno.test("einvoice_reporting_invoice_transaction - throws without required fields", async () => {
   const { adapter } = createMockAdapter();
   const tool = findTool("einvoice_reporting_invoice_transaction");
 
   await assertRejects(
     () => tool.handler({}, { adapter }),
     Error,
-    "'transaction' is required",
+    "'identifier_scheme', 'identifier_value', and 'transaction' are required",
   );
 });
 
-Deno.test("einvoice_reporting_transaction - calls adapter with businessEntityId", async () => {
+Deno.test("einvoice_reporting_transaction - calls adapter with scheme/value", async () => {
   const { adapter, calls } = createMockAdapter();
   const tool = findTool("einvoice_reporting_transaction");
 
   await tool.handler({
-    business_entity_id: "be-1",
+    identifier_scheme: "0009",
+    identifier_value: "43446637100011",
     transaction: { type: "b2c" },
   }, { adapter });
 
   assertEquals(calls[0].method, "reportTransaction");
-  assertEquals(calls[0].args[0], "be-1");
-  assertEquals(calls[0].args[1], { type: "b2c" });
+  assertEquals(calls[0].args[0], "0009");
+  assertEquals(calls[0].args[1], "43446637100011");
+  assertEquals(calls[0].args[2], { type: "b2c" });
 });
 
 Deno.test("einvoice_reporting_transaction - throws without required fields", async () => {
@@ -56,12 +64,12 @@ Deno.test("einvoice_reporting_transaction - throws without required fields", asy
   await assertRejects(
     () => tool.handler({}, { adapter }),
     Error,
-    "'business_entity_id' and 'transaction' are required",
+    "'identifier_scheme', 'identifier_value', and 'transaction' are required",
   );
   await assertRejects(
     () => tool.handler({ transaction: { type: "b2c" } }, { adapter }),
     Error,
-    "'business_entity_id' and 'transaction' are required",
+    "'identifier_scheme', 'identifier_value', and 'transaction' are required",
   );
 });
 
@@ -72,7 +80,7 @@ Deno.test("einvoice_reporting_invoice_transaction - returns action-result struct
   const tool = findTool("einvoice_reporting_invoice_transaction");
 
   const result = await tool.handler(
-    { transaction: { amount: 1000 } },
+    { identifier_scheme: "0009", identifier_value: "43446637100011", transaction: { amount: 1000 } },
     { adapter },
   ) as Record<string, unknown>;
 
@@ -93,16 +101,17 @@ Deno.test("einvoice_reporting_transaction - returns action-result structuredCont
   const tool = findTool("einvoice_reporting_transaction");
 
   const result = await tool.handler({
-    business_entity_id: "be-1",
+    identifier_scheme: "0009",
+    identifier_value: "43446637100011",
     transaction: { type: "b2c" },
   }, { adapter }) as Record<string, unknown>;
 
   assertEquals(typeof result.content, "string");
-  assertEquals((result.content as string).includes("be-1"), true);
+  assertEquals((result.content as string).includes("0009:43446637100011"), true);
   const sc = unwrapStructured(result);
   assertEquals(sc.action, "Déclaration e-reporting");
   assertEquals(sc.status, "success");
-  assertEquals((sc.title as string).includes("be-1"), true);
+  assertEquals((sc.title as string).includes("0009:43446637100011"), true);
   assertEquals(typeof sc.details, "object");
 });
 

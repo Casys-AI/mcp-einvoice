@@ -149,6 +149,8 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
   // ─── Reporting (AFNOR: e-reporting flows) ──────────────
 
   override async reportInvoiceTransaction(
+    _identifierScheme: string,
+    _identifierValue: string,
     transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const afnor = this.requireAfnor("reportInvoiceTransaction");
@@ -160,12 +162,13 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
   }
 
   override async reportTransaction(
-    businessEntityId: string,
+    _identifierScheme: string,
+    _identifierValue: string,
     transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const afnor = this.requireAfnor("reportTransaction");
     const payload = new TextEncoder().encode(
-      JSON.stringify({ businessEntityId, ...transaction }),
+      JSON.stringify(transaction),
     );
     return await afnor.submitFlow(
       payload,

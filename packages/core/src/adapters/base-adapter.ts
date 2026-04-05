@@ -122,12 +122,15 @@ export abstract class BaseAdapter implements EInvoiceAdapter {
 
   // ─── Reporting ─────────────────────────────────────────
   reportInvoiceTransaction(
+    _identifierScheme: string,
+    _identifierValue: string,
     _transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return this.notSupported("reportInvoiceTransaction");
   }
   reportTransaction(
-    _businessEntityId: string,
+    _identifierScheme: string,
+    _identifierValue: string,
     _transaction: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return this.notSupported("reportTransaction");

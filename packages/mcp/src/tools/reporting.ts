@@ -23,6 +23,16 @@ export const reportingTools: EInvoiceTool[] = [
     inputSchema: {
       type: "object",
       properties: {
+        identifier_scheme: {
+          type: "string",
+          description:
+            "Identifier scheme (e.g. '0009' for SIRET, '0088' for EAN).",
+        },
+        identifier_value: {
+          type: "string",
+          description:
+            "Identifier value (e.g. SIRET number '43446637100011').",
+        },
         transaction: {
           type: "object",
           description:
@@ -37,16 +47,18 @@ export const reportingTools: EInvoiceTool[] = [
             "Exact schema depends on the PA provider.",
         },
       },
-      required: ["transaction"],
+      required: ["identifier_scheme", "identifier_value", "transaction"],
     },
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
-      if (!input.transaction) {
+      if (!input.identifier_scheme || !input.identifier_value || !input.transaction) {
         throw new Error(
-          "[einvoice_reporting_invoice_transaction] 'transaction' is required",
+          "[einvoice_reporting_invoice_transaction] 'identifier_scheme', 'identifier_value', and 'transaction' are required",
         );
       }
       const result = await ctx.adapter.reportInvoiceTransaction(
+        input.identifier_scheme as string,
+        input.identifier_value as string,
         input.transaction as Record<string, unknown>,
       );
       return {
@@ -74,9 +86,15 @@ export const reportingTools: EInvoiceTool[] = [
     inputSchema: {
       type: "object",
       properties: {
-        business_entity_id: {
+        identifier_scheme: {
           type: "string",
-          description: "Business entity ID for which to report the transaction",
+          description:
+            "Identifier scheme (e.g. '0009' for SIRET, '0088' for EAN).",
+        },
+        identifier_value: {
+          type: "string",
+          description:
+            "Identifier value (e.g. SIRET number '43446637100011').",
         },
         transaction: {
           type: "object",
@@ -91,25 +109,26 @@ export const reportingTools: EInvoiceTool[] = [
             "Exact schema depends on the PA provider.",
         },
       },
-      required: ["business_entity_id", "transaction"],
+      required: ["identifier_scheme", "identifier_value", "transaction"],
     },
     _meta: { ui: { resourceUri: "ui://mcp-einvoice/action-result" } },
     handler: async (input, ctx) => {
-      if (!input.business_entity_id || !input.transaction) {
+      if (!input.identifier_scheme || !input.identifier_value || !input.transaction) {
         throw new Error(
-          "[einvoice_reporting_transaction] 'business_entity_id' and 'transaction' are required",
+          "[einvoice_reporting_transaction] 'identifier_scheme', 'identifier_value', and 'transaction' are required",
         );
       }
       const result = await ctx.adapter.reportTransaction(
-        input.business_entity_id as string,
+        input.identifier_scheme as string,
+        input.identifier_value as string,
         input.transaction as Record<string, unknown>,
       );
       return {
-        content: `Déclaration e-reporting (transaction) envoyée pour ${input.business_entity_id}`,
+        content: `Déclaration e-reporting (transaction) envoyée pour ${input.identifier_scheme}:${input.identifier_value}`,
         structuredContent: {
           action: "Déclaration e-reporting",
           status: "success",
-          title: `Transaction déclarée pour ${input.business_entity_id}`,
+          title: `Transaction déclarée pour ${input.identifier_scheme}:${input.identifier_value}`,
           details: result as Record<string, unknown>,
         },
       };

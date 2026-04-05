@@ -248,12 +248,12 @@ export function createMockAdapter(
       record("markStatusSeen", statusId) as Promise<Record<string, unknown>>,
 
     // Reporting
-    reportInvoiceTransaction: (t) =>
-      record("reportInvoiceTransaction", t) as Promise<
+    reportInvoiceTransaction: (scheme, value, t) =>
+      record("reportInvoiceTransaction", scheme, value, t) as Promise<
         Record<string, unknown>
       >,
-    reportTransaction: (bid, t) =>
-      record("reportTransaction", bid, t) as Promise<Record<string, unknown>>,
+    reportTransaction: (scheme, value, t) =>
+      record("reportTransaction", scheme, value, t) as Promise<Record<string, unknown>>,
 
     // Webhooks
     listWebhooks: () =>

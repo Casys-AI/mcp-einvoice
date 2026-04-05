@@ -427,7 +427,7 @@ Deno.test("SuperPDPAdapter.reportInvoiceTransaction() - calls AFNOR flow API", a
 
   try {
     const adapter = makeAdapter();
-    await adapter.reportInvoiceTransaction({ amount: 1000, type: "B2C" });
+    await adapter.reportInvoiceTransaction("0009", "12345678901234", { amount: 1000, type: "B2C" });
 
     assertEquals(captured[0].method, "POST");
     assertEquals(captured[0].url.includes("afnor-flow"), true);
@@ -444,7 +444,7 @@ Deno.test("SuperPDPAdapter.reportTransaction() - calls AFNOR flow API", async ()
 
   try {
     const adapter = makeAdapter();
-    await adapter.reportTransaction("entity-1", { amount: 500 });
+    await adapter.reportTransaction("0009", "entity-1", { amount: 500 });
 
     assertEquals(captured[0].url.includes("afnor-flow"), true);
   } finally {
