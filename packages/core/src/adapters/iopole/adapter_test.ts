@@ -177,17 +177,23 @@ Deno.test("IopoleAdapter.downloadReadable() - GET /invoice/{id}/download/readabl
 
 Deno.test("IopoleAdapter.getInvoiceFiles() - GET /invoice/{id}/files", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: { files: [] } },
+    {
+      status: 200,
+      body: [
+        { fileId: "f-1", fileName: "source.xml", mimeType: "text/xml", sizeBytes: 1024 },
+      ],
+    },
   ]);
 
   try {
     const adapter = makeAdapter();
-    await adapter.getInvoiceFiles("inv-123");
+    const files = await adapter.getInvoiceFiles("inv-123");
 
-    assertEquals(
-      new URL(captured[0].url).pathname,
-      "/v1/invoice/inv-123/files",
-    );
+    assertEquals(new URL(captured[0].url).pathname, "/v1/invoice/inv-123/files");
+    assertEquals(files.length, 1);
+    assertEquals(files[0].id, "f-1");
+    assertEquals(files[0].contentType, "text/xml");
+    assertEquals(files[0].size, 1024);
   } finally {
     restore();
   }
@@ -195,17 +201,26 @@ Deno.test("IopoleAdapter.getInvoiceFiles() - GET /invoice/{id}/files", async () 
 
 Deno.test("IopoleAdapter.getAttachments() - GET /invoice/{id}/files/attachments", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: { attachments: [] } },
+    {
+      status: 200,
+      body: [
+        { fileId: "a-1", originalFilename: "devis.pdf", mimeType: "application/pdf", sizeBytes: 4096 },
+      ],
+    },
   ]);
 
   try {
     const adapter = makeAdapter();
-    await adapter.getAttachments("inv-123");
+    const files = await adapter.getAttachments("inv-123");
 
     assertEquals(
       new URL(captured[0].url).pathname,
       "/v1/invoice/inv-123/files/attachments",
     );
+    assertEquals(files.length, 1);
+    assertEquals(files[0].id, "a-1");
+    assertEquals(files[0].name, "devis.pdf");
+    assertEquals(files[0].contentType, "application/pdf");
   } finally {
     restore();
   }
@@ -527,15 +542,35 @@ Deno.test("IopoleAdapter.reportTransaction() - POST /reporting/fr/transaction/{b
 
 Deno.test("IopoleAdapter.listWebhooks() - GET /config/webhook", async () => {
   const { restore, captured } = mockFetch([
-    { status: 200, body: [{ id: "wh-1", url: "https://example.com/hook" }] },
+    {
+      status: 200,
+      body: [{
+        webhookId: "wh-1",
+        label: "My Hook",
+        status: "ACTIVE",
+        interopData: {
+          endpoints: {
+            events: {
+              callbackUrl: "https://example.com/hook",
+              subscribedEvents: ["invoice.received"],
+            },
+          },
+        },
+      }],
+    },
   ]);
 
   try {
     const adapter = makeAdapter();
     const result = await adapter.listWebhooks();
 
-    assertEquals(result, [{ id: "wh-1", url: "https://example.com/hook" }]);
     assertEquals(new URL(captured[0].url).pathname, "/v1/config/webhook");
+    assertEquals(result.length, 1);
+    assertEquals(result[0].id, "wh-1");
+    assertEquals(result[0].name, "My Hook");
+    assertEquals(result[0].url, "https://example.com/hook");
+    assertEquals(result[0].active, true);
+    assertEquals(result[0].events, ["invoice.received"]);
   } finally {
     restore();
   }

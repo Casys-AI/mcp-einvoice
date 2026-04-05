@@ -80,8 +80,7 @@ Deno.test("einvoice_reporting_invoice_transaction - returns action-result struct
   const sc = unwrapStructured(result);
   assertEquals(sc.action, "Déclaration e-reporting");
   assertEquals(sc.status, "success");
-  assertEquals(typeof sc.title, "string");
-  assertEquals(typeof sc.details, "object");
+  assertEquals(sc.title, "Transaction facture déclarée");
 });
 
 Deno.test("einvoice_reporting_invoice_transaction has action-result UI", () => {

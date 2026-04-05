@@ -18,6 +18,7 @@ import type {
   DownloadResult,
   EInvoiceAdapter,
   EmitInvoiceRequest,
+  FileEntry,
   GenerateFacturXRequest,
   GenerateInvoiceRequest,
   InvoiceDetail,
@@ -25,10 +26,12 @@ import type {
   ListBusinessEntitiesResult,
   PaginatedRequest,
   SearchDirectoryFrResult,
+  SearchDirectoryIntResult,
   SearchInvoicesResult,
   SendStatusRequest,
   StatusHistoryResult,
   UpdateWebhookRequest,
+  WebhookDetail,
 } from "../adapter.ts";
 import { NotSupportedError } from "./shared/errors.ts";
 
@@ -48,7 +51,7 @@ export abstract class BaseAdapter implements EInvoiceAdapter {
   }
 
   // ─── Invoice ───────────────────────────────────────────
-  emitInvoice(_req: EmitInvoiceRequest): Promise<unknown> {
+  emitInvoice(_req: EmitInvoiceRequest): Promise<Record<string, unknown>> {
     return this.notSupported("emitInvoice");
   }
   searchInvoices(
@@ -65,19 +68,19 @@ export abstract class BaseAdapter implements EInvoiceAdapter {
   downloadReadable(_id: string): Promise<DownloadResult> {
     return this.notSupported("downloadReadable");
   }
-  getInvoiceFiles(_id: string): Promise<unknown> {
+  getInvoiceFiles(_id: string): Promise<FileEntry[]> {
     return this.notSupported("getInvoiceFiles");
   }
-  getAttachments(_id: string): Promise<unknown> {
+  getAttachments(_id: string): Promise<FileEntry[]> {
     return this.notSupported("getAttachments");
   }
   downloadFile(_fileId: string): Promise<DownloadResult> {
     return this.notSupported("downloadFile");
   }
-  markInvoiceSeen(_id: string): Promise<unknown> {
+  markInvoiceSeen(_id: string): Promise<Record<string, unknown>> {
     return this.notSupported("markInvoiceSeen");
   }
-  getUnseenInvoices(_pagination: PaginatedRequest): Promise<unknown> {
+  getUnseenInvoices(_pagination: PaginatedRequest): Promise<Record<string, unknown>> {
     return this.notSupported("getUnseenInvoices");
   }
   generateCII(_req: GenerateInvoiceRequest): Promise<string> {
@@ -96,112 +99,112 @@ export abstract class BaseAdapter implements EInvoiceAdapter {
   ): Promise<SearchDirectoryFrResult> {
     return this.notSupported("searchDirectoryFr");
   }
-  searchDirectoryInt(_filters: DirectoryIntSearchFilters): Promise<unknown> {
+  searchDirectoryInt(_filters: DirectoryIntSearchFilters): Promise<SearchDirectoryIntResult> {
     return this.notSupported("searchDirectoryInt");
   }
-  checkPeppolParticipant(_scheme: string, _value: string): Promise<unknown> {
+  checkPeppolParticipant(_scheme: string, _value: string): Promise<Record<string, unknown>> {
     return this.notSupported("checkPeppolParticipant");
   }
 
   // ─── Status ────────────────────────────────────────────
-  sendStatus(_req: SendStatusRequest): Promise<unknown> {
+  sendStatus(_req: SendStatusRequest): Promise<Record<string, unknown>> {
     return this.notSupported("sendStatus");
   }
   getStatusHistory(_invoiceId: string): Promise<StatusHistoryResult> {
     return this.notSupported("getStatusHistory");
   }
-  getUnseenStatuses(_pagination: PaginatedRequest): Promise<unknown> {
+  getUnseenStatuses(_pagination: PaginatedRequest): Promise<Record<string, unknown>> {
     return this.notSupported("getUnseenStatuses");
   }
-  markStatusSeen(_statusId: string): Promise<unknown> {
+  markStatusSeen(_statusId: string): Promise<Record<string, unknown>> {
     return this.notSupported("markStatusSeen");
   }
 
   // ─── Reporting ─────────────────────────────────────────
   reportInvoiceTransaction(
     _transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("reportInvoiceTransaction");
   }
   reportTransaction(
     _businessEntityId: string,
     _transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("reportTransaction");
   }
 
   // ─── Webhooks ──────────────────────────────────────────
-  listWebhooks(): Promise<unknown> {
+  listWebhooks(): Promise<WebhookDetail[]> {
     return this.notSupported("listWebhooks");
   }
-  getWebhook(_id: string): Promise<unknown> {
+  getWebhook(_id: string): Promise<WebhookDetail> {
     return this.notSupported("getWebhook");
   }
-  createWebhook(_req: CreateWebhookRequest): Promise<unknown> {
+  createWebhook(_req: CreateWebhookRequest): Promise<WebhookDetail> {
     return this.notSupported("createWebhook");
   }
-  updateWebhook(_id: string, _req: UpdateWebhookRequest): Promise<unknown> {
+  updateWebhook(_id: string, _req: UpdateWebhookRequest): Promise<WebhookDetail> {
     return this.notSupported("updateWebhook");
   }
-  deleteWebhook(_id: string): Promise<unknown> {
+  deleteWebhook(_id: string): Promise<Record<string, unknown>> {
     return this.notSupported("deleteWebhook");
   }
 
   // ─── Operator Config ───────────────────────────────────
-  getCustomerId(): Promise<unknown> {
+  getCustomerId(): Promise<string> {
     return this.notSupported("getCustomerId");
   }
   listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
     return this.notSupported("listBusinessEntities");
   }
-  getBusinessEntity(_id: string): Promise<unknown> {
+  getBusinessEntity(_id: string): Promise<Record<string, unknown>> {
     return this.notSupported("getBusinessEntity");
   }
-  createLegalUnit(_data: Record<string, unknown>): Promise<unknown> {
+  createLegalUnit(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return this.notSupported("createLegalUnit");
   }
-  createOffice(_data: Record<string, unknown>): Promise<unknown> {
+  createOffice(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return this.notSupported("createOffice");
   }
-  deleteBusinessEntity(_id: string): Promise<unknown> {
+  deleteBusinessEntity(_id: string): Promise<Record<string, unknown>> {
     return this.notSupported("deleteBusinessEntity");
   }
   configureBusinessEntity(
     _id: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("configureBusinessEntity");
   }
   claimBusinessEntity(
     _id: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("claimBusinessEntity");
   }
   claimBusinessEntityByIdentifier(
     _scheme: string,
     _value: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("claimBusinessEntityByIdentifier");
   }
-  enrollFrench(_data: Record<string, unknown>): Promise<unknown> {
+  enrollFrench(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return this.notSupported("enrollFrench");
   }
-  enrollInternational(_data: Record<string, unknown>): Promise<unknown> {
+  enrollInternational(_data: Record<string, unknown>): Promise<Record<string, unknown>> {
     return this.notSupported("enrollInternational");
   }
-  registerNetwork(_identifierId: string, _network: string): Promise<unknown> {
+  registerNetwork(_identifierId: string, _network: string): Promise<Record<string, unknown>> {
     return this.notSupported("registerNetwork");
   }
   registerNetworkByScheme(
     _scheme: string,
     _value: string,
     _network: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("registerNetworkByScheme");
   }
-  unregisterNetwork(_directoryId: string): Promise<unknown> {
+  unregisterNetwork(_directoryId: string): Promise<Record<string, unknown>> {
     return this.notSupported("unregisterNetwork");
   }
 
@@ -209,22 +212,22 @@ export abstract class BaseAdapter implements EInvoiceAdapter {
   createIdentifier(
     _entityId: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("createIdentifier");
   }
   createIdentifierByScheme(
     _scheme: string,
     _value: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return this.notSupported("createIdentifierByScheme");
   }
-  deleteIdentifier(_identifierId: string): Promise<unknown> {
+  deleteIdentifier(_identifierId: string): Promise<Record<string, unknown>> {
     return this.notSupported("deleteIdentifier");
   }
 
   // ─── Claim Management ──────────────────────────────────
-  deleteClaim(_entityId: string): Promise<unknown> {
+  deleteClaim(_entityId: string): Promise<Record<string, unknown>> {
     return this.notSupported("deleteClaim");
   }
 }

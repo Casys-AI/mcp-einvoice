@@ -29,6 +29,15 @@ export interface EmitInvoiceRequest {
   filename: string;
 }
 
+/** A file entry returned by getInvoiceFiles or getAttachments. */
+export interface FileEntry {
+  id: string;
+  name?: string;
+  filename?: string;
+  contentType?: string;
+  size?: number;
+}
+
 export interface InvoiceSearchFilters extends PaginatedRequest {
   /** Free-text query (adapter-dependent: Iopole supports Lucene, others may ignore). */
   q?: string;
@@ -80,6 +89,21 @@ export interface DirectoryFrRow {
 /** Normalized return type for searchDirectoryFr. */
 export interface SearchDirectoryFrResult {
   rows: DirectoryFrRow[];
+  count: number;
+}
+
+/** A single row in international directory search results. */
+export interface DirectoryIntRow {
+  entityId?: string;
+  identifier?: string;
+  scheme?: string;
+  name?: string;
+  country?: string;
+}
+
+/** Normalized return type for searchDirectoryInt. */
+export interface SearchDirectoryIntResult {
+  rows: DirectoryIntRow[];
   count: number;
 }
 
@@ -204,6 +228,15 @@ export interface UpdateWebhookRequest {
   active?: boolean;
 }
 
+/** A single webhook configuration. */
+export interface WebhookDetail {
+  id: string;
+  name?: string;
+  url?: string;
+  events?: string[];
+  active?: boolean;
+}
+
 /**
  * E-Invoice Adapter — PA-agnostic interface.
  *
@@ -228,16 +261,16 @@ export interface EInvoiceAdapter {
 
   // ─── Invoice Operations ───────────────────────────────
 
-  emitInvoice(req: EmitInvoiceRequest): Promise<unknown>;
+  emitInvoice(req: EmitInvoiceRequest): Promise<Record<string, unknown>>;
   searchInvoices(filters: InvoiceSearchFilters): Promise<SearchInvoicesResult>;
   getInvoice(id: string): Promise<InvoiceDetail>;
   downloadInvoice(id: string): Promise<DownloadResult>;
   downloadReadable(id: string): Promise<DownloadResult>;
-  getInvoiceFiles(id: string): Promise<unknown>;
-  getAttachments(id: string): Promise<unknown>;
+  getInvoiceFiles(id: string): Promise<FileEntry[]>;
+  getAttachments(id: string): Promise<FileEntry[]>;
   downloadFile(fileId: string): Promise<DownloadResult>;
-  markInvoiceSeen(id: string): Promise<unknown>;
-  getUnseenInvoices(pagination: PaginatedRequest): Promise<unknown>;
+  markInvoiceSeen(id: string): Promise<Record<string, unknown>>;
+  getUnseenInvoices(pagination: PaginatedRequest): Promise<Record<string, unknown>>;
   generateCII(req: GenerateInvoiceRequest): Promise<string>;
   generateUBL(req: GenerateInvoiceRequest): Promise<string>;
   generateFacturX(req: GenerateFacturXRequest): Promise<DownloadResult>;
@@ -247,79 +280,79 @@ export interface EInvoiceAdapter {
   searchDirectoryFr(
     filters: DirectoryFrSearchFilters,
   ): Promise<SearchDirectoryFrResult>;
-  searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<unknown>;
-  checkPeppolParticipant(scheme: string, value: string): Promise<unknown>;
+  searchDirectoryInt(filters: DirectoryIntSearchFilters): Promise<SearchDirectoryIntResult>;
+  checkPeppolParticipant(scheme: string, value: string): Promise<Record<string, unknown>>;
 
   // ─── Status ───────────────────────────────────────────
 
-  sendStatus(req: SendStatusRequest): Promise<unknown>;
+  sendStatus(req: SendStatusRequest): Promise<Record<string, unknown>>;
   getStatusHistory(invoiceId: string): Promise<StatusHistoryResult>;
-  getUnseenStatuses(pagination: PaginatedRequest): Promise<unknown>;
-  markStatusSeen(statusId: string): Promise<unknown>;
+  getUnseenStatuses(pagination: PaginatedRequest): Promise<Record<string, unknown>>;
+  markStatusSeen(statusId: string): Promise<Record<string, unknown>>;
 
   // ─── Reporting ────────────────────────────────────────
 
   reportInvoiceTransaction(
     transaction: Record<string, unknown>,
-  ): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
   reportTransaction(
     businessEntityId: string,
     transaction: Record<string, unknown>,
-  ): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
 
   // ─── Webhooks ─────────────────────────────────────────
 
-  listWebhooks(): Promise<unknown>;
-  getWebhook(id: string): Promise<unknown>;
-  createWebhook(req: CreateWebhookRequest): Promise<unknown>;
-  updateWebhook(id: string, req: UpdateWebhookRequest): Promise<unknown>;
-  deleteWebhook(id: string): Promise<unknown>;
+  listWebhooks(): Promise<WebhookDetail[]>;
+  getWebhook(id: string): Promise<WebhookDetail>;
+  createWebhook(req: CreateWebhookRequest): Promise<WebhookDetail>;
+  updateWebhook(id: string, req: UpdateWebhookRequest): Promise<WebhookDetail>;
+  deleteWebhook(id: string): Promise<Record<string, unknown>>;
 
   // ─── Operator Config ───────────────────────────────────
 
-  getCustomerId(): Promise<unknown>;
+  getCustomerId(): Promise<string>;
   listBusinessEntities(): Promise<ListBusinessEntitiesResult>;
-  getBusinessEntity(id: string): Promise<unknown>;
-  createLegalUnit(data: Record<string, unknown>): Promise<unknown>;
-  createOffice(data: Record<string, unknown>): Promise<unknown>;
-  deleteBusinessEntity(id: string): Promise<unknown>;
+  getBusinessEntity(id: string): Promise<Record<string, unknown>>;
+  createLegalUnit(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  createOffice(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  deleteBusinessEntity(id: string): Promise<Record<string, unknown>>;
   configureBusinessEntity(
     id: string,
     data: Record<string, unknown>,
-  ): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
   claimBusinessEntity(
     id: string,
     data: Record<string, unknown>,
-  ): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
   claimBusinessEntityByIdentifier(
     scheme: string,
     value: string,
     data: Record<string, unknown>,
-  ): Promise<unknown>;
-  enrollFrench(data: Record<string, unknown>): Promise<unknown>;
-  enrollInternational(data: Record<string, unknown>): Promise<unknown>;
-  registerNetwork(identifierId: string, network: string): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
+  enrollFrench(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  enrollInternational(data: Record<string, unknown>): Promise<Record<string, unknown>>;
+  registerNetwork(identifierId: string, network: string): Promise<Record<string, unknown>>;
   registerNetworkByScheme(
     scheme: string,
     value: string,
     network: string,
-  ): Promise<unknown>;
-  unregisterNetwork(directoryId: string): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
+  unregisterNetwork(directoryId: string): Promise<Record<string, unknown>>;
 
   // ─── Identifier Management ──────────────────────────────
 
   createIdentifier(
     entityId: string,
     data: Record<string, unknown>,
-  ): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
   createIdentifierByScheme(
     scheme: string,
     value: string,
     data: Record<string, unknown>,
-  ): Promise<unknown>;
-  deleteIdentifier(identifierId: string): Promise<unknown>;
+  ): Promise<Record<string, unknown>>;
+  deleteIdentifier(identifierId: string): Promise<Record<string, unknown>>;
 
   // ─── Claim Management ──────────────────────────────────
 
-  deleteClaim(entityId: string): Promise<unknown>;
+  deleteClaim(entityId: string): Promise<Record<string, unknown>>;
 }

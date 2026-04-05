@@ -160,14 +160,14 @@ Deno.test("einvoice_directory_peppol_check has action-result UI", () => {
 // ── structuredContent tests ─────────────────────────────
 
 Deno.test("einvoice_directory_int_search - returns content + structuredContent with normalized rows", async () => {
-  const mockResponse = {
+  const { adapter } = createMockAdapter();
+  adapter.searchDirectoryInt = async () => ({
     rows: [
       { entityId: "p-1", name: "Acme Corp", identifier: "FR12345", scheme: "0009", country: "FR" },
       { entityId: "p-2", name: "Beta Ltd", identifier: "DE67890", scheme: "0088", country: "DE" },
     ],
     count: 2,
-  };
-  const { adapter } = createMockAdapter(mockResponse);
+  });
   const tool = findTool("einvoice_directory_int_search");
 
   const result = await tool.handler({ value: "FR12345" }, { adapter }) as Record<string, unknown>;
@@ -189,11 +189,14 @@ Deno.test("einvoice_directory_int_search - returns content + structuredContent w
   assertEquals(typeof data[0]["_detail"], "object");
 });
 
-Deno.test("einvoice_directory_int_search - handles array response", async () => {
-  const mockResponse = [
-    { id: "x-1", name: "Solo", identifier: "GB999", scheme: "0088", country: "GB" },
-  ];
-  const { adapter } = createMockAdapter(mockResponse);
+Deno.test("einvoice_directory_int_search - handles single result", async () => {
+  const { adapter } = createMockAdapter();
+  adapter.searchDirectoryInt = async () => ({
+    rows: [
+      { entityId: "x-1", name: "Solo", identifier: "GB999", scheme: "0088", country: "GB" },
+    ],
+    count: 1,
+  });
   const tool = findTool("einvoice_directory_int_search");
 
   const result = unwrapStructured(

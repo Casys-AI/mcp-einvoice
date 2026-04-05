@@ -8,24 +8,16 @@
  */
 
 import type { EInvoiceTool } from "./types.ts";
+import type { FileEntry } from "@casys/einvoice-core";
 import { getGenerated, storeGenerated } from "../generated-store.ts";
 import { uint8ToBase64 } from "@casys/einvoice-core";
 
-/** Normalize adapter file list response (array, { files: [...] }, or unknown). */
-// deno-lint-ignore no-explicit-any
-function normalizeFileList(raw: unknown): Array<Record<string, unknown>> {
-  const r = raw as any;
-  if (Array.isArray(r)) return r;
-  if (Array.isArray(r?.files)) return r.files;
-  return [];
-}
-
-/** Map a file entry to doclist-viewer row. */
-function fileToRow(f: Record<string, unknown>) {
+/** Map a FileEntry to doclist-viewer row. */
+function fileToRow(f: FileEntry) {
   return {
-    _id: f.id ?? f.fileId ?? f.file_id,
+    _id: f.id,
     "Nom": f.name ?? f.filename ?? "—",
-    "Type": f.contentType ?? f.content_type ?? f.mimeType ?? f.type ?? "—",
+    "Type": f.contentType ?? "—",
     "Taille": f.size != null
       ? `${Number(f.size).toLocaleString("fr-FR")} octets`
       : "—",
@@ -128,8 +120,7 @@ export const invoiceTools: EInvoiceTool[] = [
       },
     },
     handler: async (input, ctx) => {
-      // deno-lint-ignore no-explicit-any
-      let emitResult: any;
+      let emitResult: Record<string, unknown>;
 
       // Path 1: retrieve from temp store
       if (input.generated_id) {
@@ -500,10 +491,10 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_files] 'id' is required");
       }
       const id = input.id as string;
-      const files = normalizeFileList(await ctx.adapter.getInvoiceFiles(id));
+      const files = await ctx.adapter.getInvoiceFiles(id);
       const data = files.map(fileToRow);
       return {
-        content: `${files.length} fichier(s) pour la facture ${id}`,
+        content: `${data.length} fichier(s) pour la facture ${id}`,
         structuredContent: {
           data,
           count: files.length,
@@ -540,10 +531,10 @@ export const invoiceTools: EInvoiceTool[] = [
         throw new Error("[einvoice_invoice_attachments] 'id' is required");
       }
       const id = input.id as string;
-      const files = normalizeFileList(await ctx.adapter.getAttachments(id));
+      const files = await ctx.adapter.getAttachments(id);
       const data = files.map(fileToRow);
       return {
-        content: `${files.length} pièce(s) jointe(s) pour la facture ${id}`,
+        content: `${data.length} pièce(s) jointe(s) pour la facture ${id}`,
         structuredContent: {
           data,
           count: files.length,

@@ -119,32 +119,21 @@ export const directoryTools: EInvoiceTool[] = [
       if (!input.value) {
         throw new Error("[einvoice_directory_int_search] 'value' is required");
       }
-      // deno-lint-ignore no-explicit-any
-      const raw = await ctx.adapter.searchDirectoryInt({
+      const { rows, count } = await ctx.adapter.searchDirectoryInt({
         value: input.value as string,
         offset: input.offset as number | undefined,
         limit: input.limit as number | undefined,
-      }) as any;
+      });
 
-      // Normalize: adapter may return { rows, count } or array or other shapes
-      const rows = Array.isArray(raw)
-        ? raw
-        : (raw?.rows ?? raw?.data ?? []);
-      const count = raw?.count ?? rows.length;
-
-      // deno-lint-ignore no-explicit-any
-      const data = rows.map((r: any) => ({
-        _id: r.entityId ?? r.id ?? r.identifier,
+      const data = rows.map((r) => ({
+        _id: r.entityId ?? r.identifier,
         _detail: {
           name: r.name,
-          identifier: r.identifier ?? r.value,
+          identifier: r.identifier,
           scheme: r.scheme,
           country: r.country,
-          directory: r.directory,
-          status: r.status,
-          identifiers: r.identifiers,
         },
-        "Identifiant": r.identifier ?? r.value ?? "—",
+        "Identifiant": r.identifier ?? "—",
         "Schéma": r.scheme ?? "—",
         "Pays": r.country ?? "—",
         "Nom": r.name ?? "—",

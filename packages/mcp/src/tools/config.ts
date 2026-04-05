@@ -32,9 +32,7 @@ export const configTools: EInvoiceTool[] = [
       properties: {},
     },
     handler: async (_input, ctx) => {
-      const result = await ctx.adapter.getCustomerId();
-      const customerId = (result as Record<string, unknown>)?.customerId ??
-        result;
+      const customerId = await ctx.adapter.getCustomerId();
       return {
         content: `Identifiant opérateur : ${customerId}`,
         structuredContent: { customerId },

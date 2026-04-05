@@ -14,10 +14,12 @@ export type {
   CreateWebhookRequest,
   DirectoryFrRow,
   DirectoryFrSearchFilters,
+  DirectoryIntRow,
   DirectoryIntSearchFilters,
   DownloadResult,
   EInvoiceAdapter,
   EmitInvoiceRequest,
+  FileEntry,
   GenerateFacturXRequest,
   GenerateInvoiceRequest,
   InvoiceDetail,
@@ -28,11 +30,13 @@ export type {
   ListBusinessEntitiesResult,
   PaginatedRequest,
   SearchDirectoryFrResult,
+  SearchDirectoryIntResult,
   SearchInvoicesResult,
   SendStatusRequest,
   StatusEntry,
   StatusHistoryResult,
   UpdateWebhookRequest,
+  WebhookDetail,
 } from "./src/adapter.ts";
 
 // ─── Adapters ───────────────────────────────────────────────

@@ -16,9 +16,11 @@ import type {
   CreateWebhookRequest,
   DirectoryFrRow,
   DirectoryFrSearchFilters,
+  DirectoryIntRow,
   DirectoryIntSearchFilters,
   DownloadResult,
   EmitInvoiceRequest,
+  FileEntry,
   GenerateFacturXRequest,
   GenerateInvoiceRequest,
   InvoiceDetail,
@@ -27,11 +29,13 @@ import type {
   ListBusinessEntitiesResult,
   PaginatedRequest,
   SearchDirectoryFrResult,
+  SearchDirectoryIntResult,
   SearchInvoicesResult,
   SendStatusRequest,
   StatusEntry,
   StatusHistoryResult,
   UpdateWebhookRequest,
+  WebhookDetail,
 } from "../../adapter.ts";
 import { createOAuth2TokenProvider, IopoleClient } from "./client.ts";
 import { requireEnv } from "../shared/env.ts";
@@ -107,8 +111,8 @@ export class IopoleAdapter extends BaseAdapter {
 
   // ─── Invoice Operations ───────────────────────────────
 
-  override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
-    return await this.client.upload("/invoice", req.file, req.filename);
+  override async emitInvoice(req: EmitInvoiceRequest): Promise<Record<string, unknown>> {
+    return await this.client.upload("/invoice", req.file, req.filename) as Record<string, unknown>;
   }
 
   override async searchInvoices(
@@ -236,14 +240,18 @@ export class IopoleAdapter extends BaseAdapter {
     );
   }
 
-  override async getInvoiceFiles(id: string): Promise<unknown> {
-    return await this.client.get(`/invoice/${encodePathSegment(id)}/files`);
+  override async getInvoiceFiles(id: string): Promise<FileEntry[]> {
+    const raw = await this.client.get<IopoleFileRaw[]>(
+      `/invoice/${encodePathSegment(id)}/files`,
+    );
+    return raw.map(normalizeIopoleFile);
   }
 
-  override async getAttachments(id: string): Promise<unknown> {
-    return await this.client.get(
+  override async getAttachments(id: string): Promise<FileEntry[]> {
+    const raw = await this.client.get<IopoleFileRaw[]>(
       `/invoice/${encodePathSegment(id)}/files/attachments`,
     );
+    return raw.map(normalizeIopoleFile);
   }
 
   override async downloadFile(fileId: string): Promise<DownloadResult> {
@@ -252,19 +260,19 @@ export class IopoleAdapter extends BaseAdapter {
     );
   }
 
-  override async markInvoiceSeen(id: string): Promise<unknown> {
+  override async markInvoiceSeen(id: string): Promise<Record<string, unknown>> {
     return await this.client.put(
       `/invoice/${encodePathSegment(id)}/markAsSeen`,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async getUnseenInvoices(
     pagination: PaginatedRequest,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.get("/invoice/notSeen", {
       offset: pagination.offset,
       limit: pagination.limit,
-    });
+    }) as Record<string, unknown>;
   }
 
   override async generateCII(req: GenerateInvoiceRequest): Promise<string> {
@@ -333,28 +341,37 @@ export class IopoleAdapter extends BaseAdapter {
 
   override async searchDirectoryInt(
     filters: DirectoryIntSearchFilters,
-  ): Promise<unknown> {
-    return await this.client.get("/directory/international", {
-      value: filters.value,
-      offset: filters.offset,
-      limit: filters.limit,
-    });
+  ): Promise<SearchDirectoryIntResult> {
+    // Iopole returns a flat array of directory entries, not { rows, count }
+    const raw = await this.client.get<IopoleDirectoryIntRaw[]>(
+      "/directory/international",
+      { value: filters.value, offset: filters.offset, limit: filters.limit },
+    );
+    const entries = Array.isArray(raw) ? raw : [];
+    const rows: DirectoryIntRow[] = entries.map((e) => ({
+      entityId: e.electronicAddress,
+      identifier: e.electronicAddress,
+      scheme: e.electronicAddress?.split(":")[0],
+      name: e.name,
+      country: e.country,
+    }));
+    return { rows, count: rows.length };
   }
 
   override async checkPeppolParticipant(
     scheme: string,
     value: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.get(
       `/directory/international/check/scheme/${
         encodePathSegment(scheme)
       }/value/${encodePathSegment(value)}`,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Status ───────────────────────────────────────────
 
-  override async sendStatus(req: SendStatusRequest): Promise<unknown> {
+  override async sendStatus(req: SendStatusRequest): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/invoice/${encodePathSegment(req.invoiceId)}/status`,
       {
@@ -362,7 +379,7 @@ export class IopoleAdapter extends BaseAdapter {
         message: req.message,
         payment: req.payment,
       },
-    );
+    ) as Record<string, unknown>;
   }
 
   override async getStatusHistory(
@@ -376,72 +393,78 @@ export class IopoleAdapter extends BaseAdapter {
 
   override async getUnseenStatuses(
     pagination: PaginatedRequest,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.get("/invoice/status/notSeen", {
       offset: pagination.offset,
       limit: pagination.limit,
-    });
+    }) as Record<string, unknown>;
   }
 
-  override async markStatusSeen(statusId: string): Promise<unknown> {
+  override async markStatusSeen(statusId: string): Promise<Record<string, unknown>> {
     return await this.client.put(
       `/invoice/status/${encodePathSegment(statusId)}/markAsSeen`,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Reporting ────────────────────────────────────────
 
   override async reportInvoiceTransaction(
     transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       "/reporting/fr/invoice/transaction",
       transaction,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async reportTransaction(
     businessEntityId: string,
     transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/reporting/fr/transaction/${encodePathSegment(businessEntityId)}`,
       transaction,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Webhooks ─────────────────────────────────────────
 
-  override async listWebhooks(): Promise<unknown> {
-    return await this.client.get("/config/webhook");
+  override async listWebhooks(): Promise<WebhookDetail[]> {
+    const raw = await this.client.get<IopoleWebhookRaw[]>("/config/webhook");
+    return (Array.isArray(raw) ? raw : []).map(normalizeIopoleWebhook);
   }
 
-  override async getWebhook(id: string): Promise<unknown> {
-    return await this.client.get(`/config/webhook/${encodePathSegment(id)}`);
+  override async getWebhook(id: string): Promise<WebhookDetail> {
+    const raw = await this.client.get<IopoleWebhookRaw>(
+      `/config/webhook/${encodePathSegment(id)}`,
+    );
+    return normalizeIopoleWebhook(raw);
   }
 
-  override async createWebhook(req: CreateWebhookRequest): Promise<unknown> {
-    return await this.client.post("/config/webhook", req);
+  override async createWebhook(req: CreateWebhookRequest): Promise<WebhookDetail> {
+    const raw = await this.client.post<IopoleWebhookRaw>("/config/webhook", req);
+    return normalizeIopoleWebhook(raw);
   }
 
   override async updateWebhook(
     id: string,
     req: UpdateWebhookRequest,
-  ): Promise<unknown> {
-    return await this.client.put(
+  ): Promise<WebhookDetail> {
+    const raw = await this.client.put<IopoleWebhookRaw>(
       `/config/webhook/${encodePathSegment(id)}`,
       req,
     );
+    return normalizeIopoleWebhook(raw);
   }
 
-  override async deleteWebhook(id: string): Promise<unknown> {
-    return await this.client.delete(`/config/webhook/${encodePathSegment(id)}`);
+  override async deleteWebhook(id: string): Promise<Record<string, unknown>> {
+    return await this.client.delete(`/config/webhook/${encodePathSegment(id)}`) as Record<string, unknown>;
   }
 
   // ─── Operator Config ───────────────────────────────────
 
-  override async getCustomerId(): Promise<unknown> {
-    return await this.client.get("/config/customer/id");
+  override async getCustomerId(): Promise<string> {
+    return await this.client.get("/config/customer/id") as string;
   }
 
   override async listBusinessEntities(): Promise<ListBusinessEntitiesResult> {
@@ -464,102 +487,102 @@ export class IopoleAdapter extends BaseAdapter {
     return { rows, count: rows.length };
   }
 
-  override async getBusinessEntity(id: string): Promise<unknown> {
+  override async getBusinessEntity(id: string): Promise<Record<string, unknown>> {
     return await this.client.get(
       `/config/business/entity/${encodePathSegment(id)}`,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async createLegalUnit(
     data: Record<string, unknown>,
-  ): Promise<unknown> {
-    return await this.client.post("/config/business/entity/legalunit", data);
+  ): Promise<Record<string, unknown>> {
+    return await this.client.post("/config/business/entity/legalunit", data) as Record<string, unknown>;
   }
 
-  override async createOffice(data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.post("/config/business/entity/office", data);
+  override async createOffice(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return await this.client.post("/config/business/entity/office", data) as Record<string, unknown>;
   }
 
-  override async deleteBusinessEntity(id: string): Promise<unknown> {
+  override async deleteBusinessEntity(id: string): Promise<Record<string, unknown>> {
     return await this.client.delete(
       `/config/business/entity/${encodePathSegment(id)}`,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async configureBusinessEntity(
     id: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/config/business/entity/${encodePathSegment(id)}/configure`,
       data,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async claimBusinessEntity(
     id: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/config/business/entity/${encodePathSegment(id)}/claim`,
       data,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async claimBusinessEntityByIdentifier(
     scheme: string,
     value: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/config/business/entity/scheme/${encodePathSegment(scheme)}/value/${
         encodePathSegment(value)
       }/claim`,
       data,
-    );
+    ) as Record<string, unknown>;
   }
 
-  override async enrollFrench(data: Record<string, unknown>): Promise<unknown> {
-    return await this.client.put("/config/french/enrollment", data);
+  override async enrollFrench(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return await this.client.put("/config/french/enrollment", data) as Record<string, unknown>;
   }
 
   override async enrollInternational(
     data: Record<string, unknown>,
-  ): Promise<unknown> {
-    return await this.client.put("/config/international/enrollment", data);
+  ): Promise<Record<string, unknown>> {
+    return await this.client.put("/config/international/enrollment", data) as Record<string, unknown>;
   }
 
   override async registerNetwork(
     identifierId: string,
     network: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/config/business/entity/identifier/${
         encodePathSegment(identifierId)
       }/network/${encodePathSegment(network)}`,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async registerNetworkByScheme(
     scheme: string,
     value: string,
     network: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/config/business/entity/identifier/scheme/${
         encodePathSegment(scheme)
       }/value/${encodePathSegment(value)}/network/${
         encodePathSegment(network)
       }`,
-    );
+    ) as Record<string, unknown>;
   }
 
-  override async unregisterNetwork(directoryId: string): Promise<unknown> {
+  override async unregisterNetwork(directoryId: string): Promise<Record<string, unknown>> {
     return await this.client.delete(
       `/config/business/entity/identifier/directory/${
         encodePathSegment(directoryId)
       }`,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Identifier Management ───────────────────────────────
@@ -567,38 +590,38 @@ export class IopoleAdapter extends BaseAdapter {
   override async createIdentifier(
     entityId: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/config/business/entity/${encodePathSegment(entityId)}/identifier`,
       data,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async createIdentifierByScheme(
     scheme: string,
     value: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post(
       `/config/business/entity/scheme/${encodePathSegment(scheme)}/value/${
         encodePathSegment(value)
       }/identifier`,
       data,
-    );
+    ) as Record<string, unknown>;
   }
 
-  override async deleteIdentifier(identifierId: string): Promise<unknown> {
+  override async deleteIdentifier(identifierId: string): Promise<Record<string, unknown>> {
     return await this.client.delete(
       `/config/business/entity/identifier/${encodePathSegment(identifierId)}`,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Claim Management ────────────────────────────────────
 
-  override async deleteClaim(entityId: string): Promise<unknown> {
+  override async deleteClaim(entityId: string): Promise<Record<string, unknown>> {
     return await this.client.delete(
       `/config/business/entity/${encodePathSegment(entityId)}/claim`,
-    );
+    ) as Record<string, unknown>;
   }
 }
 
@@ -711,6 +734,67 @@ function normalizeStatusHistory(raw: unknown): StatusHistoryResult {
       message: e.status?.message ?? e.message,
       destType: e.destType,
     })),
+  };
+}
+
+// ─── Iopole Native Types ─────────────────────────────
+
+/** Iopole GET /invoice/{id}/files response item. */
+interface IopoleFileRaw {
+  fileId?: string;
+  fileName?: string;
+  originalFilename?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  type?: string;
+  createDate?: string;
+  checksum?: string;
+}
+
+/** Iopole GET /directory/international response item. */
+interface IopoleDirectoryIntRaw {
+  name?: string;
+  country?: string;
+  electronicAddress?: string;
+  entity?: Record<string, unknown>;
+}
+
+/** Iopole GET /config/webhook response item. */
+interface IopoleWebhookRaw {
+  webhookId?: string;
+  label?: string;
+  status?: string;
+  filterStreamDirection?: string;
+  interopData?: {
+    endpoints?: {
+      status?: { callbackUrl?: string };
+      invoice?: { callbackUrl?: string };
+      events?: { callbackUrl?: string; subscribedEvents?: string[] };
+    };
+  };
+}
+
+function normalizeIopoleFile(raw: IopoleFileRaw): FileEntry {
+  return {
+    id: raw.fileId ?? "",
+    name: raw.originalFilename ?? raw.fileName,
+    filename: raw.fileName,
+    contentType: raw.mimeType,
+    size: raw.sizeBytes,
+  };
+}
+
+function normalizeIopoleWebhook(raw: IopoleWebhookRaw): WebhookDetail {
+  const endpoints = raw.interopData?.endpoints;
+  const url = endpoints?.events?.callbackUrl ??
+    endpoints?.invoice?.callbackUrl ??
+    endpoints?.status?.callbackUrl;
+  return {
+    id: raw.webhookId ?? "",
+    name: raw.label,
+    url,
+    events: endpoints?.events?.subscribedEvents,
+    active: raw.status === "ACTIVE",
   };
 }
 

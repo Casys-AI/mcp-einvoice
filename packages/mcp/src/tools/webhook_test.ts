@@ -100,8 +100,10 @@ Deno.test("einvoice_webhook_list has doclist-viewer UI", () => {
 // ── structuredContent tests ─────────────────────────────
 
 Deno.test("einvoice_webhook_get - returns content + structuredContent", async () => {
-  const mockWebhook = { id: "wh-42", name: "My Hook", url: "https://example.com" };
-  const { adapter } = createMockAdapter(mockWebhook);
+  const { adapter } = createMockAdapter();
+  adapter.getWebhook = async () => ({
+    id: "wh-42", name: "My Hook", url: "https://example.com", events: [], active: true,
+  });
   const tool = findTool("einvoice_webhook_get");
 
   const result = await tool.handler({ id: "wh-42" }, { adapter }) as Record<string, unknown>;

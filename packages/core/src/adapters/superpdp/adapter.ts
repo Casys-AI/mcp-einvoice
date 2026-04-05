@@ -78,10 +78,10 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   // ─── Invoice Operations (native) ──────────────────────
 
-  override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
+  override async emitInvoice(req: EmitInvoiceRequest): Promise<Record<string, unknown>> {
     return await this.client.postXml("/invoices", req.file, {
       external_id: req.filename,
-    });
+    }) as Record<string, unknown>;
   }
 
   override async searchInvoices(
@@ -163,7 +163,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   // ─── Status / Events (native) ─────────────────────────
 
-  override async sendStatus(req: SendStatusRequest): Promise<unknown> {
+  override async sendStatus(req: SendStatusRequest): Promise<Record<string, unknown>> {
     // Spec: { invoice_id: integer, status_code, details?: invoice_event_detail[] }
     // invoice_event_detail = { reason?: string, amounts?: invoice_event_amount[] }
     const details: Record<string, unknown>[] = [];
@@ -180,7 +180,7 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
       invoice_id: toInvoiceId(req.invoiceId),
       status_code: req.code,
       ...(details.length > 0 ? { details } : {}),
-    });
+    }) as Record<string, unknown>;
   }
 
   override async getStatusHistory(
@@ -229,51 +229,52 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
 
   // ─── Operator Config (native) ─────────────────────────
 
-  override async getCustomerId(): Promise<unknown> {
-    return await this.client.get("/companies/me");
+  override async getCustomerId(): Promise<string> {
+    const company = await this.client.get<{ id: number }>("/companies/me");
+    return String(company.id);
   }
 
-  override async getBusinessEntity(_id: string): Promise<unknown> {
+  override async getBusinessEntity(_id: string): Promise<Record<string, unknown>> {
     // Super PDP has one company per token — id is ignored
-    return await this.client.get("/companies/me");
+    return await this.client.get("/companies/me") as Record<string, unknown>;
   }
 
-  override async createOffice(data: Record<string, unknown>): Promise<unknown> {
+  override async createOffice(data: Record<string, unknown>): Promise<Record<string, unknown>> {
     // In Super PDP, creating an "office" maps to creating a directory entry
-    return await this.client.post("/directory_entries", data);
+    return await this.client.post("/directory_entries", data) as Record<string, unknown>;
   }
 
-  override async enrollFrench(data: Record<string, unknown>): Promise<unknown> {
+  override async enrollFrench(data: Record<string, unknown>): Promise<Record<string, unknown>> {
     // Enrolling = registering a directory entry (routing address)
-    return await this.client.post("/directory_entries", data);
+    return await this.client.post("/directory_entries", data) as Record<string, unknown>;
   }
 
   override async registerNetwork(
     identifierId: string,
     network: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     // Spec: { directory: "peppol"|"ppf", identifier: "scheme:value" }
     return await this.client.post("/directory_entries", {
       directory: mapNetworkToDirectory(network),
       identifier: identifierId,
-    });
+    }) as Record<string, unknown>;
   }
 
   override async registerNetworkByScheme(
     scheme: string,
     value: string,
     network: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post("/directory_entries", {
       directory: mapNetworkToDirectory(network),
       identifier: `${scheme}:${value}`,
-    });
+    }) as Record<string, unknown>;
   }
 
-  override async unregisterNetwork(directoryId: string): Promise<unknown> {
+  override async unregisterNetwork(directoryId: string): Promise<Record<string, unknown>> {
     return await this.client.delete(
       `/directory_entries/${encodePathSegment(directoryId)}`,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Identifier Management (native via directory) ─────
@@ -281,29 +282,29 @@ export class SuperPDPAdapter extends AfnorBaseAdapter {
   override async createIdentifier(
     _entityId: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     // Spec: { directory: "peppol"|"ppf", identifier: "scheme:value" }
     return await this.client.post("/directory_entries", {
       directory: data.directory ?? "ppf",
       identifier: data.identifier,
-    });
+    }) as Record<string, unknown>;
   }
 
   override async createIdentifierByScheme(
     scheme: string,
     value: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post("/directory_entries", {
       directory: data.directory ?? "ppf",
       identifier: `${scheme}:${value}`,
-    });
+    }) as Record<string, unknown>;
   }
 
-  override async deleteIdentifier(identifierId: string): Promise<unknown> {
+  override async deleteIdentifier(identifierId: string): Promise<Record<string, unknown>> {
     return await this.client.delete(
       `/directory_entries/${encodePathSegment(identifierId)}`,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Stubs (21 methods — inherited from AfnorBaseAdapter) ─

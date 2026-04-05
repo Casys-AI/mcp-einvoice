@@ -10,6 +10,9 @@ import type {
   AdapterMethodName,
   DownloadResult,
   EInvoiceAdapter,
+  FileEntry,
+  SearchDirectoryIntResult,
+  WebhookDetail,
 } from "../adapter.ts";
 
 // ─── Mock Fetch ──────────────────────────────────────────
@@ -164,7 +167,8 @@ export function createMockAdapter(
     ]),
 
     // Invoice
-    emitInvoice: (req) => record("emitInvoice", req),
+    emitInvoice: (req) =>
+      record("emitInvoice", req) as Promise<Record<string, unknown>>,
     searchInvoices: (filters) =>
       record("searchInvoices", filters).then(() => ({
         rows: [],
@@ -186,15 +190,19 @@ export function createMockAdapter(
         data: new Uint8Array([4, 5, 6]),
         contentType: "application/pdf",
       })) as Promise<DownloadResult>,
-    getInvoiceFiles: (id) => record("getInvoiceFiles", id),
-    getAttachments: (id) => record("getAttachments", id),
+    getInvoiceFiles: (id) =>
+      record("getInvoiceFiles", id).then(() => []) as Promise<FileEntry[]>,
+    getAttachments: (id) =>
+      record("getAttachments", id).then(() => []) as Promise<FileEntry[]>,
     downloadFile: (fileId) =>
       record("downloadFile", fileId).then(() => ({
         data: new Uint8Array([7, 8, 9]),
         contentType: "application/octet-stream",
       })) as Promise<DownloadResult>,
-    markInvoiceSeen: (id) => record("markInvoiceSeen", id),
-    getUnseenInvoices: (p) => record("getUnseenInvoices", p),
+    markInvoiceSeen: (id) =>
+      record("markInvoiceSeen", id) as Promise<Record<string, unknown>>,
+    getUnseenInvoices: (p) =>
+      record("getUnseenInvoices", p) as Promise<Record<string, unknown>>,
     generateCII: (req) =>
       record("generateCII", req).then(() => "<xml>mock</xml>") as Promise<
         string
@@ -212,12 +220,19 @@ export function createMockAdapter(
     // Directory
     searchDirectoryFr: (f) =>
       record("searchDirectoryFr", f).then(() => ({ rows: [], count: 0 })),
-    searchDirectoryInt: (f) => record("searchDirectoryInt", f),
+    searchDirectoryInt: (f) =>
+      record("searchDirectoryInt", f).then(() => ({
+        rows: [],
+        count: 0,
+      })) as Promise<SearchDirectoryIntResult>,
     checkPeppolParticipant: (scheme, value) =>
-      record("checkPeppolParticipant", scheme, value),
+      record("checkPeppolParticipant", scheme, value) as Promise<
+        Record<string, unknown>
+      >,
 
     // Status
-    sendStatus: (r) => record("sendStatus", r),
+    sendStatus: (r) =>
+      record("sendStatus", r) as Promise<Record<string, unknown>>,
     getStatusHistory: (invoiceId) =>
       record("getStatusHistory", invoiceId).then((r) => {
         // Ensure return matches StatusHistoryResult shape
@@ -227,45 +242,88 @@ export function createMockAdapter(
         }
         return { entries: [] };
       }),
-    getUnseenStatuses: (p) => record("getUnseenStatuses", p),
-    markStatusSeen: (statusId) => record("markStatusSeen", statusId),
+    getUnseenStatuses: (p) =>
+      record("getUnseenStatuses", p) as Promise<Record<string, unknown>>,
+    markStatusSeen: (statusId) =>
+      record("markStatusSeen", statusId) as Promise<Record<string, unknown>>,
 
     // Reporting
-    reportInvoiceTransaction: (t) => record("reportInvoiceTransaction", t),
-    reportTransaction: (bid, t) => record("reportTransaction", bid, t),
+    reportInvoiceTransaction: (t) =>
+      record("reportInvoiceTransaction", t) as Promise<
+        Record<string, unknown>
+      >,
+    reportTransaction: (bid, t) =>
+      record("reportTransaction", bid, t) as Promise<Record<string, unknown>>,
 
     // Webhooks
-    listWebhooks: () => record("listWebhooks"),
-    getWebhook: (id) => record("getWebhook", id),
-    createWebhook: (r) => record("createWebhook", r),
-    updateWebhook: (id, r) => record("updateWebhook", id, r),
-    deleteWebhook: (id) => record("deleteWebhook", id),
+    listWebhooks: () =>
+      record("listWebhooks").then(() => []) as Promise<WebhookDetail[]>,
+    getWebhook: (id) =>
+      record("getWebhook", id).then(() => ({
+        id: String(id), name: "mock", url: "https://example.com/hook", events: [], active: true,
+      })) as Promise<WebhookDetail>,
+    createWebhook: (r) =>
+      record("createWebhook", r).then(() => ({
+        id: "mock-wh-id", name: r.name ?? "mock", url: r.url, events: r.events, active: true,
+      })) as Promise<WebhookDetail>,
+    updateWebhook: (id, r) =>
+      record("updateWebhook", id, r).then(() => ({
+        id: String(id), name: r.name, url: r.url, events: r.events, active: r.active ?? true,
+      })) as Promise<WebhookDetail>,
+    deleteWebhook: (id) =>
+      record("deleteWebhook", id) as Promise<Record<string, unknown>>,
 
     // Config
-    getCustomerId: () => record("getCustomerId"),
+    getCustomerId: () =>
+      record("getCustomerId").then(() => "mock-customer-id") as Promise<string>,
     listBusinessEntities: () =>
       record("listBusinessEntities").then(() => ({ rows: [], count: 0 })),
-    getBusinessEntity: (id) => record("getBusinessEntity", id),
-    createLegalUnit: (data) => record("createLegalUnit", data),
-    createOffice: (data) => record("createOffice", data),
-    deleteBusinessEntity: (id) => record("deleteBusinessEntity", id),
+    getBusinessEntity: (id) =>
+      record("getBusinessEntity", id) as Promise<Record<string, unknown>>,
+    createLegalUnit: (data) =>
+      record("createLegalUnit", data) as Promise<Record<string, unknown>>,
+    createOffice: (data) =>
+      record("createOffice", data) as Promise<Record<string, unknown>>,
+    deleteBusinessEntity: (id) =>
+      record("deleteBusinessEntity", id) as Promise<Record<string, unknown>>,
     configureBusinessEntity: (id, data) =>
-      record("configureBusinessEntity", id, data),
-    claimBusinessEntity: (id, data) => record("claimBusinessEntity", id, data),
+      record("configureBusinessEntity", id, data) as Promise<
+        Record<string, unknown>
+      >,
+    claimBusinessEntity: (id, data) =>
+      record("claimBusinessEntity", id, data) as Promise<
+        Record<string, unknown>
+      >,
     claimBusinessEntityByIdentifier: (scheme, value, data) =>
-      record("claimBusinessEntityByIdentifier", scheme, value, data),
-    enrollFrench: (data) => record("enrollFrench", data),
-    enrollInternational: (data) => record("enrollInternational", data),
-    registerNetwork: (id, network) => record("registerNetwork", id, network),
+      record("claimBusinessEntityByIdentifier", scheme, value, data) as Promise<
+        Record<string, unknown>
+      >,
+    enrollFrench: (data) =>
+      record("enrollFrench", data) as Promise<Record<string, unknown>>,
+    enrollInternational: (data) =>
+      record("enrollInternational", data) as Promise<Record<string, unknown>>,
+    registerNetwork: (id, network) =>
+      record("registerNetwork", id, network) as Promise<
+        Record<string, unknown>
+      >,
     registerNetworkByScheme: (scheme, value, network) =>
-      record("registerNetworkByScheme", scheme, value, network),
-    unregisterNetwork: (id) => record("unregisterNetwork", id),
+      record("registerNetworkByScheme", scheme, value, network) as Promise<
+        Record<string, unknown>
+      >,
+    unregisterNetwork: (id) =>
+      record("unregisterNetwork", id) as Promise<Record<string, unknown>>,
     createIdentifier: (entityId, data) =>
-      record("createIdentifier", entityId, data),
+      record("createIdentifier", entityId, data) as Promise<
+        Record<string, unknown>
+      >,
     createIdentifierByScheme: (scheme, value, data) =>
-      record("createIdentifierByScheme", scheme, value, data),
-    deleteIdentifier: (id) => record("deleteIdentifier", id),
-    deleteClaim: (id) => record("deleteClaim", id),
+      record("createIdentifierByScheme", scheme, value, data) as Promise<
+        Record<string, unknown>
+      >,
+    deleteIdentifier: (id) =>
+      record("deleteIdentifier", id) as Promise<Record<string, unknown>>,
+    deleteClaim: (id) =>
+      record("deleteClaim", id) as Promise<Record<string, unknown>>,
   };
 
   return { adapter, calls };

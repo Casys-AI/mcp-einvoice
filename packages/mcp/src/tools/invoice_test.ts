@@ -517,14 +517,11 @@ Deno.test("einvoice_invoice_files - returns doclist structuredContent with array
   assertEquals(rowAction.argName, "file_id");
 });
 
-Deno.test("einvoice_invoice_files - handles { files: [...] } response shape", async () => {
+Deno.test("einvoice_invoice_files - handles single-entry array", async () => {
   const { adapter } = createMockAdapter();
-  // Override to return { files: [...] } shape
-  adapter.getInvoiceFiles = async () => ({
-    files: [
-      { id: "f-10", filename: "invoice.xml", type: "text/xml", size: 512 },
-    ],
-  });
+  adapter.getInvoiceFiles = async () => [
+    { id: "f-10", filename: "invoice.xml", contentType: "text/xml", size: 512 },
+  ];
   const tool = findTool("einvoice_invoice_files");
 
   const sc = unwrapStructured(
@@ -538,9 +535,9 @@ Deno.test("einvoice_invoice_files - handles { files: [...] } response shape", as
   assertEquals(data[0]["Type"], "text/xml");
 });
 
-Deno.test("einvoice_invoice_files - handles non-array/non-files response gracefully", async () => {
+Deno.test("einvoice_invoice_files - handles empty array", async () => {
   const { adapter } = createMockAdapter();
-  // Default mock returns { ok: true } — neither array nor { files: [...] }
+  adapter.getInvoiceFiles = async () => [];
   const tool = findTool("einvoice_invoice_files");
 
   const sc = unwrapStructured(
@@ -584,13 +581,11 @@ Deno.test("einvoice_invoice_attachments - returns doclist structuredContent with
   assertEquals(rowAction.argName, "file_id");
 });
 
-Deno.test("einvoice_invoice_attachments - handles { files: [...] } response shape", async () => {
+Deno.test("einvoice_invoice_attachments - handles single-entry array", async () => {
   const { adapter } = createMockAdapter();
-  adapter.getAttachments = async () => ({
-    files: [
-      { id: "a-5", filename: "devis.pdf", mimeType: "application/pdf", size: 4096 },
-    ],
-  });
+  adapter.getAttachments = async () => [
+    { id: "a-5", filename: "devis.pdf", contentType: "application/pdf", size: 4096 },
+  ];
   const tool = findTool("einvoice_invoice_attachments");
 
   const sc = unwrapStructured(
@@ -605,9 +600,9 @@ Deno.test("einvoice_invoice_attachments - handles { files: [...] } response shap
   assertEquals(data[0]["Type"], "application/pdf");
 });
 
-Deno.test("einvoice_invoice_attachments - handles non-array/non-files response gracefully", async () => {
+Deno.test("einvoice_invoice_attachments - handles empty array", async () => {
   const { adapter } = createMockAdapter();
-  // Default mock returns { ok: true }
+  adapter.getAttachments = async () => [];
   const tool = findTool("einvoice_invoice_attachments");
 
   const sc = unwrapStructured(

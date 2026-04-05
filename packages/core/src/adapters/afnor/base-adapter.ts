@@ -50,7 +50,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
 
   // ─── Invoice Operations (AFNOR: submitFlow, searchFlows, downloadFlow) ───
 
-  override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
+  override async emitInvoice(req: EmitInvoiceRequest): Promise<Record<string, unknown>> {
     const afnor = this.requireAfnor("emitInvoice");
     const syntax = req.filename.toLowerCase().endsWith(".pdf")
       ? "Factur-X"
@@ -58,7 +58,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     return await afnor.submitFlow(
       req.file,
       { flowSyntax: syntax, name: req.filename, processingRule: "B2B" },
-    );
+    ) as Record<string, unknown>;
   }
 
   override async searchInvoices(
@@ -109,7 +109,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
 
   // ─── Status (AFNOR: lifecycle flows) ───────────────────
 
-  override async sendStatus(req: SendStatusRequest): Promise<unknown> {
+  override async sendStatus(req: SendStatusRequest): Promise<Record<string, unknown>> {
     const afnor = this.requireAfnor("sendStatus");
     // Lifecycle events are submitted as CDAR flows
     const cdarPayload = JSON.stringify({
@@ -125,7 +125,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
         name: `status-${req.invoiceId}.json`,
         processingRule: "B2B",
       },
-    );
+    ) as Record<string, unknown>;
   }
 
   override async getStatusHistory(
@@ -150,19 +150,19 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
 
   override async reportInvoiceTransaction(
     transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     const afnor = this.requireAfnor("reportInvoiceTransaction");
     const payload = new TextEncoder().encode(JSON.stringify(transaction));
     return await afnor.submitFlow(
       payload,
       { flowSyntax: "FRR", name: "report.json", processingRule: "B2C" },
-    );
+    ) as Record<string, unknown>;
   }
 
   override async reportTransaction(
     businessEntityId: string,
     transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     const afnor = this.requireAfnor("reportTransaction");
     const payload = new TextEncoder().encode(
       JSON.stringify({ businessEntityId, ...transaction }),
@@ -170,7 +170,7 @@ export abstract class AfnorBaseAdapter extends BaseAdapter {
     return await afnor.submitFlow(
       payload,
       { flowSyntax: "FRR", name: "report.json", processingRule: "B2C" },
-    );
+    ) as Record<string, unknown>;
   }
 
   // All other methods inherit NotSupportedError stubs from BaseAdapter.

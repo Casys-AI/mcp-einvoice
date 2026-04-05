@@ -14,9 +14,11 @@ import type {
   AdapterMethodName,
   CreateWebhookRequest,
   DirectoryFrSearchFilters,
+  DirectoryIntRow,
   DirectoryIntSearchFilters,
   DownloadResult,
   EmitInvoiceRequest,
+  FileEntry,
   GenerateFacturXRequest,
   GenerateInvoiceRequest,
   InvoiceDetail,
@@ -24,10 +26,12 @@ import type {
   ListBusinessEntitiesResult,
   PaginatedRequest,
   SearchDirectoryFrResult,
+  SearchDirectoryIntResult,
   SearchInvoicesResult,
   SendStatusRequest,
   StatusHistoryResult,
   UpdateWebhookRequest,
+  WebhookDetail,
 } from "../../adapter.ts";
 import { BaseAdapter } from "../base-adapter.ts";
 import { StorecoveClient } from "./client.ts";
@@ -87,7 +91,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Invoice Operations ───────────────────────────────
 
-  override async emitInvoice(req: EmitInvoiceRequest): Promise<unknown> {
+  override async emitInvoice(req: EmitInvoiceRequest): Promise<Record<string, unknown>> {
     // Storecove accepts JSON Pure, JSON Parsed, or JSON Enveloped.
     // For file upload (UBL/CII XML), use JSON Enveloped mode:
     // base64-encode the file and wrap it in the document_submission structure.
@@ -104,7 +108,7 @@ export class StorecoveAdapter extends BaseAdapter {
       ...(this.defaultLegalEntityId
         ? { legal_entity_id: Number(this.defaultLegalEntityId) }
         : {}),
-    });
+    }) as Record<string, unknown>;
   }
 
   override async searchInvoices(
@@ -151,7 +155,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async getInvoiceFiles(_id: string): Promise<unknown> {
+  override async getInvoiceFiles(_id: string): Promise<FileEntry[]> {
     throw new NotSupportedError(
       this.name,
       "getInvoiceFiles",
@@ -159,7 +163,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async getAttachments(_id: string): Promise<unknown> {
+  override async getAttachments(_id: string): Promise<FileEntry[]> {
     throw new NotSupportedError(
       this.name,
       "getAttachments",
@@ -175,7 +179,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async markInvoiceSeen(_id: string): Promise<unknown> {
+  override async markInvoiceSeen(_id: string): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "markInvoiceSeen",
@@ -185,7 +189,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   override async getUnseenInvoices(
     _pagination: PaginatedRequest,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "getUnseenInvoices",
@@ -249,24 +253,35 @@ export class StorecoveAdapter extends BaseAdapter {
 
   override async searchDirectoryInt(
     filters: DirectoryIntSearchFilters,
-  ): Promise<unknown> {
-    return await this.client.post("/discovery/receives", {
+  ): Promise<SearchDirectoryIntResult> {
+    // Storecove /discovery/receives returns a participant object or array
+    const raw = await this.client.post("/discovery/receives", {
       identifier: filters.value,
     });
+    const entries = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    // deno-lint-ignore no-explicit-any
+    const rows: DirectoryIntRow[] = entries.map((e: any) => ({
+      entityId: e.id ?? e.identifier ?? filters.value,
+      identifier: e.identifier ?? filters.value,
+      scheme: e.scheme,
+      name: e.name,
+      country: e.country,
+    }));
+    return { rows, count: rows.length };
   }
 
   override async checkPeppolParticipant(
     scheme: string,
     value: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     return await this.client.post("/discovery/exists", {
       identifier: { scheme, identifier: value },
-    });
+    }) as Record<string, unknown>;
   }
 
   // ─── Status ───────────────────────────────────────────
 
-  override async sendStatus(_req: SendStatusRequest): Promise<unknown> {
+  override async sendStatus(_req: SendStatusRequest): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "sendStatus",
@@ -296,7 +311,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   override async getUnseenStatuses(
     _pagination: PaginatedRequest,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "getUnseenStatuses",
@@ -304,7 +319,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async markStatusSeen(_statusId: string): Promise<unknown> {
+  override async markStatusSeen(_statusId: string): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "markStatusSeen",
@@ -316,7 +331,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   override async reportInvoiceTransaction(
     _transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "reportInvoiceTransaction",
@@ -327,7 +342,7 @@ export class StorecoveAdapter extends BaseAdapter {
   override async reportTransaction(
     _businessEntityId: string,
     _transaction: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "reportTransaction",
@@ -337,7 +352,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Webhooks ─────────────────────────────────────────
 
-  override async listWebhooks(): Promise<unknown> {
+  override async listWebhooks(): Promise<WebhookDetail[]> {
     throw new NotSupportedError(
       this.name,
       "listWebhooks",
@@ -345,7 +360,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async getWebhook(_id: string): Promise<unknown> {
+  override async getWebhook(_id: string): Promise<WebhookDetail> {
     // Storecove has no get-by-id — return the list and let the tool filter
     throw new NotSupportedError(
       this.name,
@@ -354,7 +369,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async createWebhook(_req: CreateWebhookRequest): Promise<unknown> {
+  override async createWebhook(_req: CreateWebhookRequest): Promise<WebhookDetail> {
     throw new NotSupportedError(
       this.name,
       "createWebhook",
@@ -365,7 +380,7 @@ export class StorecoveAdapter extends BaseAdapter {
   override async updateWebhook(
     _id: string,
     _req: UpdateWebhookRequest,
-  ): Promise<unknown> {
+  ): Promise<WebhookDetail> {
     throw new NotSupportedError(
       this.name,
       "updateWebhook",
@@ -373,7 +388,7 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async deleteWebhook(_id: string): Promise<unknown> {
+  override async deleteWebhook(_id: string): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "deleteWebhook",
@@ -383,7 +398,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Operator Config ───────────────────────────────────
 
-  override async getCustomerId(): Promise<unknown> {
+  override async getCustomerId(): Promise<string> {
     throw new NotSupportedError(
       this.name,
       "getCustomerId",
@@ -400,13 +415,13 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async getBusinessEntity(id: string): Promise<unknown> {
-    return await this.client.get(`/legal_entities/${encodePathSegment(id)}`);
+  override async getBusinessEntity(id: string): Promise<Record<string, unknown>> {
+    return await this.client.get(`/legal_entities/${encodePathSegment(id)}`) as Record<string, unknown>;
   }
 
   override async createLegalUnit(
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "createLegalUnit",
@@ -416,7 +431,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   override async createOffice(
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "createOffice",
@@ -424,14 +439,14 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async deleteBusinessEntity(id: string): Promise<unknown> {
-    return await this.client.delete(`/legal_entities/${encodePathSegment(id)}`);
+  override async deleteBusinessEntity(id: string): Promise<Record<string, unknown>> {
+    return await this.client.delete(`/legal_entities/${encodePathSegment(id)}`) as Record<string, unknown>;
   }
 
   override async configureBusinessEntity(
     _id: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "configureBusinessEntity",
@@ -442,7 +457,7 @@ export class StorecoveAdapter extends BaseAdapter {
   override async claimBusinessEntity(
     _id: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "claimBusinessEntity",
@@ -454,7 +469,7 @@ export class StorecoveAdapter extends BaseAdapter {
     _scheme: string,
     _value: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "claimBusinessEntityByIdentifier",
@@ -464,7 +479,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   override async enrollFrench(
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "enrollFrench",
@@ -474,7 +489,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   override async enrollInternational(
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     // Map to Peppol identifier creation
     const legalEntityId = data.legalEntityId ?? this.defaultLegalEntityId;
     if (!legalEntityId) {
@@ -491,13 +506,13 @@ export class StorecoveAdapter extends BaseAdapter {
         scheme: data.scheme,
         identifier: data.identifier ?? data.value,
       },
-    );
+    ) as Record<string, unknown>;
   }
 
   override async registerNetwork(
     identifierId: string,
     _network: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     // In Storecove, Peppol registration is done at identifier creation time.
     // This is a no-op if the identifier already exists.
     return {
@@ -510,7 +525,7 @@ export class StorecoveAdapter extends BaseAdapter {
     scheme: string,
     value: string,
     _network: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     // Same as registerNetwork — Peppol identifiers are registered on creation
     return {
       message:
@@ -519,7 +534,7 @@ export class StorecoveAdapter extends BaseAdapter {
     };
   }
 
-  override async unregisterNetwork(directoryId: string): Promise<unknown> {
+  override async unregisterNetwork(directoryId: string): Promise<Record<string, unknown>> {
     // directoryId maps to the Peppol identifier deletion path
     // Expected format: legalEntityId/superscheme/scheme/identifier
     const parts = directoryId.split("/");
@@ -533,7 +548,7 @@ export class StorecoveAdapter extends BaseAdapter {
       `/legal_entities/${encodePathSegment(legalEntityId)}/peppol_identifiers/${
         rest.map(encodePathSegment).join("/")
       }`,
-    );
+    ) as Record<string, unknown>;
   }
 
   // ─── Identifier Management ───────────────────────────────
@@ -541,7 +556,7 @@ export class StorecoveAdapter extends BaseAdapter {
   override async createIdentifier(
     entityId: string,
     data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     // Route to Peppol identifiers or additional tax identifiers based on data
     if (data.scheme && String(data.scheme).startsWith("0")) {
       // Peppol scheme (ISO 6523)
@@ -552,7 +567,7 @@ export class StorecoveAdapter extends BaseAdapter {
           scheme: data.scheme,
           identifier: data.value,
         },
-      );
+      ) as Record<string, unknown>;
     }
     // Tax identifier
     return await this.client.post(
@@ -560,14 +575,14 @@ export class StorecoveAdapter extends BaseAdapter {
         encodePathSegment(entityId)
       }/additional_tax_identifiers`,
       data,
-    );
+    ) as Record<string, unknown>;
   }
 
   override async createIdentifierByScheme(
     _scheme: string,
     _value: string,
     _data: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "createIdentifierByScheme",
@@ -575,14 +590,14 @@ export class StorecoveAdapter extends BaseAdapter {
     );
   }
 
-  override async deleteIdentifier(identifierId: string): Promise<unknown> {
+  override async deleteIdentifier(identifierId: string): Promise<Record<string, unknown>> {
     // identifierId could be a Peppol path or a tax identifier ID
     // If it contains '/', treat as Peppol identifier path
     if (identifierId.includes("/")) {
       const segments = identifierId.split("/").map(encodePathSegment).join("/");
       return await this.client.delete(
         `/legal_entities/${segments}`,
-      );
+      ) as Record<string, unknown>;
     }
     // Otherwise treat as additional tax identifier — need entity ID
     throw new Error(
@@ -593,7 +608,7 @@ export class StorecoveAdapter extends BaseAdapter {
 
   // ─── Claim Management ────────────────────────────────────
 
-  override async deleteClaim(_entityId: string): Promise<unknown> {
+  override async deleteClaim(_entityId: string): Promise<Record<string, unknown>> {
     throw new NotSupportedError(
       this.name,
       "deleteClaim",

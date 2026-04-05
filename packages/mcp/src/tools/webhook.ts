@@ -25,17 +25,14 @@ export const webhookTools: EInvoiceTool[] = [
       properties: {},
     },
     handler: async (_input, ctx) => {
-      // deno-lint-ignore no-explicit-any
-      const raw = await ctx.adapter.listWebhooks() as any;
-      const webhooks = Array.isArray(raw) ? raw : (raw?.data ?? [raw]);
-      // deno-lint-ignore no-explicit-any
-      const data = webhooks.map((w: any) => ({
-        _id: w.id ?? w.webhookId,
+      const webhooks = await ctx.adapter.listWebhooks();
+      const data = webhooks.map((w) => ({
+        _id: w.id,
         "Nom": w.name ?? "—",
         "URL": w.url ?? "—",
         "Actif": w.active !== false ? "Oui" : "Non",
         "Événements": Array.isArray(w.events)
-          ? (w.events as string[]).join(", ")
+          ? w.events.join(", ")
           : "—",
       }));
       return {
@@ -68,9 +65,8 @@ export const webhookTools: EInvoiceTool[] = [
       if (!input.id) {
         throw new Error("[einvoice_webhook_get] 'id' is required");
       }
-      // deno-lint-ignore no-explicit-any
-      const webhook = await ctx.adapter.getWebhook(input.id as string) as any;
-      const name = webhook?.name ?? webhook?.id ?? input.id;
+      const webhook = await ctx.adapter.getWebhook(input.id as string);
+      const name = webhook.name ?? webhook.id ?? input.id;
       return {
         content: `Webhook : ${name}`,
         structuredContent: webhook,
@@ -130,7 +126,7 @@ export const webhookTools: EInvoiceTool[] = [
           action: "Création webhook",
           status: "success",
           title: `Webhook créé : ${input.name ?? input.url}`,
-          details: result as Record<string, unknown>,
+          details: { ...result },
         },
       };
     },
@@ -175,7 +171,7 @@ export const webhookTools: EInvoiceTool[] = [
           action: "Mise à jour webhook",
           status: "success",
           title: `Webhook ${input.id} mis à jour`,
-          details: result as Record<string, unknown>,
+          details: { ...result },
         },
       };
     },
@@ -208,7 +204,7 @@ export const webhookTools: EInvoiceTool[] = [
           action: "Suppression webhook",
           status: "success",
           title: `Webhook ${input.id} supprimé`,
-          details: result as Record<string, unknown>,
+          details: { ...result },
         },
       };
     },

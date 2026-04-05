@@ -551,7 +551,7 @@ Deno.test("SuperPDPAdapter.getCustomerId() - GET /companies/me", async () => {
     const adapter = makeAdapter();
     const result = await adapter.getCustomerId();
 
-    assertEquals(result, { id: 2913, formal_name: "Burger Queen" });
+    assertEquals(result, "2913");
     assertEquals(new URL(captured[0].url).pathname, "/v1.beta/companies/me");
   } finally {
     restore();
