@@ -147,7 +147,7 @@ to preview before sending.
 - `NotSupportedError`: thrown by `BaseAdapter.notSupported()` — adapter doesn't
   support the method.
 - `AdapterAPIError`: thrown by all HTTP clients on non-2xx. Carries `status` and
-  `body`. Adapter name baked into `.name` (e.g. `IopoleAPIError`).
+  `body`. Adapter name baked into `.name` (e.g. `error.name === "IopoleAPIError"`).
 - `einvoiceErrorMapper` (registered as `toolErrorMapper` on
   `ConcurrentMCPServer`): maps errors to MCP `isError: true` responses.
   Framework-level, not per-tool — do NOT add local try/catch in tool handlers

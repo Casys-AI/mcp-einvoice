@@ -6,12 +6,12 @@
  * @module lib/einvoice/src/api/iopole-client_test
  */
 
-import { assertEquals, assertRejects } from "jsr:@std/assert";
+import { assert, assertEquals, assertRejects } from "jsr:@std/assert";
 import {
   createOAuth2TokenProvider,
-  IopoleAPIError,
   IopoleClient,
 } from "./client.ts";
+import { AdapterAPIError } from "../shared/errors.ts";
 import { mockFetch } from "../../testing/helpers.ts";
 
 const TEST_CUSTOMER_ID = "test-customer-id";
@@ -100,6 +100,48 @@ Deno.test("IopoleClient.get() - passes query parameters", async () => {
   }
 });
 
+// ── getV11 ──────────────────────────────────────────────
+
+Deno.test("IopoleClient.getV11() - uses /v1.1 base URL", async () => {
+  const { restore, captured } = mockFetch([
+    { status: 200, body: { data: [] } },
+  ]);
+
+  try {
+    const client = makeClient();
+    await client.getV11("/invoice/search", { q: "test" });
+
+    assertEquals(captured.length, 1);
+    const url = new URL(captured[0].url);
+    assertEquals(url.pathname, "/v1.1/invoice/search");
+    assertEquals(url.searchParams.get("q"), "test");
+  } finally {
+    restore();
+  }
+});
+
+Deno.test("IopoleClient.getV11() - does not mutate config.baseUrl", async () => {
+  const { restore, captured } = mockFetch([
+    { status: 200, body: {} },
+    { status: 200, body: {} },
+  ]);
+
+  try {
+    const client = makeClient();
+    // Call getV11, then regular get — baseUrl must remain /v1
+    await client.getV11("/invoice/search");
+    await client.get("/invoice/other");
+
+    assertEquals(captured.length, 2);
+    const url0 = new URL(captured[0].url);
+    const url1 = new URL(captured[1].url);
+    assertEquals(url0.pathname, "/v1.1/invoice/search");
+    assertEquals(url1.pathname, "/v1/invoice/other");
+  } finally {
+    restore();
+  }
+});
+
 // ── POST ─────────────────────────────────────────────────
 
 Deno.test("IopoleClient.post() - sends JSON body", async () => {
@@ -173,6 +215,109 @@ Deno.test("IopoleClient.delete() - sends DELETE", async () => {
   }
 });
 
+// ── postBinary ──────────────────────────────────────────
+
+Deno.test("IopoleClient.postBinary() - returns binary data with content type", async () => {
+  const original = globalThis.fetch;
+
+  globalThis.fetch = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    // Verify it sends JSON body + auth headers (keys are case-sensitive from spread)
+    assertEquals(init?.method, "POST");
+    const headers = init?.headers as Record<string, string>;
+    assertEquals(headers["Authorization"], "Bearer test-token-123");
+    assertEquals(headers["customer-id"], TEST_CUSTOMER_ID);
+    assertEquals(headers["Content-Type"], "application/json");
+    const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46]); // %PDF
+    return new Response(pdfBytes, {
+      status: 200,
+      headers: { "content-type": "application/pdf" },
+    });
+  };
+
+  try {
+    const client = makeClient();
+    const { data, contentType } = await client.postBinary(
+      "/tools/facturx/generate",
+      { invoice: {} },
+      { flavor: "EN16931", language: "fr" },
+    );
+    assertEquals(contentType, "application/pdf");
+    assertEquals(data.length, 4);
+    assertEquals(data[0], 0x25);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+Deno.test("IopoleClient.postBinary() - throws AdapterAPIError on failure", async () => {
+  const original = globalThis.fetch;
+
+  globalThis.fetch = async (): Promise<Response> => {
+    return new Response("Bad Request", { status: 400 });
+  };
+
+  try {
+    const client = makeClient();
+    await assertRejects(
+      () => client.postBinary("/tools/facturx/generate", {}, {}),
+      AdapterAPIError,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+// ── upload ───────────────────────────────────────────────
+
+Deno.test("IopoleClient.upload() - sends multipart FormData", async () => {
+  const original = globalThis.fetch;
+  // deno-lint-ignore no-explicit-any
+  let capturedBody: any = null;
+
+  globalThis.fetch = async (_url: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    assertEquals(init?.method, "POST");
+    const headers = init?.headers as Record<string, string>;
+    assertEquals(headers["Authorization"], "Bearer test-token-123");
+    assertEquals(headers["customer-id"], TEST_CUSTOMER_ID);
+    // Content-Type must NOT be set (fetch adds boundary automatically)
+    assertEquals(headers["Content-Type"], undefined);
+    capturedBody = init?.body as FormData;
+    return new Response(JSON.stringify({ invoiceId: "inv-1" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    const client = makeClient();
+    const file = new Uint8Array([1, 2, 3]);
+    const result = await client.upload("/invoice", file, "test.pdf");
+    assertEquals(result, { invoiceId: "inv-1" });
+    // Verify FormData was sent
+    assert(capturedBody instanceof FormData);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+Deno.test("IopoleClient.upload() - throws AdapterAPIError on failure", async () => {
+  const original = globalThis.fetch;
+
+  globalThis.fetch = async (): Promise<Response> => {
+    return new Response("Forbidden", { status: 403 });
+  };
+
+  try {
+    const client = makeClient();
+    await assertRejects(
+      () => client.upload("/invoice", new Uint8Array([1]), "test.pdf"),
+      AdapterAPIError,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 // ── Download ─────────────────────────────────────────────
 
 Deno.test("IopoleClient.download() - returns Uint8Array and content type", async () => {
@@ -202,7 +347,7 @@ Deno.test("IopoleClient.download() - returns Uint8Array and content type", async
 
 // ── Error Handling ───────────────────────────────────────
 
-Deno.test("IopoleClient - throws IopoleAPIError on 4xx", async () => {
+Deno.test("IopoleClient - throws AdapterAPIError on 4xx", async () => {
   const { restore } = mockFetch([
     { status: 401, body: { error: "Unauthorized" } },
   ]);
@@ -211,7 +356,7 @@ Deno.test("IopoleClient - throws IopoleAPIError on 4xx", async () => {
     const client = makeClient();
     const err = await assertRejects(
       () => client.get("/invoice/search"),
-      IopoleAPIError,
+      AdapterAPIError,
     );
     assertEquals(err.status, 401);
   } finally {
@@ -219,7 +364,7 @@ Deno.test("IopoleClient - throws IopoleAPIError on 4xx", async () => {
   }
 });
 
-Deno.test("IopoleClient - throws IopoleAPIError on 5xx", async () => {
+Deno.test("IopoleClient - throws AdapterAPIError on 5xx", async () => {
   const { restore } = mockFetch([
     { status: 500, body: { error: "Internal Server Error" } },
   ]);
@@ -228,7 +373,7 @@ Deno.test("IopoleClient - throws IopoleAPIError on 5xx", async () => {
     const client = makeClient();
     await assertRejects(
       () => client.post("/invoice/emit", { invoice: {} }),
-      IopoleAPIError,
+      AdapterAPIError,
     );
   } finally {
     restore();
@@ -249,7 +394,7 @@ Deno.test("IopoleClient.download() - throws on error response", async () => {
     const client = makeClient();
     await assertRejects(
       () => client.download("/invoice/nonexistent/readable"),
-      IopoleAPIError,
+      AdapterAPIError,
     );
   } finally {
     globalThis.fetch = original;

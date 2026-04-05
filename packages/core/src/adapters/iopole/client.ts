@@ -1,234 +1,76 @@
 /**
  * Iopole REST API Client
  *
- * Zero-dependency HTTP client for the Iopole e-invoicing API.
- * Supports OAuth2 client_credentials authentication with auto-refresh.
+ * Extends BaseHttpClient with Iopole-specific auth (Bearer + customer-id)
+ * and custom methods (getV11, postBinary, upload, postWithQuery).
  *
  * API base: https://api.iopole.com/v1 (production)
  *           https://api.ppd.iopole.fr/v1 (sandbox)
  *
- * Auth:  POST client_credentials to Keycloak, token TTL = 10 min.
+ * Auth:  OAuth2 client_credentials to Keycloak, token TTL = 10 min.
  *        Header `customer-id` required on all API requests (since 2026-02-01).
  *
  * @module lib/iopole/api/iopole-client
  */
 
-// ─── OAuth2 Token Provider (shared) ───────────────────
+import { BaseHttpClient } from "../shared/http-client.ts";
+import type { BaseClientConfig } from "../shared/http-client.ts";
+import { AdapterAPIError } from "../shared/errors.ts";
+
 // Re-exported from shared module — used by Iopole and other OAuth2 adapters.
 export { createOAuth2TokenProvider } from "../shared/oauth2.ts";
 export type { OAuth2Config } from "../shared/oauth2.ts";
 
 // ─── Client Config ─────────────────────────────────────
 
-export interface IopoleClientConfig {
-  /** Iopole API base URL, e.g. https://api.ppd.iopole.fr/v1 */
-  baseUrl: string;
+export interface IopoleClientConfig extends BaseClientConfig {
   /** Iopole customer-id header (required since 2026-02-01) */
   customerId: string;
   /** Async function that returns a valid Bearer token */
   getToken: () => Promise<string>;
-  /** Request timeout in ms. Default: 30000 */
-  timeoutMs?: number;
-}
-
-/**
- * Error thrown when an Iopole API request fails.
- */
-export class IopoleAPIError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-    public readonly body: string,
-  ) {
-    super(message);
-    this.name = "IopoleAPIError";
-  }
 }
 
 /**
  * Iopole REST API client.
  *
- * All methods map directly to Iopole API endpoints.
- * No hidden heuristics, no silent fallbacks.
+ * All standard methods (get, post, put, delete, download) are inherited
+ * from BaseHttpClient. Custom methods handle Iopole-specific needs:
+ * - getV11: API version switching (v1 → v1.1)
+ * - postBinary: PDF generation (returns Uint8Array, 60s timeout)
+ * - upload: multipart file upload
+ * - postWithQuery: POST with query params
  */
-export class IopoleClient {
-  private config: IopoleClientConfig;
+export class IopoleClient extends BaseHttpClient {
+  private customerId: string;
+  private getToken: () => Promise<string>;
 
   constructor(config: IopoleClientConfig) {
-    this.config = config;
+    super("Iopole", { baseUrl: config.baseUrl, timeoutMs: config.timeoutMs });
+    this.customerId = config.customerId;
+    this.getToken = config.getToken;
   }
 
-  // ─── Generic Request ────────────────────────────────────
-
-  async request<T = unknown>(
-    method: string,
-    path: string,
-    options?: {
-      body?: unknown;
-      query?: Record<string, string | number | boolean | undefined>;
-      headers?: Record<string, string>;
-    },
-  ): Promise<T> {
-    return this.requestWithBase<T>(this.config.baseUrl, method, path, options);
-  }
-
-  private async requestWithBase<T = unknown>(
-    baseUrl: string,
-    method: string,
-    path: string,
-    options?: {
-      body?: unknown;
-      query?: Record<string, string | number | boolean | undefined>;
-      headers?: Record<string, string>;
-    },
-  ): Promise<T> {
-    const url = new URL(`${baseUrl}${path}`);
-
-    if (options?.query) {
-      for (const [key, value] of Object.entries(options.query)) {
-        if (value !== undefined) {
-          url.searchParams.set(key, String(value));
-        }
-      }
-    }
-
-    const token = await this.config.getToken();
-
-    const headers: Record<string, string> = {
+  protected async getAuthHeaders(): Promise<Record<string, string>> {
+    const token = await this.getToken();
+    return {
       Authorization: `Bearer ${token}`,
-      "customer-id": this.config.customerId,
-      Accept: "application/json",
-      ...options?.headers,
+      "customer-id": this.customerId,
     };
-
-    if (options?.body) {
-      headers["Content-Type"] = "application/json";
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      this.config.timeoutMs ?? 30_000,
-    );
-
-    try {
-      const response = await fetch(url.toString(), {
-        method,
-        headers,
-        body: options?.body ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const body = await response.text();
-        throw new IopoleAPIError(
-          `[IopoleClient] ${method} ${path} → ${response.status}: ${
-            body.slice(0, 500)
-          }`,
-          response.status,
-          body,
-        );
-      }
-
-      const contentType = response.headers.get("content-type") ?? "";
-      if (contentType.includes("application/json")) {
-        return (await response.json()) as T;
-      }
-
-      // For binary responses (PDF downloads, etc.)
-      return (await response.text()) as unknown as T;
-    } finally {
-      clearTimeout(timeout);
-    }
   }
 
-  // ─── Convenience Methods ────────────────────────────────
-
-  async get<T = unknown>(
-    path: string,
-    query?: Record<string, string | number | boolean | undefined>,
-  ): Promise<T> {
-    return this.request<T>("GET", path, { query });
-  }
+  // ─── Custom Methods ────────────────────────────────────
 
   /**
    * GET request against the v1.1 API endpoint.
-   * Builds a v1.1 URL without mutating this.config.baseUrl,
-   * so concurrent calls (e.g. getV11 + get) cannot interfere.
+   * Uses requestWithBase() with a computed v1.1 URL — concurrent-safe,
+   * no config mutation, full BaseHttpClient logic (auth, timeout, errors).
    */
   async getV11<T = unknown>(
     path: string,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, string | number | boolean | string[] | undefined>,
   ): Promise<T> {
     const baseV11 = this.config.baseUrl.replace(/\/v1\b/, "/v1.1");
     return this.requestWithBase<T>(baseV11, "GET", path, { query });
-  }
-
-  async post<T = unknown>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("POST", path, { body });
-  }
-
-  async put<T = unknown>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("PUT", path, { body });
-  }
-
-  async delete<T = unknown>(path: string): Promise<T> {
-    return this.request<T>("DELETE", path);
-  }
-
-  /**
-   * Upload a file via multipart/form-data.
-   * Used for POST /invoice (emitInvoice) — the Swagger spec requires
-   * Content-Type: multipart/form-data with a `file` field (binary, PDF or XML).
-   */
-  async upload<T = unknown>(
-    path: string,
-    file: Uint8Array,
-    filename: string,
-  ): Promise<T> {
-    const url = `${this.config.baseUrl}${path}`;
-    const token = await this.config.getToken();
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      this.config.timeoutMs ?? 30_000,
-    );
-
-    try {
-      const form = new FormData();
-      form.append("file", new Blob([file as BlobPart]), filename);
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "customer-id": this.config.customerId,
-          Accept: "application/json",
-          // Do NOT set Content-Type — fetch sets it with the multipart boundary
-        },
-        body: form,
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const body = await response.text();
-        throw new IopoleAPIError(
-          `[IopoleClient] POST ${path} (upload) → ${response.status}: ${
-            body.slice(0, 500)
-          }`,
-          response.status,
-          body,
-        );
-      }
-
-      const contentType = response.headers.get("content-type") ?? "";
-      if (contentType.includes("application/json")) {
-        return (await response.json()) as T;
-      }
-      return (await response.text()) as unknown as T;
-    } finally {
-      clearTimeout(timeout);
-    }
   }
 
   /**
@@ -238,28 +80,28 @@ export class IopoleClient {
   async postWithQuery<T = unknown>(
     path: string,
     body: unknown,
-    query: Record<string, string | number | boolean | undefined>,
+    query: Record<string, string | number | boolean | string[] | undefined>,
   ): Promise<T> {
-    return this.request<T>("POST", path, { body, query });
+    return await this.request<T>("POST", path, { body, query });
   }
 
   /**
    * POST with query parameters, returning raw binary.
-   * Used for /tools/facturx/generate which returns a PDF (binary).
-   * Using request() would corrupt binary data by treating it as text.
+   * Used for /tools/facturx/generate which returns a PDF.
+   * Uses 60s timeout (longer than the 30s default for PDF generation).
    */
   async postBinary(
     path: string,
     body: unknown,
     query: Record<string, string | number | boolean | undefined>,
   ): Promise<{ data: Uint8Array; contentType: string }> {
+    const authHeaders = await this.getAuthHeaders();
     const url = new URL(`${this.config.baseUrl}${path}`);
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined) url.searchParams.set(key, String(value));
     }
-    const token = await this.config.getToken();
     const controller = new AbortController();
-    // Longer timeout for binary generation (PDF can take 30-60s)
+    // Longer default for binary generation (PDF can take 30-60s), but respect config override
     const timeout = setTimeout(
       () => controller.abort(),
       this.config.timeoutMs ?? 60_000,
@@ -268,8 +110,7 @@ export class IopoleClient {
       const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "customer-id": this.config.customerId,
+          ...authHeaders,
           "Content-Type": "application/json",
           Accept: "*/*",
         },
@@ -278,8 +119,9 @@ export class IopoleClient {
       });
       if (!response.ok) {
         const errBody = await response.text();
-        throw new IopoleAPIError(
-          `[IopoleClient] POST ${path} → ${response.status}: ${
+        throw new AdapterAPIError(
+          "Iopole",
+          `[Iopole] POST ${path} → ${response.status}: ${
             errBody.slice(0, 500)
           }`,
           response.status,
@@ -296,14 +138,19 @@ export class IopoleClient {
   }
 
   /**
-   * Download a binary resource (invoice PDF, attachment, etc.)
-   * Returns the raw Response for streaming.
+   * Upload a file via multipart/form-data.
+   * Used for POST /invoice (emitInvoice).
+   * Does NOT set Content-Type — fetch sets it with the multipart boundary.
    */
-  async download(
+  async upload<T = unknown>(
     path: string,
-  ): Promise<{ data: Uint8Array; contentType: string }> {
+    file: Uint8Array,
+    filename: string,
+  ): Promise<T> {
+    const authHeaders = await this.getAuthHeaders();
     const url = `${this.config.baseUrl}${path}`;
-    const token = await this.config.getToken();
+    const form = new FormData();
+    form.append("file", new Blob([file as BlobPart]), filename);
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
@@ -312,27 +159,33 @@ export class IopoleClient {
 
     try {
       const response = await fetch(url, {
-        method: "GET",
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "customer-id": this.config.customerId,
+          ...authHeaders,
+          Accept: "application/json",
+          // Do NOT set Content-Type — fetch sets it with the multipart boundary
         },
+        body: form,
         signal: controller.signal,
       });
 
       if (!response.ok) {
-        const body = await response.text();
-        throw new IopoleAPIError(
-          `[IopoleClient] GET ${path} → ${response.status}`,
+        const errBody = await response.text();
+        throw new AdapterAPIError(
+          "Iopole",
+          `[Iopole] POST ${path} (upload) → ${response.status}: ${
+            errBody.slice(0, 500)
+          }`,
           response.status,
-          body,
+          errBody,
         );
       }
 
-      const data = new Uint8Array(await response.arrayBuffer());
-      const contentType = response.headers.get("content-type") ??
-        "application/octet-stream";
-      return { data, contentType };
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        return (await response.json()) as T;
+      }
+      return (await response.text()) as unknown as T;
     } finally {
       clearTimeout(timeout);
     }

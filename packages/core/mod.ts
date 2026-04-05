@@ -47,7 +47,6 @@ export { createSuperPDPAdapter } from "./src/adapters/superpdp/adapter.ts";
 
 // ─── Iopole Client (for direct use or DI in tests) ──────────
 export {
-  IopoleAPIError,
   IopoleClient,
 } from "./src/adapters/iopole/client.ts";
 export type {

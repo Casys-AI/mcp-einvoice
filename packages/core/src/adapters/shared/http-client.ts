@@ -35,6 +35,11 @@ export abstract class BaseHttpClient {
 
   // ─── Generic Request ────────────────────────────────────
 
+  /**
+   * Core request method. Uses this.config.baseUrl by default.
+   * Subclasses that need a different base URL for specific calls
+   * can use requestWithBase() directly.
+   */
   async request<T = unknown>(
     method: string,
     path: string,
@@ -45,7 +50,26 @@ export abstract class BaseHttpClient {
       contentType?: string;
     },
   ): Promise<T> {
-    const url = new URL(`${this.config.baseUrl}${path}`);
+    return this.requestWithBase<T>(this.config.baseUrl, method, path, options);
+  }
+
+  /**
+   * Request with an explicit base URL. Concurrent-safe — doesn't mutate config.
+   * Used by request() with the default baseUrl, and directly by subclasses
+   * that need a different base URL (e.g. Iopole v1.1 API).
+   */
+  protected async requestWithBase<T = unknown>(
+    baseUrl: string,
+    method: string,
+    path: string,
+    options?: {
+      body?: unknown;
+      query?: Record<string, string | number | boolean | string[] | undefined>;
+      headers?: Record<string, string>;
+      contentType?: string;
+    },
+  ): Promise<T> {
+    const url = new URL(`${baseUrl}${path}`);
 
     if (options?.query) {
       for (const [key, value] of Object.entries(options.query)) {

@@ -57,7 +57,6 @@ export type {
 
 // Low-level Iopole client (for direct use or DI in tests)
 export {
-  IopoleAPIError,
   IopoleClient,
 } from "@casys/einvoice-core";
 
