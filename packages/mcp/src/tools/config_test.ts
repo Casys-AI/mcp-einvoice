@@ -170,6 +170,7 @@ Deno.test("einvoice_config_entities_list - _rowAction points to entity_get with 
 
 Deno.test("einvoice_config_entities_list - returns empty data array when no rows", async () => {
   const { adapter } = createMockAdapter();
+  adapter.listBusinessEntities = () => Promise.resolve({ rows: [], count: 0 });
   const tool = findTool("einvoice_config_entities_list");
 
   const result = unwrapStructured(

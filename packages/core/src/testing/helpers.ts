@@ -171,14 +171,58 @@ export function createMockAdapter(
       record("emitInvoice", req) as Promise<Record<string, unknown>>,
     searchInvoices: (filters) =>
       record("searchInvoices", filters).then(() => ({
-        rows: [],
-        count: 0,
+        rows: [
+          {
+            id: "INV-001",
+            invoiceNumber: "FA-2025-0042",
+            status: "delivered",
+            direction: "sent" as const,
+            senderName: "Acme Corp",
+            receiverName: "Client SA",
+            date: "2025-03-15",
+            amount: 1200.50,
+            currency: "EUR",
+          },
+          {
+            id: "INV-002",
+            invoiceNumber: "FA-2025-0043",
+            status: "approved",
+            direction: "received" as const,
+            senderName: "Fournisseur SAS",
+            receiverName: "Acme Corp",
+            date: "2025-03-16",
+            amount: 850.00,
+            currency: "EUR",
+          },
+        ],
+        count: 2,
       })),
     getInvoice: (id) =>
       record("getInvoice", id).then(() => ({
         id: id as string,
-        status: "DELIVERED",
-        direction: "received" as const,
+        invoiceNumber: "FA-2025-0042",
+        status: "delivered",
+        direction: "sent" as const,
+        senderName: "Acme Corp",
+        senderId: "SIREN-123456789",
+        receiverName: "Client SA",
+        receiverId: "SIREN-987654321",
+        issueDate: "2025-03-15",
+        dueDate: "2025-04-15",
+        currency: "EUR",
+        totalHt: 1000.00,
+        totalTax: 200.00,
+        totalTtc: 1200.00,
+        lines: [
+          {
+            description: "Prestation de conseil",
+            quantity: 2,
+            unitPrice: 500.00,
+            taxRate: 20,
+            amount: 1000.00,
+          },
+        ],
+        notes: ["Paiement à 30 jours"],
       })),
     downloadInvoice: (id) =>
       record("downloadInvoice", id).then(() => ({
@@ -191,9 +235,13 @@ export function createMockAdapter(
         contentType: "application/pdf",
       })) as Promise<DownloadResult>,
     getInvoiceFiles: (id) =>
-      record("getInvoiceFiles", id).then(() => []) as Promise<FileEntry[]>,
+      record("getInvoiceFiles", id).then(() => [
+        { id: "FILE-001", filename: "facture.xml", contentType: "application/xml", size: 4096 },
+      ]) as Promise<FileEntry[]>,
     getAttachments: (id) =>
-      record("getAttachments", id).then(() => []) as Promise<FileEntry[]>,
+      record("getAttachments", id).then(() => [
+        { id: "ATT-001", filename: "annexe.pdf", contentType: "application/pdf", size: 102400 },
+      ]) as Promise<FileEntry[]>,
     downloadFile: (fileId) =>
       record("downloadFile", fileId).then(() => ({
         data: new Uint8Array([7, 8, 9]),
@@ -219,11 +267,32 @@ export function createMockAdapter(
 
     // Directory
     searchDirectoryFr: (f) =>
-      record("searchDirectoryFr", f).then(() => ({ rows: [], count: 0 })),
+      record("searchDirectoryFr", f).then(() => ({
+        rows: [
+          {
+            entityId: "ENT-001",
+            name: "Acme Corp",
+            type: "legal_unit",
+            siren: "123456789",
+            siret: "12345678900014",
+            country: "FR",
+            status: "active",
+          },
+        ],
+        count: 1,
+      })),
     searchDirectoryInt: (f) =>
       record("searchDirectoryInt", f).then(() => ({
-        rows: [],
-        count: 0,
+        rows: [
+          {
+            entityId: "ENT-INT-001",
+            identifier: "0088:7300010000001",
+            scheme: "0088",
+            name: "International Corp",
+            country: "DE",
+          },
+        ],
+        count: 1,
       })) as Promise<SearchDirectoryIntResult>,
     checkPeppolParticipant: (scheme, value) =>
       record("checkPeppolParticipant", scheme, value) as Promise<
@@ -234,14 +303,12 @@ export function createMockAdapter(
     sendStatus: (r) =>
       record("sendStatus", r) as Promise<Record<string, unknown>>,
     getStatusHistory: (invoiceId) =>
-      record("getStatusHistory", invoiceId).then((r) => {
-        // Ensure return matches StatusHistoryResult shape
-        const result = r as Record<string, unknown>;
-        if (result && Array.isArray(result.entries)) {
-          return r as { entries: Array<{ date: string; code: string }> };
-        }
-        return { entries: [] };
-      }),
+      record("getStatusHistory", invoiceId).then(() => ({
+        entries: [
+          { date: "2025-03-15T10:00:00Z", code: "200", message: "Déposée" },
+          { date: "2025-03-15T10:05:00Z", code: "205", message: "Approuvée" },
+        ],
+      })),
     getUnseenStatuses: (p) =>
       record("getUnseenStatuses", p) as Promise<Record<string, unknown>>,
     markStatusSeen: (statusId) =>
@@ -257,27 +324,41 @@ export function createMockAdapter(
 
     // Webhooks
     listWebhooks: () =>
-      record("listWebhooks").then(() => []) as Promise<WebhookDetail[]>,
+      record("listWebhooks").then(() => [
+        { id: "WH-001", name: "Invoice webhook", url: "https://example.com/hook", events: ["invoice.created"], active: true },
+      ]) as Promise<WebhookDetail[]>,
     getWebhook: (id) =>
       record("getWebhook", id).then(() => ({
-        id: String(id), name: "mock", url: "https://example.com/hook", events: [], active: true,
+        id: String(id), name: "Invoice webhook", url: "https://example.com/hook", events: ["invoice.created"], active: true,
       })) as Promise<WebhookDetail>,
     createWebhook: (r) =>
       record("createWebhook", r).then(() => ({
-        id: "mock-wh-id", name: r.name ?? "mock", url: r.url, events: r.events, active: true,
+        id: "mock-wh-id", name: r.name ?? "mock", url: r.url ?? "https://example.com/hook", events: r.events ?? [], active: true,
       })) as Promise<WebhookDetail>,
     updateWebhook: (id, r) =>
       record("updateWebhook", id, r).then(() => ({
-        id: String(id), name: r.name, url: r.url, events: r.events, active: r.active ?? true,
+        id: String(id), name: r.name ?? "Invoice webhook", url: r.url ?? "https://example.com/hook", events: r.events ?? ["invoice.created"], active: r.active ?? true,
       })) as Promise<WebhookDetail>,
     deleteWebhook: (id) =>
       record("deleteWebhook", id) as Promise<Record<string, unknown>>,
 
     // Config
     getCustomerId: () =>
-      record("getCustomerId").then(() => "mock-customer-id") as Promise<string>,
+      record("getCustomerId").then(() => "CUST-001") as Promise<string>,
     listBusinessEntities: () =>
-      record("listBusinessEntities").then(() => ({ rows: [], count: 0 })),
+      record("listBusinessEntities").then(() => ({
+        rows: [
+          {
+            entityId: "BE-001",
+            name: "Acme Corp",
+            type: "legal_unit",
+            siren: "123456789",
+            siret: "12345678900014",
+            country: "FR",
+          },
+        ],
+        count: 1,
+      })),
     getBusinessEntity: (id) =>
       record("getBusinessEntity", id) as Promise<Record<string, unknown>>,
     createLegalUnit: (data) =>

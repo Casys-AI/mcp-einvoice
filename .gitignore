@@ -7,3 +7,7 @@ deno.lock
 .cov/
 dist-*/
 .claude/worktrees/
+
+# IDE/tool state
+.serena/
+.remember/
