@@ -86,3 +86,7 @@ export {
   type CapturedRequest,
   type MockResponse,
 } from "./src/testing/helpers.ts";
+export {
+  runAdapterContract,
+  type ContractOptions,
+} from "./src/testing/adapter-contract.ts";
