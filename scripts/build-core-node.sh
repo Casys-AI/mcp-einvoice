@@ -27,8 +27,12 @@ mkdir -p "$DIST_DIR"
 cp -r "$ROOT_DIR/packages/core/src" "$DIST_DIR/src"
 cp "$ROOT_DIR/packages/core/mod.ts" "$DIST_DIR/mod.ts"
 
-# Remove test files
+# Remove test files and Deno-only testing utilities (jsr:@std/assert, Deno.TestContext)
 find "$DIST_DIR" -name "*_test.ts" -o -name "*.test.ts" -o -name "*.bench.ts" | xargs rm -f 2>/dev/null || true
+rm -rf "$DIST_DIR/src/testing"
+
+# Strip testing exports from mod.ts (Deno-only, uses jsr: imports)
+perl -i -0777 -pe 's/\/\/ ─── Testing ─.*//s' "$DIST_DIR/mod.ts"
 
 # Replace runtime.ts with runtime.node.ts
 cp "$DIST_DIR/src/runtime.node.ts" "$DIST_DIR/src/runtime.ts"

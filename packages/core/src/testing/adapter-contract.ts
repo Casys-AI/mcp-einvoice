@@ -23,7 +23,7 @@ import {
   assert,
   assertEquals,
   assertExists,
-} from "jsr:@std/assert";
+} from "jsr:@std/assert@^1.0.0";
 import type { AdapterMethodName, EInvoiceAdapter } from "../adapter.ts";
 
 export interface ContractOptions {
