@@ -34,8 +34,12 @@ cp "$ROOT_DIR/packages/core/mod.ts" "$DIST_DIR/core/mod.ts"
 cp -r "$ROOT_DIR/packages/rest/src" "$DIST_DIR/src"
 cp "$ROOT_DIR/packages/rest/server.node.ts" "$DIST_DIR/server.ts"
 
-# Remove test files
+# Remove test files and Deno-only testing utilities
 find "$DIST_DIR" -name "*_test.ts" -o -name "*.test.ts" -o -name "*.bench.ts" | xargs rm -f 2>/dev/null || true
+rm -rf "$DIST_DIR/core/src/testing"
+
+# Strip testing exports from core mod.ts (Deno-only, uses jsr: imports)
+perl -i -0777 -pe 's/\/\/ ─── Testing ─.*//s' "$DIST_DIR/core/mod.ts"
 
 # Replace core runtime.ts with runtime.node.ts
 cp "$DIST_DIR/core/src/runtime.node.ts" "$DIST_DIR/core/src/runtime.ts"

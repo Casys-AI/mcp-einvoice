@@ -35,6 +35,10 @@ cp "$ROOT_DIR/packages/core/mod.ts" "$DIST_DIR/core-mod.ts"
 
 # ── Clean up ──
 find "$DIST_DIR" \( -name "*_test.ts" -o -name "*.test.ts" -o -name "*.bench.ts" \) -delete 2>/dev/null || true
+rm -rf "$DIST_DIR/src/testing"
+
+# Strip testing exports from core mod (Deno-only, uses jsr: imports)
+perl -i -0777 -pe 's/\/\/ ─── Testing ─.*//s' "$DIST_DIR/core-mod.ts"
 find "$DIST_DIR/src/ui" -maxdepth 1 -type d ! -name "ui" ! -name "dist" ! -name "shared" -exec rm -rf {} + 2>/dev/null || true
 rm -f "$DIST_DIR/src/ui/build-all.mjs" "$DIST_DIR/src/ui/vite.single.config.mjs" "$DIST_DIR/src/ui/package.json" "$DIST_DIR/src/ui/package-lock.json" 2>/dev/null || true
 
