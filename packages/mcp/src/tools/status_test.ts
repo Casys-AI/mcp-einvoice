@@ -69,9 +69,9 @@ Deno.test("einvoice_status_history - throws without invoice_id", async () => {
 // ── status_history now passes through normalized StatusHistoryResult from adapter ─────
 
 Deno.test("einvoice_status_history - passes through adapter StatusHistoryResult", async () => {
-  // Mock adapter returns { entries: [] } by default; override with actual entries
-  const mockResponse = { entries: [{ date: "2026-03-19", code: "DELIVERED" }] };
-  const { adapter } = createMockAdapter(mockResponse);
+  const { adapter } = createMockAdapter();
+  adapter.getStatusHistory = (_id) =>
+    Promise.resolve({ entries: [{ date: "2026-03-19", code: "DELIVERED" }] });
   const tool = findTool("einvoice_status_history");
 
   const result = unwrapStructured(
@@ -82,8 +82,8 @@ Deno.test("einvoice_status_history - passes through adapter StatusHistoryResult"
 });
 
 Deno.test("einvoice_status_history - returns empty entries when adapter has none", async () => {
-  const mockResponse = "unexpected";
-  const { adapter } = createMockAdapter(mockResponse);
+  const { adapter } = createMockAdapter();
+  adapter.getStatusHistory = (_id) => Promise.resolve({ entries: [] });
   const tool = findTool("einvoice_status_history");
 
   const result = unwrapStructured(

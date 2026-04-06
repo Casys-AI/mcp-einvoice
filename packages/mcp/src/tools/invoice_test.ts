@@ -361,6 +361,8 @@ Deno.test("generated-store - expired entries return null", () => {
 
 Deno.test("einvoice_invoice_get - passes through normalized direction from adapter", async () => {
   const { adapter } = createMockAdapter();
+  adapter.getInvoice = (_id) =>
+    Promise.resolve({ id: String(_id), status: "delivered", direction: "received" as const });
   const tool = findTool("einvoice_invoice_get");
 
   // Mock adapter returns InvoiceDetail with direction already normalized
