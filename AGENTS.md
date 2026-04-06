@@ -142,6 +142,11 @@ truth for total tool count.
 
 ### Adding a New Adapter
 
+Template scaffold, contract tests, and onboarding guide are in the SDK kit:
+- **Template:** `packages/core/src/adapters/template/` — copy and customize
+- **Contract:** `runAdapterContract()` in `packages/core/src/testing/adapter-contract.ts`
+- **Guide:** `packages/core/src/adapters/GUIDE.md` — decision tree, checklist, common mistakes
+
 | Scenario | Base class | Notes |
 | --- | --- | --- |
 | French PA with AFNOR | `AfnorBaseAdapter` | Override with native API calls |

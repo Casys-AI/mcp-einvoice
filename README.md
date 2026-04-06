@@ -212,32 +212,25 @@ cd packages/mcp/src/ui && node build-all.mjs   # Rebuild après modification TSX
 
 ## Ajouter un adapter
 
-**PA française avec AFNOR** → `extends AfnorBaseAdapter` (socle AFNOR gratuit,
-override le natif) :
+Un template scaffold + un contrat de test + un guide complet sont fournis :
 
-```typescript
-export class MyPAAdapter extends AfnorBaseAdapter {
-  readonly name = "my-pa";
-  readonly capabilities = new Set(["emitInvoice", "searchInvoices", ...]);
-  private client: MyPAClient;
+```bash
+# 1. Copier le template
+cp -r packages/core/src/adapters/template/ packages/core/src/adapters/my-pa/
 
-  constructor(client: MyPAClient, afnor: AfnorClient | null) {
-    super(afnor);  // ou super(null) si pas encore d'AFNOR
-    this.client = client;
-  }
+# 2. Implémenter client.ts (auth) et adapter.ts (capabilities + méthodes)
 
-  override async generateCII(req) { return this.client.convert(req); }
-  // ... override les extras, hériter le reste
-}
+# 3. Valider avec le contrat de test
+import { runAdapterContract } from "@casys/einvoice-core";
 ```
 
-**PA française sans AFNOR** → `extends BaseAdapter` (override toutes les
-méthodes avec l'API native, comme Iopole).
+| Scénario | Base class | Exemple |
+|----------|------------|---------|
+| PA française avec AFNOR | `AfnorBaseAdapter` | SuperPDP |
+| PA française sans AFNOR | `BaseAdapter` | Iopole |
+| Plateforme non-française | `BaseAdapter` | Storecove |
 
-**Plateforme non-française** → `extends BaseAdapter` directement (comme
-Storecove).
-
-Guide complet : `packages/core/src/adapters/README.md`.
+Guide complet : [`packages/core/src/adapters/GUIDE.md`](packages/core/src/adapters/GUIDE.md).
 
 ## Structure
 
@@ -253,10 +246,13 @@ packages/
 │       │   │   ├── base-adapter.ts  # AfnorBaseAdapter (extends BaseAdapter)
 │       │   │   └── client.ts        # AfnorClient (3 flow endpoints)
 │       │   ├── shared/oauth2.ts # OAuth2 token provider (shared)
+│       │   ├── template/        # Scaffold pour nouveaux adapters
 │       │   ├── iopole/          # PA française — extends BaseAdapter
 │       │   ├── storecove/       # Peppol AP — extends BaseAdapter
 │       │   └── superpdp/        # PA française — extends AfnorBaseAdapter
-│       └── testing/helpers.ts   # createMockAdapter()
+│       └── testing/
+│           ├── helpers.ts       # createMockAdapter(), mockFetch()
+│           └── adapter-contract.ts  # runAdapterContract() — contrat de test
 ├── mcp/                         # @casys/mcp-einvoice
 │   ├── server.ts                # MCP server (stdio + HTTP)
 │   ├── mod.ts
