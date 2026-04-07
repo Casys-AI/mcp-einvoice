@@ -46,16 +46,32 @@ export {
   createIopoleAdapter,
   IopoleAdapter,
 } from "./src/adapters/iopole/adapter.ts";
-export { createStorecoveAdapter } from "./src/adapters/storecove/adapter.ts";
-export { createSuperPDPAdapter } from "./src/adapters/superpdp/adapter.ts";
-
-// ─── Iopole Client (for direct use or DI in tests) ──────────
 export {
-  IopoleClient,
-} from "./src/adapters/iopole/client.ts";
-export type {
-  IopoleClientConfig,
-} from "./src/adapters/iopole/client.ts";
+  createStorecoveAdapter,
+  StorecoveAdapter,
+} from "./src/adapters/storecove/adapter.ts";
+export {
+  createSuperPDPAdapter,
+  SuperPDPAdapter,
+} from "./src/adapters/superpdp/adapter.ts";
+
+// ─── Adapter Clients (for direct use, DI in tests, and multi-tenant ─
+// ─── instantiation where the env-driven `create*Adapter()` factories ─
+// ─── do not work — see einvoice-platform for the multi-tenant SaaS  ──
+// ─── pattern) ──────────────────────────────────────────────────────
+export { IopoleClient } from "./src/adapters/iopole/client.ts";
+export type { IopoleClientConfig } from "./src/adapters/iopole/client.ts";
+
+export { StorecoveClient } from "./src/adapters/storecove/client.ts";
+export type { StorecoveClientConfig } from "./src/adapters/storecove/client.ts";
+
+export { SuperPDPClient } from "./src/adapters/superpdp/client.ts";
+export type { SuperPDPClientConfig } from "./src/adapters/superpdp/client.ts";
+
+// SuperPDP also requires an AfnorClient — the AFNOR registry is a separate
+// upstream service used by the SuperPDP adapter for entity lookups.
+export { AfnorClient } from "./src/adapters/afnor/client.ts";
+export type { AfnorClientConfig } from "./src/adapters/afnor/client.ts";
 
 // ─── Errors ─────────────────────────────────────────────────
 export {
@@ -65,8 +81,8 @@ export {
 
 // ─── Shared Utilities ───────────────────────────────────────
 export {
-  BaseHttpClient,
   type BaseClientConfig,
+  BaseHttpClient,
 } from "./src/adapters/shared/http-client.ts";
 export {
   createOAuth2TokenProvider,
@@ -81,12 +97,12 @@ export { normalizeDirection } from "./src/adapters/shared/direction.ts";
 
 // ─── Testing ────────────────────────────────────────────────
 export {
+  type CapturedRequest,
   createMockAdapter,
   mockFetch,
-  type CapturedRequest,
   type MockResponse,
 } from "./src/testing/helpers.ts";
 export {
-  runAdapterContract,
   type ContractOptions,
+  runAdapterContract,
 } from "./src/testing/adapter-contract.ts";
