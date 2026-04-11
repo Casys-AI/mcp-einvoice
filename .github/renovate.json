@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "schedule": [
+    "before 9am on monday"
+  ],
+  "timezone": "Europe/Paris",
+  "rangeStrategy": "bump",
+  "packageRules": [
+    {
+      "description": "Group all @casys/* packages into a single PR. This is what caught us out on mcp-server 0.12 → 0.16 — stale internal deps silently drifted 4 minor versions.",
+      "matchPackagePatterns": [
+        "^@casys/"
+      ],
+      "groupName": "@casys packages",
+      "commitMessageTopic": "@casys workspace packages"
+    },
+    {
+      "description": "Group Deno standard library (@std/*) bumps into one PR to reduce noise.",
+      "matchPackagePatterns": [
+        "^@std/"
+      ],
+      "groupName": "@std packages",
+      "commitMessageTopic": "@std (Deno stdlib)"
+    }
+  ],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "labels": [
+    "dependencies"
+  ]
+}
