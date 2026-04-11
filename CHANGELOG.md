@@ -2,7 +2,15 @@
 
 ## 0.3.0 (2026-04-11)
 
-### Added (both packages)
+> **Lockstep release**: all three packages (`@casys/einvoice-core`,
+> `@casys/mcp-einvoice`, `@casys/einvoice-rest`) bumped to 0.3.0
+> together, even though only `core` and `mcp-einvoice` have code
+> changes. `rest` is bumped to keep its `@casys/einvoice-core`
+> dependency caret aligned with `^0.3.0` — otherwise a downstream
+> project using both `rest` and `mcp-einvoice` would end up with
+> two incompatible versions of `einvoice-core` in its lock file.
+
+### Added (core + mcp-einvoice)
 - **`@casys/einvoice-core`**: export adapter `Client` classes and their config
   types so external consumers can instantiate adapters explicitly per tenant
   (SaaS multi-tenant use case) without going through the env-driven factories:
