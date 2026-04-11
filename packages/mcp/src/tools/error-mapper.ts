@@ -5,15 +5,12 @@
  * or returns null to rethrow as JSON-RPC errors.
  *
  * Replaces the local withErrorHandler wrapper — error mapping is now
- * handled by the framework via ConcurrentMCPServer.toolErrorMapper.
+ * handled by the framework via McpApp.toolErrorMapper.
  *
  * @module lib/einvoice/src/tools/error-mapper
  */
 
-import {
-  AdapterAPIError,
-  NotSupportedError,
-} from "@casys/einvoice-core";
+import { AdapterAPIError, NotSupportedError } from "@casys/einvoice-core";
 
 /**
  * Map tool errors to user-friendly messages.

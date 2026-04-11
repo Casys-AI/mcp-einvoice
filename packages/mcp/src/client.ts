@@ -90,7 +90,7 @@ export class EInvoiceToolsClient {
   }
 
   /**
-   * Build a handlers Map for ConcurrentMCPServer.registerTools().
+   * Build a handlers Map for McpApp.registerTools().
    * Each handler wraps the tool to inject the adapter context.
    * Only includes tools supported by the adapter's capabilities.
    */

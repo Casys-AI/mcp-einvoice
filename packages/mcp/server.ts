@@ -36,7 +36,7 @@
  * @module lib/einvoice/server
  */
 
-import { ConcurrentMCPServer, launchInspector } from "@casys/mcp-server";
+import { launchInspector, McpApp } from "@casys/mcp-server";
 import { einvoiceErrorMapper } from "./src/tools/error-mapper.ts";
 import { EInvoiceToolsClient } from "./src/client.ts";
 import type { EInvoiceAdapter } from "@casys/einvoice-core";
@@ -113,8 +113,8 @@ async function main() {
   const hostname = hostnameArg
     ? hostnameArg.split("=")[1]
     : isDenoCloud
-      ? "0.0.0.0"
-      : "localhost";
+    ? "0.0.0.0"
+    : "localhost";
 
   // Initialize adapter
   const adapter = createAdapter(adapterName);
@@ -125,7 +125,7 @@ async function main() {
   );
 
   // Build MCP server
-  const server = new ConcurrentMCPServer({
+  const server = new McpApp({
     name: "mcp-einvoice",
     version: "0.1.1",
     maxConcurrent: 10,
