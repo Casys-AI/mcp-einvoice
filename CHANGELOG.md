@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0 (2026-04-11)
+
+### Added (both packages)
+- **`@casys/einvoice-core`**: export adapter `Client` classes and their config
+  types so external consumers can instantiate adapters explicitly per tenant
+  (SaaS multi-tenant use case) without going through the env-driven factories:
+  - `StorecoveClient`, `StorecoveClientConfig`, `StorecoveAdapter`
+  - `SuperPDPClient`, `SuperPDPClientConfig`, `SuperPDPAdapter`
+  - `AfnorClient`, `AfnorClientConfig` (dep of `SuperPDPAdapter`)
+- **`@casys/mcp-einvoice`**: export `EInvoiceToolsClient` +
+  `EInvoiceToolsClientOptions` — the orchestrator class used internally by
+  the bundled `server.ts` to assemble the tools registry against a given
+  adapter. Multi-tenant consumers need this to do the same per tenant.
+
+### Notes
+- **Non-breaking**: all changes are additive. Existing single-tenant consumers
+  of the env-driven factories (`createIopoleAdapter()`, etc.) require no code
+  change.
+- `c9d5c70` shipped this code on 2026-04-07 but forgot to bump the version
+  numbers, so the JSR CI publish skipped with "already published". This
+  release is the same code with the missing version bumps.
+- `@casys/mcp-einvoice` now requires `@casys/einvoice-core@^0.3.0` (was
+  `^0.2.0`) because the new `EInvoiceToolsClient` export depends on the
+  new adapter client exports from core.
+
 ## 0.1.6 (2026-03-26)
 
 ### Added
