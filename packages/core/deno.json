@@ -1,7 +1,7 @@
 {
   "name": "@casys/einvoice-core",
-  "version": "0.3.0",
-  "description": "PA-agnostic e-invoicing adapter layer. Types, adapters (Iopole, Storecove, SuperPDP), shared utils.",
+  "version": "0.4.0",
+  "description": "PA-agnostic e-invoicing adapter layer. Types, adapters (Iopole, Storecove, SuperPDP, Chorus Pro), shared utils.",
   "exports": {
     ".": "./mod.ts"
   },
