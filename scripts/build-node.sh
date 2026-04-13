@@ -57,6 +57,7 @@ cat > "$DIST_DIR/package.json" <<PKGJSON
   "type": "module",
   "dependencies": {
     "@casys/mcp-server": "^0.17.0",
+    "@casys/mcp-compose": "^0.4.0",
     "@modelcontextprotocol/sdk": "^1.15.1"
   },
   "devDependencies": {
