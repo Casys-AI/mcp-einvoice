@@ -23,7 +23,7 @@ Au lieu de construire immédiatement l'interface complète vue dans les maquette
 ### 1. Sélecteur d'environnement et de provider (en-tête)
 - Sélecteur d'environnement : Sandbox / Production
 - Sélecteur de client (pour les intégrateurs multi-tenant)
-- Sélecteur de provider principal : Iopole, Storecove, SuperPDP
+- Sélecteur de provider principal : Iopole, Storecove, SUPER PDP
 - Indicateur de statut du provider (connecté, déconnecté, en erreur)
 - Bouton "Tester la connexion"
 

@@ -4,7 +4,7 @@
 
 **Goal:** Migrate the 2 Iopole reporting adapter methods and tools to the new API endpoints (old `/reporting/fr/*` paths were removed by Iopole).
 
-**Architecture:** The adapter interface changes from `businessEntityId` to `identifierScheme` + `identifierValue` for routing. The tool schemas gain `identifier_scheme` and `identifier_value` fields. The adapter implementation switches to the new URL pattern. Other adapters (SuperPDP, AFNOR) also implement these methods — their implementations don't change (different API), but the interface signature does.
+**Architecture:** The adapter interface changes from `businessEntityId` to `identifierScheme` + `identifierValue` for routing. The tool schemas gain `identifier_scheme` and `identifier_value` fields. The adapter implementation switches to the new URL pattern. Other adapters (SUPER PDP, AFNOR) also implement these methods — their implementations don't change (different API), but the interface signature does.
 
 **Tech Stack:** Deno, TypeScript
 
@@ -115,7 +115,7 @@ reportTransaction: (scheme, value, t) =>
 
 Run: `deno check packages/core/mod.ts`
 
-Expected: FAIL — Iopole, SuperPDP, and AFNOR adapters still have old signatures. This confirms the interface change propagated correctly.
+Expected: FAIL — Iopole, SUPER PDP, and AFNOR adapters still have old signatures. This confirms the interface change propagated correctly.
 
 - [ ] **Step 5: Commit**
 
@@ -244,13 +244,13 @@ git commit -m "feat: migrate Iopole reporting to new /reporting/transaction/* en
 
 ---
 
-### Task 3: Update AFNOR and SuperPDP adapters
+### Task 3: Update AFNOR and SUPER PDP adapters
 
 **Files:**
 - Modify: `packages/core/src/adapters/afnor/base-adapter.ts`
 - Modify: `packages/core/src/adapters/superpdp/adapter.ts` (if it overrides)
 
-- [ ] **Step 1: Check if SuperPDP overrides reporting methods**
+- [ ] **Step 1: Check if SUPER PDP overrides reporting methods**
 
 ```bash
 grep -n "reportInvoiceTransaction\|reportTransaction" packages/core/src/adapters/superpdp/adapter.ts
@@ -287,7 +287,7 @@ override async reportTransaction(
 
 Note: AFNOR uses its own flow API. The scheme/value params are unused but the signature must match the interface.
 
-- [ ] **Step 3: Run AFNOR + SuperPDP tests**
+- [ ] **Step 3: Run AFNOR + SUPER PDP tests**
 
 Run: `deno test packages/core/src/adapters/afnor/ packages/core/src/adapters/superpdp/`
 
@@ -297,7 +297,7 @@ Expected: ALL PASS
 
 ```bash
 git add packages/core/src/adapters/afnor/ packages/core/src/adapters/superpdp/
-git commit -m "refactor: update AFNOR/SuperPDP reporting signatures to match new interface"
+git commit -m "refactor: update AFNOR/SUPER PDP reporting signatures to match new interface"
 ```
 
 ---

@@ -17,7 +17,7 @@ export class NotSupportedError extends Error {
 
 /**
  * Error thrown when an API request fails.
- * Used by all HTTP clients (Iopole, Storecove, SuperPDP, AFNOR).
+ * Used by all HTTP clients (Iopole, Storecove, SUPER PDP, AFNOR).
  */
 export class AdapterAPIError extends Error {
   constructor(

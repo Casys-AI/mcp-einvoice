@@ -25,7 +25,7 @@
 - **Adapter normalization**: Iopole `getInvoiceFiles`, `getAttachments`,
   `listWebhooks`, `getWebhook`, `createWebhook`, `updateWebhook`,
   `searchDirectoryInt` — all normalize native API fields to typed interfaces.
-  SuperPDP `getCustomerId` returns `String(company.id)`.
+  SUPER PDP `getCustomerId` returns `String(company.id)`.
 
 ### Features
 

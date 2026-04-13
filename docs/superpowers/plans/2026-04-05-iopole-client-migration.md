@@ -4,7 +4,7 @@
 
 **Goal:** Migrate IopoleClient to extend BaseHttpClient and fix hardcoded "mcp-iopole" references in viewers.
 
-**Architecture:** IopoleClient (340 lines, standalone) becomes a BaseHttpClient subclass like Storecove/SuperPDP/AFNOR clients. Custom methods (getV11, postBinary, upload, postWithQuery) stay as Iopole-specific extensions. Viewer HTML titles and build script messages change "mcp-iopole" → "mcp-einvoice".
+**Architecture:** IopoleClient (340 lines, standalone) becomes a BaseHttpClient subclass like Storecove/SUPER PDP/AFNOR clients. Custom methods (getV11, postBinary, upload, postWithQuery) stay as Iopole-specific extensions. Viewer HTML titles and build script messages change "mcp-iopole" → "mcp-einvoice".
 
 **Tech Stack:** Deno, TypeScript, Vite (viewer builds)
 
@@ -274,7 +274,7 @@ git add packages/core/src/adapters/iopole/client.ts packages/core/src/adapters/i
 git commit -m "refactor: migrate IopoleClient to extend BaseHttpClient
 
 Iopole was the only adapter with a standalone HTTP client. Now all 4
-clients (Iopole, Storecove, SuperPDP, AFNOR) extend BaseHttpClient.
+clients (Iopole, Storecove, SUPER PDP, AFNOR) extend BaseHttpClient.
 Custom methods (getV11, postBinary, upload, postWithQuery) kept as
 Iopole-specific extensions. IopoleAPIError replaced by AdapterAPIError."
 ```

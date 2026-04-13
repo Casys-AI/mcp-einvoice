@@ -5,7 +5,7 @@
  *
  * DECISION TREE:
  * 1. French PA with AFNOR XP Z12-013 support?
- *    → Extend AfnorBaseAdapter (like SuperPDP)
+ *    → Extend AfnorBaseAdapter (like SUPER PDP)
  *    → AfnorBaseAdapter handles: searchDirectoryFr, reportInvoiceTransaction,
  *      reportTransaction via AFNOR flow API
  *

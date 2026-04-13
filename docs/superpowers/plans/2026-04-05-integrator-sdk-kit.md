@@ -54,7 +54,7 @@ import type { BaseClientConfig } from "../shared/http-client.ts";
 // BaseClientConfig provides: baseUrl, timeoutMs?
 
 export interface TemplateClientConfig extends BaseClientConfig {
-  // OPTION A: OAuth2 (like Iopole, SuperPDP)
+  // OPTION A: OAuth2 (like Iopole, SUPER PDP)
   // getToken: () => Promise<string>;
 
   // OPTION B: API key (like Storecove)
@@ -107,7 +107,7 @@ export class TemplateClient extends BaseHttpClient {
   //           upload() for multipart file upload
   //           getV11() for API version switching
   //
-  // SuperPDP: postXml() for XML invoice format
+  // SUPER PDP: postXml() for XML invoice format
   //           convert() for format conversion (CII ↔ UBL)
   //
   // AFNOR:    submitFlow() for multipart AFNOR flow submission
@@ -141,7 +141,7 @@ git commit -m "feat: add template HTTP client for new adapters"
  *
  * DECISION TREE:
  * 1. French PA with AFNOR XP Z12-013 support?
- *    → Extend AfnorBaseAdapter (like SuperPDP)
+ *    → Extend AfnorBaseAdapter (like SUPER PDP)
  *    → AfnorBaseAdapter handles: searchDirectoryFr, reportInvoiceTransaction,
  *      reportTransaction via AFNOR flow API
  *
@@ -593,7 +593,7 @@ Is your platform a French PDP with AFNOR XP Z12-013 support?
 ├── YES → Extend AfnorBaseAdapter
 │   └── Your adapter gets: searchDirectoryFr, reportInvoiceTransaction,
 │       reportTransaction via AFNOR flow API for free
-│       Example: SuperPDP (packages/core/src/adapters/superpdp/)
+│       Example: SUPER PDP (packages/core/src/adapters/superpdp/)
 │
 ├── NO, French PA without AFNOR
 │   └── Extend BaseAdapter directly
@@ -651,7 +651,7 @@ Is your platform a French PDP with AFNOR XP Z12-013 support?
 
 | Strategy | Example | Client Pattern |
 |----------|---------|----------------|
-| **OAuth2** | Iopole, SuperPDP | `createOAuth2TokenProvider()` → `getToken()` in getAuthHeaders |
+| **OAuth2** | Iopole, SUPER PDP | `createOAuth2TokenProvider()` → `getToken()` in getAuthHeaders |
 | **API Key** | Storecove | Store key → return as Bearer in getAuthHeaders |
 | **Custom** | (none yet) | Override getAuthHeaders() with your logic |
 

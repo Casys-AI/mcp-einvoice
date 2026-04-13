@@ -10,7 +10,7 @@ adapter e-invoicing (interface, 3 implémentations PA, shared utils) ET le
 serveur MCP (tools, viewers, server bootstrap).
 
 Le module Dolibarr (`dolibarr-invoice`, PHP) a besoin d'appeler les PDP
-(Iopole, Storecove, SuperPDP) depuis PHP. Dolibarr ne peut pas importer de
+(Iopole, Storecove, SUPER PDP) depuis PHP. Dolibarr ne peut pas importer de
 TypeScript directement — il lui faut une API REST HTTP.
 
 Ce REST API est un nouveau consommateur TypeScript de la couche adapter, ce qui
@@ -395,7 +395,7 @@ app.openapi(searchInvoices, async (c) => {
 ## Tests
 
 - **core** : tests unitaires adapters (existants, déplacés) + E2E adapters
-  (Iopole, SuperPDP)
+  (Iopole, SUPER PDP)
 - **mcp** : tests unitaires tools (existants, déplacés) — utilisent
   `createMockAdapter()` importé depuis core
 - **rest** : tests de routes Hono — mock adapter, vérifient requête HTTP →

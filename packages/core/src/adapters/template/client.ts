@@ -20,7 +20,7 @@ import type { BaseClientConfig } from "../shared/http-client.ts";
 // BaseClientConfig provides: baseUrl, timeoutMs?
 
 export interface TemplateClientConfig extends BaseClientConfig {
-  // OPTION A: OAuth2 (like Iopole, SuperPDP)
+  // OPTION A: OAuth2 (like Iopole, SUPER PDP)
   // getToken: () => Promise<string>;
 
   // OPTION B: API key (like Storecove)
@@ -73,7 +73,7 @@ export class TemplateClient extends BaseHttpClient {
   //           upload() for multipart file upload
   //           getV11() for API version switching
   //
-  // SuperPDP: postXml() for XML invoice format
+  // SUPER PDP: postXml() for XML invoice format
   //           convert() for format conversion (CII ↔ UBL)
   //
   // AFNOR:    submitFlow() for multipart AFNOR flow submission

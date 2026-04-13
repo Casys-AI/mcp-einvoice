@@ -203,7 +203,7 @@ export interface StatusHistoryResult {
 
 /**
  * Status codes — PA-specific (Iopole: IN_HAND, APPROVED, etc.;
- * SuperPDP: fr:212, etc.; Storecove: delivery evidence)
+ * SUPER PDP: fr:212, etc.; Storecove: delivery evidence)
  */
 export interface SendStatusRequest {
   invoiceId: string;

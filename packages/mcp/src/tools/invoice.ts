@@ -27,7 +27,7 @@ function fileToRow(f: FileEntry) {
 /**
  * Map invoice input to invoice-viewer preview format.
  * PA-agnostic: handles multiple input structures (nested Iopole-style,
- * flat SuperPDP-style, or generic).
+ * flat SUPER PDP-style, or generic).
  */
 // deno-lint-ignore no-explicit-any
 function mapToViewerPreview(inv: any): Record<string, unknown> {

@@ -375,7 +375,7 @@ Ce serveur MCP est consommé par des agents IA. Appliquer ces principes :
 - Do not hardcode status colors — use `getStatus()`.
 - Do not add server-side dependencies without approval.
 - Do not set `Content-Type` on multipart uploads.
-- Do not use offset-based pagination with SuperPDP (it's cursor-based).
+- Do not use offset-based pagination with SUPER PDP (it's cursor-based).
 - Do not put PA-specific logic in tools (Lucene wrapping, N+1 enrichment,
   normalization all belong in the adapter).
 - Do not use `Deno.*` APIs outside `packages/mcp/src/runtime.ts` — always go
@@ -387,7 +387,7 @@ Ce serveur MCP est consommé par des agents IA. Appliquer ces principes :
 - Run: `deno task test` (all tests, unit + E2E, across all packages).
 - Tests colocated as `*_test.ts` next to source files.
 - E2E: `packages/mcp/src/e2e_test.ts` (Iopole),
-  `packages/mcp/src/e2e_superpdp_test.ts` (SuperPDP) — both need `.env`
+  `packages/mcp/src/e2e_superpdp_test.ts` (SUPER PDP) — both need `.env`
   credentials, skip gracefully without them.
 - Core test helpers: `packages/core/src/testing/helpers.ts` —
   `createMockAdapter()`, `mockFetch()`.

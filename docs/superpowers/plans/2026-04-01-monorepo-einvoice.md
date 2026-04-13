@@ -69,7 +69,7 @@ Replace the current `deno.json` with the workspace root config. Save the current
 {
   "name": "@casys/einvoice-core",
   "version": "0.1.0",
-  "description": "PA-agnostic e-invoicing adapter layer. Types, adapters (Iopole, Storecove, SuperPDP), shared utils.",
+  "description": "PA-agnostic e-invoicing adapter layer. Types, adapters (Iopole, Storecove, SUPER PDP), shared utils.",
   "exports": {
     ".": "./mod.ts"
   },
@@ -238,7 +238,7 @@ Verify all other `shared/*.ts` files — `encoding.ts`, `errors.ts`, `http-clien
  * E-Invoice Core
  *
  * PA-agnostic adapter layer for e-invoicing.
- * Types, adapters (Iopole, Storecove, SuperPDP), shared utilities.
+ * Types, adapters (Iopole, Storecove, SUPER PDP), shared utilities.
  *
  * @module @casys/einvoice-core
  */

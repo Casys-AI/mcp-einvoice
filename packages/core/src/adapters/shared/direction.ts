@@ -3,7 +3,7 @@
  *
  * Maps PA-specific direction strings to the canonical "received" | "sent".
  * Covers: Iopole (RECEIVED/INBOUND/SENT/EMITTED/OUTBOUND),
- *         SuperPDP (in/out), AFNOR (In/Out), Storecove (always received).
+ *         SUPER PDP (in/out), AFNOR (In/Out), Storecove (always received).
  *
  * @module lib/einvoice/src/adapters/shared/direction
  */

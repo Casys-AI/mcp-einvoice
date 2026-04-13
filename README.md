@@ -162,7 +162,7 @@ deno test  # runAdapterContract() vérifie les shapes automatiquement
 
 | Cas | Classe de base | Exemple |
 |-----|----------------|---------|
-| PA française avec AFNOR | `AfnorBaseAdapter` | SuperPDP |
+| PA française avec AFNOR | `AfnorBaseAdapter` | SUPER PDP |
 | PA française sans AFNOR | `BaseAdapter` | Iopole |
 | PPF gouvernemental | `BaseAdapter` | Chorus Pro |
 | Plateforme non-française | `BaseAdapter` | Storecove |
