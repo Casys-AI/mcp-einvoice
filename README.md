@@ -8,7 +8,8 @@ pour toutes les plateformes agréées (PA), utilisable par n'importe quel agent 
 <p align="center">
   <a href="https://www.iopole.com/contact?utm_medium=affiliate&utm_source=thenocodeguy&utm_campaign=erwan%20lee%20pesle"><img src="docs/logos/iopole.svg" alt="Iopole" height="40"></a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://www.storecove.com/"><img src="docs/logos/storecove.png" alt="Storecove" height="40"></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://www.superpdp.tech/"><img src="docs/logos/superpdp.svg" alt="Super PDP" height="40"></a>
+  <a href="https://www.superpdp.tech/"><img src="docs/logos/superpdp.svg" alt="Super PDP" height="40"></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://portail.chorus-pro.gouv.fr/"><img src="docs/logos/choruspro.svg" alt="Chorus Pro" height="40"></a>
 </p>
 
 ## Le problème
@@ -64,6 +65,7 @@ correspondantes (voir `.env.example`).
 | <img src="docs/logos/iopole.svg" height="16">    | **[Iopole](https://www.iopole.com/contact?utm_medium=affiliate&utm_source=thenocodeguy&utm_campaign=erwan%20lee%20pesle)**    | PA française, B2B   | 39/39 |
 | <img src="docs/logos/storecove.png" height="16"> | **[Storecove](https://www.storecove.com/)** | Peppol, 40+ pays | 19/39 |
 | <img src="docs/logos/superpdp.svg" height="16">  | **[Super PDP](https://www.superpdp.tech/)** | PA française, B2B   | 20/39 |
+| <img src="docs/logos/choruspro.svg" height="16"> | **[Chorus Pro](https://portail.chorus-pro.gouv.fr/)** | PPF, secteur public | 6/39  |
 
 Seuls les tools supportés par la plateforme active sont exposés à l'agent.
 [Ajouter une plateforme →](#ajouter-une-plateforme)
@@ -75,6 +77,8 @@ Seuls les tools supportés par la plateforme active sont exposés à l'agent.
   [Demander un accès sandbox →](https://www.iopole.com/contact?utm_medium=affiliate&utm_source=thenocodeguy&utm_campaign=erwan%20lee%20pesle)
 - **[Storecove](https://www.storecove.com/)** — réseau Peppol international
 - **[Super PDP](https://www.superpdp.tech/)** — PA française, socle AFNOR
+- **[Chorus Pro](https://portail.chorus-pro.gouv.fr/)** — PPF gouvernemental,
+  secteur public. Nécessite un compte PISTE + un compte technique Chorus Pro
 
 ## Ce qu'on peut faire
 
@@ -160,6 +164,7 @@ deno test  # runAdapterContract() vérifie les shapes automatiquement
 |-----|----------------|---------|
 | PA française avec AFNOR | `AfnorBaseAdapter` | SuperPDP |
 | PA française sans AFNOR | `BaseAdapter` | Iopole |
+| PPF gouvernemental | `BaseAdapter` | Chorus Pro |
 | Plateforme non-française | `BaseAdapter` | Storecove |
 
 Guide complet : [`packages/core/src/adapters/GUIDE.md`](packages/core/src/adapters/GUIDE.md)

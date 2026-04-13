@@ -1,121 +1,178 @@
-# Adding a New Adapter
+# Adding a New Adapter — AI Agent Guide
 
-## Decision Tree
+## Prerequisites
+
+Before starting, you MUST have:
+- The target platform's API documentation (endpoints, auth, request/response schemas)
+- Store the API docs in `packages/core/src/adapters/<name>/api-reference.md`
+
+## Base Class Decision
 
 ```
-Is your platform a French PDP with AFNOR XP Z12-013 support?
-├── YES → Extend AfnorBaseAdapter
-│   └── Your adapter gets: searchDirectoryFr, reportInvoiceTransaction,
-│       reportTransaction via AFNOR flow API for free
-│       Example: SuperPDP (packages/core/src/adapters/superpdp/)
-│
-├── NO, French PA without AFNOR
-│   └── Extend BaseAdapter directly
-│       Override all methods your API supports
-│       Example: Iopole (packages/core/src/adapters/iopole/)
-│
-└── NO, non-French platform
-    └── Extend BaseAdapter directly
-        Only override methods your platform supports
-        Unsupported methods auto-throw NotSupportedError
-        Example: Storecove (packages/core/src/adapters/storecove/)
+French PDP with AFNOR XP Z12-013?
+  YES → AfnorBaseAdapter  (example: superpdp/)
+  NO  → BaseAdapter        (examples: iopole/, storecove/, choruspro/)
 ```
 
-## Quick Start
+## Files to Create
 
-1. **Copy the template:**
-   ```bash
-   cp -r packages/core/src/adapters/template/ packages/core/src/adapters/YOUR_NAME/
-   ```
+All files go in `packages/core/src/adapters/<name>/`.
+Copy from `template/` as starting point: `cp -r template/ <name>/`
 
-2. **Choose your base class** (see decision tree above)
+### 1. `api-reference.md` — Store API documentation
 
-3. **Implement the HTTP client** (`client.ts`):
-   - Extend `BaseHttpClient`
-   - Implement `getAuthHeaders()` with your auth strategy
-   - Add custom methods only if BaseHttpClient's REST methods aren't enough
-   - OAuth2? Use `createOAuth2TokenProvider()` from `shared/oauth2.ts`
+Store the full API reference: endpoints, auth, request/response schemas, enums.
+This is the source of truth for maintaining the adapter.
 
-4. **Implement the adapter** (`adapter.ts`):
-   - Set `name` (lowercase, used as adapter ID in env vars)
-   - Set `capabilities` (only methods you actually implement)
-   - Override methods from BaseAdapter
-   - Each method must return the **typed return format** (see Types below)
+### 2. `client.ts` — HTTP Client
 
-5. **Add normalization** (if your adapter accepts freeform invoice data):
-   - Create `normalize.ts` following the `NormalizeFn` type from `shared/types.ts`
-   - Map intuitive field names to your API's format
-   - See `superpdp/normalize.ts` for a full example
+Extend `BaseHttpClient`. Implement `getAuthHeaders()`.
 
-6. **Register your adapter:**
-   - Add factory to `packages/core/src/adapters/registry.ts`
-   - Add case to `packages/mcp/server.ts` createAdapter() switch
+Auth strategies:
+- **OAuth2**: inject `getToken: () => Promise<string>` from `createOAuth2TokenProvider()`
+- **API key**: inject key string, return in header
+- **Dual auth** (e.g. Chorus Pro): combine multiple headers in `getAuthHeaders()`
+- **Custom**: override `getAuthHeaders()` with your logic
 
-7. **Run the contract tests:**
-   ```typescript
-   import { runAdapterContract } from "../../testing/adapter-contract.ts";
+If `createOAuth2TokenProvider()` is missing a feature you need (e.g. `scope`),
+extend `OAuth2Config` in `shared/oauth2.ts` with an optional field — do NOT duplicate the provider.
 
-   Deno.test("MyAdapter satisfies contract", async (t) => {
-     const adapter = createMyAdapter(testConfig);
-     await runAdapterContract(t, adapter, {
-       testInvoiceId: "known-sandbox-invoice-id",
-     });
-   });
-   ```
+### 3. `adapter.ts` — Adapter + Factory
 
-## Auth Strategies
+Contains the adapter class AND the `create<Name>Adapter()` factory function.
 
-| Strategy | Example | Client Pattern |
-|----------|---------|----------------|
-| **OAuth2** | Iopole, SuperPDP | `createOAuth2TokenProvider()` → `getToken()` in getAuthHeaders |
-| **API Key** | Storecove | Store key → return as Bearer in getAuthHeaders |
-| **Custom** | (none yet) | Override getAuthHeaders() with your logic |
+Required:
+- `override get name()` → lowercase adapter ID (e.g. `"choruspro"`)
+- `override get capabilities()` → Set of ONLY the methods you implement
+- Override methods from BaseAdapter, return typed shapes (see below)
+- Factory function at bottom: reads env vars via `requireEnv()` / `env()`
 
-## Typed Return Formats
+### 4. `README.md` — Adapter documentation
 
-Your adapter methods must return these shapes. The tools and viewers depend on them.
+Config table (env vars), capabilities mapping, platform-specific notes.
 
-| Method | Return Type | Key Fields |
-|--------|-------------|------------|
-| `searchInvoices` | `{ rows: InvoiceSearchRow[], count: number }` | rows[].id, .invoiceNumber, .direction, .status, .amount |
-| `getInvoice` | `InvoiceDetail` | id, invoiceNumber, direction, status, lines[], notes[] |
-| `getStatusHistory` | `{ entries: StatusEntry[] }` | entries[].code, .label, .date |
-| `searchDirectoryFr` | `{ rows: DirectoryFrRow[], count: number }` | rows[].entityId, .siret, .name |
-| `listBusinessEntities` | `{ rows: BusinessEntityRow[], count: number }` | rows[].entityId, .name, .siret, .type |
-| `downloadInvoice` | `{ data: Uint8Array, contentType: string }` | Binary file content |
+## Files to Modify (ALL required — missing any will break the build)
 
-See `packages/core/src/adapter.ts` for the full EInvoiceAdapter interface and all typed returns.
+### 5. `packages/core/src/adapters/registry.ts`
+
+```ts
+import { create<Name>Adapter } from "./<name>/adapter.ts";
+// Add to ADAPTER_FACTORIES:
+<name>: create<Name>Adapter,
+```
+
+### 6. `packages/core/src/adapters/mod.ts`
+
+```ts
+export { create<Name>Adapter, <Name>Adapter } from "./<name>/adapter.ts";
+```
+
+### 7. `packages/core/mod.ts` (CRITICAL — the package entry point)
+
+Two additions needed:
+
+```ts
+// In the Adapters section:
+export { create<Name>Adapter, <Name>Adapter } from "./src/adapters/<name>/adapter.ts";
+
+// In the Adapter Clients section:
+export { <Name>Client } from "./src/adapters/<name>/client.ts";
+export type { <Name>ClientConfig } from "./src/adapters/<name>/client.ts";
+```
+
+### 8. `packages/mcp/server.ts`
+
+Add import and case to the `createAdapter()` switch:
+
+```ts
+import { create<Name>Adapter } from "@casys/einvoice-core";
+// In switch:
+case "<name>":
+  return create<Name>Adapter();
+```
+
+Update the error message's adapter list.
+
+### 9. `.env.example`
+
+Add a section with all required env vars:
+
+```
+# ===================
+# <Name> — <auth type>
+# ===================
+<NAME>_API_URL=...
+<NAME>_CLIENT_ID=...
+```
+
+Update the adapter list comment at top: `# Adapter to use (iopole | ... | <name>)`
+
+### 10. `README.md` (project root)
+
+Three places to update:
+- Logo row in `<p align="center">` (put logo SVG in `docs/logos/<name>.svg`)
+- Platform table (`## Plateformes supportées`)
+- Sandbox section (`## Obtenir un compte sandbox`)
+
+## Return Type Reference
+
+Methods MUST return these exact shapes. Tools and viewers depend on them.
+
+| Method | Return Type | Required Fields |
+|--------|-------------|-----------------|
+| `searchInvoices` | `SearchInvoicesResult` | `{ rows: InvoiceSearchRow[], count }` — rows need: id, direction |
+| `getInvoice` | `InvoiceDetail` | id, invoiceNumber, direction, status |
+| `emitInvoice` | `Record<string, unknown>` | any confirmation object |
+| `downloadInvoice` | `DownloadResult` | `{ data: Uint8Array, contentType }` |
+| `getStatusHistory` | `StatusHistoryResult` | `{ entries: StatusEntry[] }` — entries need: date, code |
+| `sendStatus` | `Record<string, unknown>` | any confirmation object |
+| `searchDirectoryFr` | `SearchDirectoryFrResult` | `{ rows: DirectoryFrRow[], count }` — rows need: entityId |
+| `searchDirectoryInt` | `SearchDirectoryIntResult` | `{ rows: DirectoryIntRow[], count }` |
+| `listBusinessEntities` | `ListBusinessEntitiesResult` | `{ rows: BusinessEntityRow[], count }` — rows need: entityId |
+| `getBusinessEntity` | `Record<string, unknown>` | raw entity data |
+
+Full interface: `packages/core/src/adapter.ts`
+
+## Normalization Rules
+
+- `direction` must be `"sent"` or `"received"` — use `normalizeDirection()` from `shared/direction.ts`
+- `amount` must be `number`, not `string` — coerce with `Number()`
+- `id` must be `string` — coerce with `String()`
+- `date` should be ISO format when possible
+- Use `encodePathSegment()` on all URL path interpolations
+- Use `uint8ToBase64()` from `shared/encoding.ts` for base64 encoding
+
+## Validation
+
+After implementation, run these checks in order:
+
+```bash
+# 1. Type-check (catches missing exports, wrong types)
+deno check packages/core/mod.ts packages/mcp/server.ts packages/rest/server.ts
+
+# 2. Unit tests (catches regressions in other adapters)
+deno task test
+
+# 3. Verify tool filtering (no credentials needed)
+deno eval '
+import { <Name>Adapter } from "./packages/core/src/adapters/<name>/adapter.ts";
+import { EInvoiceToolsClient } from "./packages/mcp/src/client.ts";
+const adapter = new <Name>Adapter(/* mock config */);
+const client = new EInvoiceToolsClient();
+console.log(client.supportedTools(adapter).map(t => t.name));
+'
+
+# 4. Contract tests (requires sandbox credentials)
+# Create adapter_test.ts with runAdapterContract()
+```
 
 ## Common Mistakes
 
-| Mistake | Symptom | Fix |
-|---------|---------|-----|
-| `direction: "in"` instead of `"sent"` | Contract fails on direction enum | Use `normalizeDirection()` from `shared/direction.ts` |
-| `{ results: [...] }` instead of `{ rows: [...] }` | Contract fails on missing `rows` | Follow the exact type names from `adapter.ts` |
-| `amount` as string | Contract fails on `typeof amount` | Use `Number(rawAmount)` coercion |
-| Missing `count` in paginated results | Contract fails on `typeof count` | Always include `count` alongside `rows` |
-| `data` as string for downloads | Contract fails `instanceof Uint8Array` | Read response as `arrayBuffer()`, not `text()` |
-| Interpolating user input in URLs | Security vulnerability | Use `encodePathSegment()` on all path segments |
-
-## Normalization Guidelines
-
-If your adapter's `emitInvoice` accepts freeform invoice data (not just file upload):
-
-1. Create `normalize.ts` in your adapter directory
-2. Export a function matching `NormalizeFn` from `shared/types.ts`
-3. Map human-friendly field names to your API's format
-4. Handle defaults (country, currency, tax category codes)
-5. Validate French mandatory fields (BR-FR-05 notes, BR-FR-12 electronic address)
-
-## Checklist
-
-- [ ] `client.ts` extends BaseHttpClient with getAuthHeaders()
-- [ ] `adapter.ts` extends BaseAdapter (or AfnorBaseAdapter)
-- [ ] `name` returns lowercase adapter ID
-- [ ] `capabilities` Set matches implemented methods exactly
-- [ ] All implemented methods return typed shapes
-- [ ] `encodePathSegment()` used on URL path interpolations
-- [ ] Factory function created and registered
-- [ ] Contract tests pass (`runAdapterContract`)
-- [ ] Unit tests cover all implemented methods with `mockFetch()`
-- [ ] E2E test file created (for sandbox API testing with real credentials)
+| Mistake | Symptom |
+|---------|---------|
+| Forgot `packages/core/mod.ts` | TS2305: Module has no exported member |
+| Forgot `packages/mcp/server.ts` switch | Runtime error: Unknown adapter |
+| `capabilities` lists methods not overridden | Runtime NotSupportedError when tool called |
+| `capabilities` misses overridden methods | Tool not exposed to agent |
+| Template `mod.ts` left in adapter dir | Dead file — real adapters don't use per-adapter mod.ts |
+| OAuth2 scope not passed | Token request rejected by auth server |

@@ -14,6 +14,8 @@ export interface OAuth2Config {
   clientId: string;
   /** OAuth2 client secret */
   clientSecret: string;
+  /** OAuth2 scope (optional, e.g. "openid resource.READ" for PISTE/Chorus Pro) */
+  scope?: string;
 }
 
 /**
@@ -30,11 +32,15 @@ export function createOAuth2TokenProvider(
   const REFRESH_MARGIN_MS = 60_000;
 
   async function fetchToken(): Promise<string> {
-    const body = new URLSearchParams({
+    const params: Record<string, string> = {
       grant_type: "client_credentials",
       client_id: config.clientId,
       client_secret: config.clientSecret,
-    });
+    };
+    if (config.scope) {
+      params.scope = config.scope;
+    }
+    const body = new URLSearchParams(params);
 
     const response = await fetch(config.authUrl, {
       method: "POST",

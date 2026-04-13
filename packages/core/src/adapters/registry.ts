@@ -10,12 +10,14 @@
 import { createIopoleAdapter } from "./iopole/adapter.ts";
 import { createStorecoveAdapter } from "./storecove/adapter.ts";
 import { createSuperPDPAdapter } from "./superpdp/adapter.ts";
+import { createChorusProAdapter } from "./choruspro/adapter.ts";
 import type { EInvoiceAdapter } from "../adapter.ts";
 
 const ADAPTER_FACTORIES: Record<string, () => EInvoiceAdapter> = {
   iopole: createIopoleAdapter,
   storecove: createStorecoveAdapter,
   superpdp: createSuperPDPAdapter,
+  choruspro: createChorusProAdapter,
 };
 
 /** Create an adapter by name. Reads credentials from env vars. */

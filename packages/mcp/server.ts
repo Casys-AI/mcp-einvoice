@@ -41,6 +41,7 @@ import { einvoiceErrorMapper } from "./src/tools/error-mapper.ts";
 import { EInvoiceToolsClient } from "./src/client.ts";
 import type { EInvoiceAdapter } from "@casys/einvoice-core";
 import {
+  createChorusProAdapter,
   createIopoleAdapter,
   createStorecoveAdapter,
   createSuperPDPAdapter,
@@ -69,10 +70,12 @@ function createAdapter(adapterName: string): EInvoiceAdapter {
       return createStorecoveAdapter();
     case "superpdp":
       return createSuperPDPAdapter();
+    case "choruspro":
+      return createChorusProAdapter();
     default:
       throw new Error(
         `${LOG_PREFIX} Unknown adapter: "${adapterName}". ` +
-          `Available adapters: iopole, storecove, superpdp`,
+          `Available adapters: iopole, storecove, superpdp, choruspro`,
       );
   }
 }

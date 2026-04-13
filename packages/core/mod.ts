@@ -54,6 +54,10 @@ export {
   createSuperPDPAdapter,
   SuperPDPAdapter,
 } from "./src/adapters/superpdp/adapter.ts";
+export {
+  createChorusProAdapter,
+  ChorusProAdapter,
+} from "./src/adapters/choruspro/adapter.ts";
 
 // ─── Adapter Clients (for direct use, DI in tests, and multi-tenant ─
 // ─── instantiation where the env-driven `create*Adapter()` factories ─
@@ -67,6 +71,9 @@ export type { StorecoveClientConfig } from "./src/adapters/storecove/client.ts";
 
 export { SuperPDPClient } from "./src/adapters/superpdp/client.ts";
 export type { SuperPDPClientConfig } from "./src/adapters/superpdp/client.ts";
+
+export { ChorusProClient } from "./src/adapters/choruspro/client.ts";
+export type { ChorusProClientConfig } from "./src/adapters/choruspro/client.ts";
 
 // SuperPDP also requires an AfnorClient — the AFNOR registry is a separate
 // upstream service used by the SuperPDP adapter for entity lookups.
