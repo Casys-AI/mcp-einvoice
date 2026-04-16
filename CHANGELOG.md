@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.2 (2026-04-16)
+
+### Fixed
+- **HTTPS URL support in `registerEInvoiceViewers`**: `exists` and `readFile`
+  callbacks now handle `https://` (and `http://`) URLs in addition to `file://`
+  paths. When consuming `@casys/mcp-einvoice` from JSR, `import.meta.url` is an
+  `https://jsr.io/...` URL; after the matching `mcp-server@0.17.3` fix,
+  `resolveViewerDistPath` passes that raw URL to these callbacks. `exists`
+  returns `true` for HTTPS (files are guaranteed present via `publish.include`);
+  `readFile` uses `fetch()` and throws a descriptive error on non-OK responses.
+
+### Changed
+- Requires `@casys/mcp-server@^0.17.2` (was `^0.17.0`). The companion
+  `resolveViewerDistPath` HTTPS-URL fix will ship in a 0.17.x patch; the caret
+  constraint ensures it is picked up automatically once published.
+
+## 0.5.1 (2026-04-16)
+
+### Fixed
+- **Viewer dist path resolution**: `MODULE_URL` was `import.meta.url` of
+  `src/viewers.ts`, causing `resolveViewerDistPath` to look for
+  `src/src/ui/dist/` (double `src/`). Fix: `new URL('..', import.meta.url)`
+  to anchor at the package root.
+
 ## 0.5.0 (2026-04-16)
 
 ### Added

@@ -32,6 +32,13 @@ const EINVOICE_VIEWERS = [
 
 export type EInvoiceViewerName = (typeof EINVOICE_VIEWERS)[number];
 
+/** One-shot cache for HTTPS-fetched viewer HTML. Keyed by URL. */
+const viewerHtmlCache = new Map<string, string>();
+
+function isRemoteUrl(path: string): boolean {
+  return path.startsWith("https://") || path.startsWith("http://");
+}
+
 /**
  * Register all e-invoice MCP App viewers on the given `McpApp`.
  *
@@ -46,6 +53,9 @@ export function registerEInvoiceViewers(
     moduleUrl: MODULE_URL,
     viewers: [...EINVOICE_VIEWERS],
     exists: (path: string): boolean => {
+      if (isRemoteUrl(path)) {
+        return true; // JSR CDN — files guaranteed present via publish.include
+      }
       try {
         Deno.statSync(path);
         return true;
@@ -53,6 +63,21 @@ export function registerEInvoiceViewers(
         return false;
       }
     },
-    readFile: (path: string) => Deno.readTextFile(path),
+    readFile: async (path: string): Promise<string> => {
+      if (isRemoteUrl(path)) {
+        const cached = viewerHtmlCache.get(path);
+        if (cached) return cached;
+        const r = await fetch(path);
+        if (!r.ok) {
+          throw new Error(
+            `Failed to fetch viewer HTML: ${path} (${r.status})`,
+          );
+        }
+        const html = await r.text();
+        viewerHtmlCache.set(path, html);
+        return html;
+      }
+      return Deno.readTextFile(path);
+    },
   });
 }
