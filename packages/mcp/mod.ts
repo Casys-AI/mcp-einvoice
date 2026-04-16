@@ -64,3 +64,7 @@ export type { EInvoiceToolsClientOptions } from "./src/client.ts";
 export { IopoleClient } from "@casys/einvoice-core";
 
 export type { IopoleClientConfig, OAuth2Config } from "@casys/einvoice-core";
+
+// Viewer names type (the actual registration is via
+// EInvoiceToolsClient.registerViewers — see src/viewers.ts)
+export type { EInvoiceViewerName } from "./src/viewers.ts";

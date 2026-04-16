@@ -46,14 +46,7 @@ import {
   createStorecoveAdapter,
   createSuperPDPAdapter,
 } from "@casys/einvoice-core";
-import {
-  env,
-  exit,
-  getArgs,
-  onSignal,
-  readTextFile,
-  statSync,
-} from "./src/runtime.ts";
+import { env, exit, getArgs, onSignal } from "./src/runtime.ts";
 
 const DEFAULT_HTTP_PORT = 3015;
 const LOG_PREFIX = "[mcp-einvoice]";
@@ -144,20 +137,7 @@ async function main() {
   server.registerTools(mcpTools, handlers);
 
   // Register UI viewers (MCP Apps)
-  server.registerViewers({
-    prefix: "mcp-einvoice",
-    moduleUrl: import.meta.url,
-    viewers: [
-      "invoice-viewer",
-      "doclist-viewer",
-      "status-timeline",
-      "directory-card",
-      "directory-list",
-      "action-result",
-    ],
-    exists: statSync,
-    readFile: readTextFile,
-  });
+  toolsClient.registerViewers(server);
 
   console.error(
     `${LOG_PREFIX} Initialized — adapter=${adapterName}, ${toolsClient.count} tools${

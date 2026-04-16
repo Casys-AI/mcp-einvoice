@@ -21,6 +21,8 @@ import type {
   MCPToolWireFormat,
 } from "./tools/types.ts";
 import type { EInvoiceAdapter } from "@casys/einvoice-core";
+import type { McpApp } from "@casys/mcp-server";
+import { registerEInvoiceViewers } from "./viewers.ts";
 
 // Re-export from tools
 export {
@@ -136,6 +138,18 @@ export class EInvoiceToolsClient {
       );
     }
     return await tool.handler(args, { adapter });
+  }
+
+  /**
+   * Register all e-invoice MCP App viewers on the given `McpApp`.
+   *
+   * Viewers are the HTML UIs that tools reference via
+   * `_meta.ui.resourceUri` (e.g. `ui://mcp-einvoice/doclist-viewer`).
+   * Without this call, tool responses point to resources that don't
+   * exist and Claude.ai returns -32602.
+   */
+  registerViewers(app: McpApp): { registered: string[]; skipped: string[] } {
+    return registerEInvoiceViewers(app);
   }
 
   /** Get tool count */

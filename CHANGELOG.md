@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.5.0 (2026-04-16)
+
+### Added
+- **`EInvoiceToolsClient.registerViewers(app)`**: register all MCP App viewers
+  on a `McpApp` instance. Multi-tenant consumers (einvoice-platform) need this
+  to serve `ui://mcp-einvoice/*` resources that tools reference via
+  `_meta.ui.resourceUri`. Previously only the bundled `server.ts` registered
+  viewers; external consumers had no way to do it.
+- **`EInvoiceViewerName`** type: union of all viewer names shipped with the
+  package.
+
+### Fixed
+- **JSR publish missing viewer HTML**: `publish.include` now includes
+  `src/ui/dist/**/*.html`. Without this, consumers installing from JSR could
+  not resolve viewer dist paths.
+
+### Changed
+- `server.ts` now uses `toolsClient.registerViewers(server)` instead of an
+  inline `server.registerViewers()` call — same behavior, single source of
+  truth for the viewer list.
+
+### Notes
+- Requires `@casys/mcp-server@^0.17.0` (unchanged from 0.4.0).
+
+## 0.4.0 (2026-04-16)
+
+### Added
+- **Chorus Pro adapter** (PPF — Portail Public de Facturation): 6 capabilities
+  (`searchInvoices`, `getInvoice`, `emitInvoice`, `searchDirectoryFr`,
+  `listBusinessEntities`, `getBusinessEntity`). Dual auth: OAuth2 via PISTE +
+  `cpro-account` header (base64 technical credentials).
+
+### Fixed
+- **CI**: bump `@casys/mcp-server` in the Node build.
+- **CI**: add missing `@casys/mcp-compose` dependency to the Node build.
+
 ## 0.3.0 (2026-04-11)
 
 > **Lockstep release**: all three packages (`@casys/einvoice-core`,
