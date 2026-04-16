@@ -12,8 +12,13 @@
 
 import type { McpApp } from "@casys/mcp-server";
 
-/** Captured once at import time — anchors dist resolution to this package. */
-const MODULE_URL = import.meta.url;
+/**
+ * Captured once at import time — anchors dist resolution to the package root.
+ * This file lives in `src/`, but `resolveViewerDistPath` expects the URL to
+ * point at the package root (so `./src/ui/dist/{viewer}/index.html` resolves
+ * correctly). Going up one level from `src/viewers.ts` → package root.
+ */
+const MODULE_URL = new URL("..", import.meta.url).href;
 
 /** All viewers shipped with mcp-einvoice. */
 const EINVOICE_VIEWERS = [
